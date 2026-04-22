@@ -1,4 +1,4 @@
-﻿# Airflow2 Orchestration Platform
+# Airflow2 Orchestration Platform
 
 This repository implements a version-aware DAG CI/CD scaffold.
 
