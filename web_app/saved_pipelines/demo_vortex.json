@@ -1,0 +1,208 @@
+{
+  "pipeline": {
+    "dag_id": "test_vortex_web",
+    "description": "Sequential orchestration pipeline",
+    "start_date": "2026-01-01",
+    "schedule": null,
+    "schedule_mode": "manual",
+    "catchup": false,
+    "schedule_preset": "",
+    "schedule_cron": "",
+    "interval_value": "",
+    "interval_unit": "minutes",
+    "event_source": "",
+    "custom_schedule_text": "",
+    "retries": 3,
+    "retry_delay_minutes": 5,
+    "alert_emails": [],
+    "alert_mode": "both",
+    "tags": [
+      "demo",
+      "orchestration"
+    ],
+    "output_filename": "test_vortex_web.py"
+  },
+  "nodes": [
+    {
+      "id": "node_1",
+      "type": "n8n",
+      "label": "n8n 1",
+      "x": 8,
+      "y": 239.6297709147135,
+      "config": {
+        "http_method": "GET",
+        "use_test_webhook": true,
+        "workflow_name": "VORTEX_DataSyncFlow_Full"
+      }
+    },
+    {
+      "id": "node_2",
+      "type": "cloudrun",
+      "label": "Cloud Run 2",
+      "x": 275.5555725097656,
+      "y": 239.25928751627603,
+      "config": {
+        "payload": "{\n    \"dataset\": \"raw\",\n    \"bucket_name\": \"os-dpf-vortex-prj-dev\",\n    \"integration_source\": \"n8n\",\n    \"data_source\": \"boond\",\n    \"tables\": {\n        \"ABSENCES\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"ADMINISTRATIVE\": {\n            \"separator\": \";\",\n            \"mode\": \"delta\"\n        },\n        \"AGENCIES\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"COMPANIES\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"CONTACTS\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"DAYS_OFF\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"DELIVERIES\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"DICTIONARY\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"INVOICES\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"POSTPRODUCTION_DETAILS\": {\n            \"separator\": \";\",\n            \"mode\": \"delta\"\n        },\n        \"PREV_YEAR_LEAVE_BALANCE\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"PROJECTS\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"RESOURCES\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"EXTERNAL_DELIVERIES\": {\n            \"separator\": \"|\",\n            \"mode\": \"full\"\n        },\n\"TIMESHEET\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"RESOURCES_IMAGES\": {\n            \"separator\": \";\",\n            \"mode\": \"delta\"\n        }\n    }\n}",
+        "service_account_file": "/opt/airflow/cred.json",
+        "url": "https://ingestioncloudrun-193541357649.europe-west1.run.app/primary_keys"
+      }
+    },
+    {
+      "id": "node_3",
+      "type": "dataform",
+      "label": "Dataform 3",
+      "x": 801.8518066406251,
+      "y": 93.18524169921874,
+      "config": {
+        "compilation_id": "2ceb50cd-f9a1-4a81-8e60-3a36b2b32466",
+        "dataform_tags": "STG_BOOND",
+        "project_id": "os-dpf-vortex-prj-dev",
+        "project_mode": "single",
+        "region": "europe-west1",
+        "repository": "vortex_dev",
+        "service_account_file": "/opt/airflow/cred.json"
+      }
+    },
+    {
+      "id": "node_4",
+      "type": "powerbi",
+      "label": "Power BI 4",
+      "x": 1930.4757394149276,
+      "y": 211.24256889269964,
+      "config": {
+        "dataset_id": "9a7c48a2-ac45-4850-a607-1c0e5d68664c",
+        "workspace_id": "3c1c9bef-4e81-4e61-bf0f-f0d5bc4d515a"
+      }
+    },
+    {
+      "id": "node_5",
+      "type": "dataform",
+      "label": "Dataform 5",
+      "x": 1326.1914198551574,
+      "y": 93.18524169921874,
+      "config": {
+        "compilation_id": "2ceb50cd-f9a1-4a81-8e60-3a36b2b32466",
+        "dataform_tags": "DW_BOOND",
+        "project_count": 2,
+        "project_id": "os-dpf-vortex-prj-dev",
+        "project_ids": [],
+        "project_mode": "single",
+        "region": "europe-west1",
+        "repository": "vortex_dev",
+        "service_account_file": "/opt/airflow/cred.json"
+      }
+    },
+    {
+      "id": "node_6",
+      "type": "dataform",
+      "label": "Dataform 6",
+      "x": 1065.627830952587,
+      "y": 91.33333333333331,
+      "config": {
+        "compilation_id": "2ceb50cd-f9a1-4a81-8e60-3a36b2b32466",
+        "dataform_tags": "DH_BOOND",
+        "project_count": 2,
+        "project_id": "os-dpf-vortex-prj-dev",
+        "project_ids": [],
+        "project_mode": "single",
+        "region": "europe-west1",
+        "repository": "vortex_dev",
+        "service_account_file": "/opt/airflow/cred.json"
+      }
+    },
+    {
+      "id": "node_7",
+      "type": "parallel_fork",
+      "label": "Parallel Fork 7",
+      "x": 549.0316481817335,
+      "y": 236.242055620466,
+      "config": {}
+    },
+    {
+      "id": "node_8",
+      "type": "dataform",
+      "label": "Dataform 8",
+      "x": 810.1427932012649,
+      "y": 412.16790807814823,
+      "config": {
+        "compilation_id": "2ceb50cd-f9a1-4a81-8e60-3a36b2b32466",
+        "dataform_tags": "SHC,SHR",
+        "project_count": 2,
+        "project_id": "os-dpf-vortex-prj-dev",
+        "project_ids": [],
+        "project_mode": "single",
+        "region": "europe-west1",
+        "repository": "vortex_dev",
+        "service_account_file": "/opt/airflow/cred.json"
+      }
+    },
+    {
+      "id": "node_9",
+      "type": "parallel_join",
+      "label": "Parallel Join 9",
+      "x": 1625.58688499814,
+      "y": 212.3530277070545,
+      "config": {
+        "trigger_rule": "all_success"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "node_1",
+      "target": "node_2"
+    },
+    {
+      "source": "node_3",
+      "target": "node_6"
+    },
+    {
+      "source": "node_6",
+      "target": "node_5"
+    },
+    {
+      "source": "node_2",
+      "target": "node_7"
+    },
+    {
+      "source": "node_7",
+      "target": "node_3"
+    },
+    {
+      "source": "node_7",
+      "target": "node_8"
+    },
+    {
+      "source": "node_8",
+      "target": "node_9"
+    },
+    {
+      "source": "node_5",
+      "target": "node_9"
+    },
+    {
+      "source": "node_9",
+      "target": "node_4"
+    }
+  ],
+  "group_boxes": [
+    {
+      "id": "group_box_2",
+      "title": "Group 2",
+      "x": 770.0001271565754,
+      "y": 33.42587788899742,
+      "width": 807.7777099609375,
+      "height": 195.00003814697266,
+      "color": "#e70404"
+    },
+    {
+      "id": "group_box_3",
+      "title": "Group 3",
+      "x": 764.4444274902344,
+      "y": 353.3333969116211,
+      "width": 810.5555725097656,
+      "height": 199.16664123535156,
+      "color": "#2f6ea2"
+    }
+  ]
+}

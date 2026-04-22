@@ -1,0 +1,10 @@
+@task(task_id={{ task_id | pyrepr }})
+def {{ function_name }}():
+    delay_minutes = int({{ config.get("delay_minutes", 1) | pyrepr }})
+    if delay_minutes <= 0:
+        raise AirflowException("delay.delay_minutes must be > 0.")
+    time.sleep(delay_minutes * 60)
+    return {"delayed_minutes": delay_minutes, "status": "completed"}
+
+
+{{ task_var }} = {{ function_name }}()

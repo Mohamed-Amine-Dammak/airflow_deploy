@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Roles | Admin Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='libs/airflow-favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20260403m">
+</head>
+<body class="admin-page">
+  <div class="admin-shell">
+    <header class="admin-head">
+      <div>
+        <h1>Role Management</h1>
+        <p>View predefined permissions, create custom roles, and manage existing role definitions.</p>
+      </div>
+      <div class="admin-head-actions">
+        <span class="context-chip">Signed in as: {{ admin_username }}</span>
+        <a class="btn btn-secondary" href="{{ url_for('admin_dashboard') }}">Back To Dashboard</a>
+        <a class="btn btn-secondary" href="{{ url_for('logout') }}">Logout</a>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <section class="admin-card">
+        <div class="admin-section-head">
+          <h2>Available Roles</h2>
+          <div class="admin-user-actions">
+            <button id="admin-roles-refresh" class="btn btn-secondary" type="button">Refresh</button>
+            <a class="btn btn-primary" href="{{ url_for('admin_new_role_page') }}">Create Custom Role</a>
+          </div>
+        </div>
+        <p class="admin-help">Predefined roles are read-only. Custom roles can be edited or deleted.</p>
+        <div id="admin-roles-status" class="admin-inline-status" aria-live="polite">{{ request.args.get('msg', '') }}</div>
+
+        <div class="connections-table-wrap">
+          <table class="connections-table">
+            <thead>
+              <tr>
+                <th>Role</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Privileges</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-roles-body">
+              <tr><td colspan="5" class="admin-empty">Loading roles...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="{{ url_for('static', filename='js/admin_roles.js') }}?v=20260403m"></script>
+</body>
+</html>

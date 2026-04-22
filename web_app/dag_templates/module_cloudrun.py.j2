@@ -1,0 +1,38 @@
+@task(task_id={{ task_id | pyrepr }})
+def {{ function_name }}():
+    cloud_run_url = {{ config.get("url") | pyrepr }}
+    service_account_file = {{ config.get("service_account_file") | pyrepr }}
+    payload = {{ config.get("payload") | pyrepr }}
+
+    credentials = service_account.IDTokenCredentials.from_service_account_file(
+        service_account_file,
+        target_audience=cloud_run_url,
+    )
+    credentials.refresh(Request())
+
+    headers = {
+        "Authorization": f"Bearer {credentials.token}",
+        "Content-Type": "application/json",
+        "User-Agent": "Airflow",
+    }
+
+    response = requests.post(
+        cloud_run_url,
+        headers=headers,
+        data=json.dumps(payload),
+        timeout=300,
+    )
+
+    if response.status_code not in (200, 201, 202):
+        raise AirflowException(
+            f"Cloud Run call failed. status={response.status_code}, body={response.text}, url={cloud_run_url}"
+        )
+
+    return {
+        "cloud_run_url": cloud_run_url,
+        "status_code": response.status_code,
+        "response_text": response.text,
+    }
+
+
+{{ task_var }} = {{ function_name }}()

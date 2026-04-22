@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Release Notes v0 | Airflow Pipeline Builder</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='libs/airflow-favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20260401h">
+</head>
+<body class="release-notes-page">
+  <main class="release-notes-wrap">
+    <header class="release-hero">
+      <div>
+        <span class="release-kicker">First Release</span>
+        <h1>Airflow Orchestration Builder - v0</h1>
+        <p>Initial production-ready baseline for visually building and generating sequential Airflow DAGs.</p>
+      </div>
+      <div class="release-hero-actions">
+        <a class="primary-link" href="{{ url_for('builder') }}">Open Builder</a>
+        <a class="secondary-link" href="{{ url_for('index') }}">Back Home</a>
+      </div>
+    </header>
+
+    <section class="release-card">
+      <h2>What v0 Includes</h2>
+      <ul>
+        <li>Interactive drag-and-drop canvas with visual modules and live connection arrows.</li>
+        <li>Sequential pipeline modeling with validation (single chain, one start, one end, no cycles).</li>
+        <li>Dynamic right-side configuration forms for each module type.</li>
+        <li>Pipeline settings with scheduling mode selector (Manual, Preset, Cron, Interval, Event/Dataset, Custom).</li>
+        <li>Template-based DAG rendering with Jinja2 and readable generated Python output.</li>
+        <li>One-click DAG generation, preview, and copy to Airflow DAG folder.</li>
+        <li>Save/load pipeline JSON with workspace status feedback.</li>
+      </ul>
+    </section>
+
+    <section class="release-grid">
+      <article class="release-card">
+        <h3>Supported Modules</h3>
+        <div class="release-tags">
+          <span>n8n</span>
+          <span>Talend</span>
+          <span>Dataform</span>
+          <span>Cloud Run</span>
+          <span>Azure Upload</span>
+          <span>Azure Download</span>
+          <span>Azure Blob Sensor</span>
+          <span>Power BI</span>
+          <span>SFTP Upload</span>
+          <span>SFTP Sensor</span>
+          <span>Y2 Scheduled Task</span>
+        </div>
+      </article>
+      <article class="release-card">
+        <h3>UX Improvements Included</h3>
+        <ul>
+          <li>Modern top toolbar with clearer hierarchy and primary call-to-action.</li>
+          <li>Zoom controls and smoother node movement on the canvas.</li>
+          <li>Cleaner connector visuals with live drag preview edge.</li>
+          <li>Stronger selected-node contour and refreshed node actions.</li>
+          <li>Airflow Connections quick access from the builder menu.</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="release-card">
+      <h2>DAG Generation Behavior (v0)</h2>
+      <ul>
+        <li>Generates exactly one DAG Python file per pipeline.</li>
+        <li>Uses pipeline-level default args (retry policy, alerts, tags, schedule).</li>
+        <li>Renders module blocks in validated execution order.</li>
+        <li>Chains execution sequentially using <code>task_1 &gt;&gt; task_2 &gt;&gt; task_3</code> style behavior.</li>
+        <li>Copies generated file to both local generated folder and configured Airflow DAGs path.</li>
+      </ul>
+    </section>
+
+    <section class="release-grid">
+      <article class="release-card">
+        <h3>Known v0 Scope</h3>
+        <ul>
+          <li>Sequential orchestration only (no branching or conditional routing yet).</li>
+          <li>One-DAG-per-pipeline workflow.</li>
+          <li>Module logic follows current template patterns and example DAG references.</li>
+        </ul>
+      </article>
+      <article class="release-card">
+        <h3>Next Planned Extensions</h3>
+        <ul>
+          <li>Parallel branches and conditional execution paths.</li>
+          <li>Reusable sub-pipelines and module presets.</li>
+          <li>Richer validation diagnostics and enhanced preview tooling.</li>
+          <li>Expanded module catalog and deeper runtime observability.</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

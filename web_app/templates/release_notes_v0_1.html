@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Release Notes v0.1 | Airflow Pipeline Builder</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='libs/airflow-favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20260402d">
+</head>
+<body class="release-notes-page">
+  <main class="release-notes-wrap">
+    <header class="release-hero">
+      <div>
+        <span class="release-kicker">Runtime Monitoring Update</span>
+        <h1>Airflow Orchestration Builder - v0.1</h1>
+        <p>Live DAG execution visibility with task-level status coloring and log viewing directly inside the builder canvas.</p>
+      </div>
+      <div class="release-hero-actions">
+        <a class="primary-link" href="{{ url_for('builder') }}">Open Builder</a>
+        <a class="secondary-link" href="{{ url_for('release_notes_v0') }}">View v0 Notes</a>
+      </div>
+    </header>
+
+    <section class="release-card">
+      <h2>Highlights in v0.1</h2>
+      <ul>
+        <li>New <strong>Run DAG</strong> action in the builder header, next to Generate DAG.</li>
+        <li>Run button is enabled only after real readiness checks confirm the DAG is available in Airflow.</li>
+        <li>Added new control-flow components: <strong>Parallel Fork</strong>, <strong>Parallel Join</strong>, and <strong>Conditional Router</strong>.</li>
+        <li>Live polling of DAG run state and task instances after run trigger.</li>
+        <li>Per-node execution contour coloring on the canvas:
+          success (green), failed (red), running (blue), queued (orange), skipped (gray).</li>
+        <li>New <strong>Logs</strong> button on nodes with task instance data.</li>
+        <li>Bottom logs drawer with task metadata, log content, and manual refresh.</li>
+      </ul>
+    </section>
+
+    <section class="release-grid">
+      <article class="release-card">
+        <h3>Run & Monitoring Lifecycle</h3>
+        <ul>
+          <li>Not generated</li>
+          <li>Generating</li>
+          <li>Waiting for Airflow</li>
+          <li>Ready to run</li>
+          <li>Running</li>
+          <li>Run started / Run failed</li>
+        </ul>
+      </article>
+      <article class="release-card">
+        <h3>Header Status Improvements</h3>
+        <ul>
+          <li>Current run summary badge added in the top toolbar.</li>
+          <li>Run state updates live while Airflow execution progresses.</li>
+          <li>Monitoring stops automatically on terminal states (success, failed, canceled).</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="release-card">
+      <h2>Backend API Additions</h2>
+      <ul>
+        <li><code>GET /api/runs/&lt;dag_id&gt;/&lt;dag_run_id&gt;/status</code></li>
+        <li><code>GET /api/runs/&lt;dag_id&gt;/&lt;dag_run_id&gt;/tasks</code></li>
+        <li><code>GET /api/runs/&lt;dag_id&gt;/&lt;dag_run_id&gt;/tasks/&lt;task_id&gt;/logs?try_number=1</code></li>
+        <li>Airflow auth flow aligned with your script pattern: token + DAG run polling + task list + log fetch.</li>
+      </ul>
+    </section>
+
+    <section class="release-card">
+      <h2>Task Mapping Reliability</h2>
+      <ul>
+        <li>DAG generation now returns deterministic node-to-task mapping for runtime monitoring.</li>
+        <li>Supports one-to-many mapping for tag-based Dataform tasks.</li>
+        <li>Mapping is reused by the logs viewer and node status renderer.</li>
+      </ul>
+    </section>
+
+    <section class="release-grid">
+      <article class="release-card">
+        <h3>Operational Defaults Updated</h3>
+        <ul>
+          <li>Readiness timeout increased to better match slower Airflow DAG scan intervals.</li>
+          <li>Run polling timeout and interval are now configurable through environment variables.</li>
+          <li>Improved error messages for auth failure, missing runs, missing logs, and API connectivity issues.</li>
+        </ul>
+      </article>
+      <article class="release-card">
+        <h3>Still in Scope for v0.1</h3>
+        <ul>
+          <li>Builder functionality and saved pipeline format remain backward compatible.</li>
+          <li>Sequential and control-flow behavior from current release remains unchanged.</li>
+          <li>No auth/roles layer yet (planned for future release).</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

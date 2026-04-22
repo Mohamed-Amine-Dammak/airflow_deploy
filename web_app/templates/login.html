@@ -1,0 +1,74 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Airflow Pipeline Builder</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='libs/airflow-favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20260420b">
+</head>
+<body class="auth-page">
+  <main class="auth-card" role="main" aria-labelledby="auth-title">
+    <div class="auth-brand">
+      <img src="{{ url_for('static', filename='libs/airflow-favicon.svg') }}" alt="" aria-hidden="true">
+      <div>
+        <strong>Airflow Pipeline Builder</strong>
+        <small>Admin login</small>
+      </div>
+    </div>
+
+    <h1 id="auth-title">Sign in</h1>
+    <p class="auth-subtitle">Use your admin account to access the orchestration workspace.</p>
+
+    {% if error %}
+      <div class="auth-error" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" class="auth-form" autocomplete="off" id="login-form">
+      <input type="hidden" name="next" value="{{ next_path }}">
+
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" required autofocus>
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" required>
+
+      <button type="submit" class="auth-btn auth-btn-primary auth-btn-submit" id="login-submit-btn">
+        <span class="auth-btn-spinner" aria-hidden="true"></span>
+        <span class="auth-btn-text">Login</span>
+      </button>
+    </form>
+
+    {% if azure_sso_enabled %}
+      <div class="auth-divider" role="separator" aria-label="OR">
+        <span>OR</span>
+      </div>
+      <a
+        class="auth-btn auth-btn-microsoft"
+        href="{{ url_for('login_azure', next=next_path) }}"
+        aria-label="Sign in with Microsoft single sign-on"
+      >
+        <svg class="microsoft-logo" viewBox="0 0 21 21" aria-hidden="true" focusable="false">
+          <rect x="1" y="1" width="9" height="9" fill="#f25022"></rect>
+          <rect x="11" y="1" width="9" height="9" fill="#7fba00"></rect>
+          <rect x="1" y="11" width="9" height="9" fill="#00a4ef"></rect>
+          <rect x="11" y="11" width="9" height="9" fill="#ffb900"></rect>
+        </svg>
+        <span>Continue with Microsoft</span>
+      </a>
+    {% endif %}
+  </main>
+  <script>
+    (function () {
+      var form = document.getElementById("login-form");
+      var submitBtn = document.getElementById("login-submit-btn");
+      if (!form || !submitBtn) return;
+      form.addEventListener("submit", function () {
+        submitBtn.disabled = true;
+        submitBtn.classList.add("is-loading");
+        submitBtn.setAttribute("aria-busy", "true");
+      });
+    })();
+  </script>
+</body>
+</html>

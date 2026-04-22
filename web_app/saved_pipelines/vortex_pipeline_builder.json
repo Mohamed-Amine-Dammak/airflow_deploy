@@ -1,0 +1,92 @@
+{
+  "pipeline": {
+    "dag_id": "test_vortex_web",
+    "description": "Sequential orchestration pipeline",
+    "start_date": "2026-01-01",
+    "schedule": null,
+    "schedule_mode": "manual",
+    "catchup": false,
+    "schedule_preset": "",
+    "schedule_cron": "",
+    "interval_value": "",
+    "interval_unit": "minutes",
+    "event_source": "",
+    "custom_schedule_text": "",
+    "retries": 3,
+    "retry_delay_minutes": 5,
+    "alert_emails": [],
+    "alert_mode": "both",
+    "tags": [
+      "demo",
+      "orchestration"
+    ],
+    "output_filename": "test_vortex_web.py"
+  },
+  "nodes": [
+    {
+      "id": "node_1",
+      "type": "n8n",
+      "label": "n8n 1",
+      "x": 60,
+      "y": 90,
+      "config": {
+        "http_method": "GET",
+        "use_test_webhook": true,
+        "workflow_name": "VORTEX_DataSyncFlow_Full"
+      }
+    },
+    {
+      "id": "node_2",
+      "type": "cloudrun",
+      "label": "Cloud Run 2",
+      "x": 350,
+      "y": 90,
+      "config": {
+        "payload": "{\n    \"dataset\": \"raw\",\n    \"bucket_name\": \"os-dpf-vortex-prj-dev\",\n    \"integration_source\": \"n8n\",\n    \"data_source\": \"boond\",\n    \"tables\": {\n        \"ABSENCES\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"ADMINISTRATIVE\": {\n            \"separator\": \";\",\n            \"mode\": \"delta\"\n        },\n        \"AGENCIES\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"COMPANIES\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"CONTACTS\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"DAYS_OFF\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"DELIVERIES\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"DICTIONARY\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"INVOICES\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"POSTPRODUCTION_DETAILS\": {\n            \"separator\": \";\",\n            \"mode\": \"delta\"\n        },\n        \"PREV_YEAR_LEAVE_BALANCE\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"PROJECTS\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"RESOURCES\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"EXTERNAL_DELIVERIES\": {\n            \"separator\": \"|\",\n            \"mode\": \"full\"\n        },\n\"TIMESHEET\": {\n            \"separator\": \";\",\n            \"mode\": \"full\"\n        },\n        \"RESOURCES_IMAGES\": {\n            \"separator\": \";\",\n            \"mode\": \"delta\"\n        }\n    }\n}",
+        "service_account_file": "/opt/airflow/credgcp.json",
+        "url": "https://ingestioncloudrun-193541357649.europe-west1.run.app/primary_keys"
+      }
+    },
+    {
+      "id": "node_3",
+      "type": "dataform",
+      "label": "Dataform 3",
+      "x": 640,
+      "y": 90,
+      "config": {
+        "compilation_id": "2ceb50cd-f9a1-4a81-8e60-3a36b2b32466",
+        "dataform_tags": "STG, DH, DW",
+        "project_id": "os-dpf-vortex-prj-dev",
+        "project_mode": "single",
+        "region": "europe-west1",
+        "repository": "vortex_dev",
+        "service_account_file": "/opt/airflow/credgcp.json"
+      }
+    },
+    {
+      "id": "node_4",
+      "type": "powerbi",
+      "label": "Power BI 4",
+      "x": 930,
+      "y": 90,
+      "config": {
+        "dataset_id": "b4350df9-bdcc-43fd-b458-1b1a4cb42831",
+        "workspace_id": "5992b264-2c31-4087-9f57-3b3baa1e7b0d"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "node_1",
+      "target": "node_2"
+    },
+    {
+      "source": "node_2",
+      "target": "node_3"
+    },
+    {
+      "source": "node_3",
+      "target": "node_4"
+    }
+  ]
+}

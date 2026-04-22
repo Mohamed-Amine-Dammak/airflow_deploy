@@ -1,0 +1,263 @@
+@task(task_id={{ task_id | pyrepr }})
+def {{ function_name }}():
+    action = {{ config.get("action", "upload") | pyrepr }}
+    bucket_name = {{ config.get("bucket_name") | pyrepr }}
+    service_account_file = {{ config.get("service_account_file", "") | pyrepr }}
+    destination_path = {{ config.get("destination_path", "") | pyrepr }}
+    upload_mode = {{ config.get("upload_mode", "single") | pyrepr }}
+    source_type = {{ config.get("source_type", "local") | pyrepr }}
+    multiple_source_type = {{ config.get("multiple_source_type", "local") | pyrepr }}
+    local_file_path = {{ config.get("local_file_path", "") | pyrepr }}
+    local_directory_path = {{ config.get("local_directory_path", "") | pyrepr }}
+    local_file_paths = {{ config.get("local_file_paths", []) | pyrepr }}
+    drive_file_link = {{ config.get("drive_file_link", "") | pyrepr }}
+    drive_input_mode = {{ config.get("drive_input_mode", "directory") | pyrepr }}
+    drive_directory_link = {{ config.get("drive_directory_link", "") | pyrepr }}
+    drive_file_links = {{ config.get("drive_file_links", []) | pyrepr }}
+    source_object = {{ config.get("source_object", "") | pyrepr }}
+    destination_bucket_name = {{ config.get("destination_bucket_name", "") | pyrepr }}
+    destination_object = {{ config.get("destination_object", "") | pyrepr }}
+    delete_mode = {{ config.get("delete_mode", "single") | pyrepr }}
+    object_name = {{ config.get("object_name", "") | pyrepr }}
+    object_names = {{ config.get("object_names", []) | pyrepr }}
+    delete_object_prefix = {{ config.get("delete_object_prefix", "") | pyrepr }}
+
+    def _require_service_account_file(path):
+        safe_path = str(path or "").strip()
+        if not safe_path:
+            raise AirflowException("gcs.service_account_file is required.")
+        if not os.path.exists(safe_path):
+            raise AirflowException(f"Service account file not found: {safe_path}")
+        return safe_path
+
+    def _build_storage_client(path):
+        credentials = service_account.Credentials.from_service_account_file(
+            path,
+            scopes=["https://www.googleapis.com/auth/cloud-platform"],
+        )
+        return storage.Client(credentials=credentials)
+
+    def _build_drive_service(path):
+        credentials = service_account.Credentials.from_service_account_file(
+            path,
+            scopes=["https://www.googleapis.com/auth/drive.readonly"],
+        )
+        return build("drive", "v3", credentials=credentials, cache_discovery=False)
+
+    def _sanitize_prefix(prefix):
+        return str(prefix or "").strip().strip("/")
+
+    def _join_object(prefix, file_name):
+        clean_name = str(file_name or "").strip().lstrip("/")
+        if not clean_name:
+            raise AirflowException("GCS object name cannot be empty.")
+        clean_prefix = _sanitize_prefix(prefix)
+        return f"{clean_prefix}/{clean_name}" if clean_prefix else clean_name
+
+    def _extract_drive_id(link, kind):
+        text = str(link or "").strip()
+        if not text:
+            return ""
+        patterns = [
+            rf"/{kind}s?/d/([A-Za-z0-9_-]+)",
+            rf"/{kind}s?/([A-Za-z0-9_-]+)",
+            r"[?&]id=([A-Za-z0-9_-]+)",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, text)
+            if match:
+                return match.group(1)
+        if re.match(r"^[A-Za-z0-9_-]+$", text):
+            return text
+        return ""
+
+    def _download_drive_file_to_tmp(drive_service, file_id, target_dir):
+        metadata = drive_service.files().get(fileId=file_id, fields="id,name,mimeType").execute()
+        file_name = str(metadata.get("name") or file_id)
+        local_path = os.path.join(target_dir, file_name)
+        request = drive_service.files().get_media(fileId=file_id)
+        with open(local_path, "wb") as f:
+            downloader = MediaIoBaseDownload(f, request)
+            done = False
+            while not done:
+                _status, done = downloader.next_chunk()
+        return local_path, metadata
+
+    service_account_file = _require_service_account_file(service_account_file)
+
+    if action == "upload":
+        if not bucket_name:
+            raise AirflowException("gcs.bucket_name is required for upload.")
+
+        effective_source_type = source_type if upload_mode == "single" else multiple_source_type
+        source_files = []
+        downloaded_tmp_dir = None
+
+        if effective_source_type == "local":
+            if upload_mode == "single":
+                resolved_single = str(local_file_path or "").strip()
+                if not resolved_single:
+                    raise AirflowException("gcs.local_file_path is required for single local upload.")
+                source_files = [resolved_single]
+            else:
+                explicit_files = [str(item).strip() for item in (local_file_paths or []) if str(item).strip()]
+                if explicit_files:
+                    source_files = explicit_files
+                else:
+                    directory = str(local_directory_path or "").strip()
+                    if not directory:
+                        raise AirflowException(
+                            "Provide gcs.local_file_paths or gcs.local_directory_path for multiple local upload."
+                        )
+                    if not os.path.isdir(directory):
+                        raise AirflowException(f"Local directory not found: {directory}")
+                    source_files = [
+                        os.path.join(directory, file_name)
+                        for file_name in sorted(os.listdir(directory))
+                        if os.path.isfile(os.path.join(directory, file_name))
+                    ]
+        elif effective_source_type == "drive":
+            drive_service = _build_drive_service(service_account_file)
+            downloaded_tmp_dir = tempfile.mkdtemp(prefix="gcs_drive_upload_")
+
+            drive_file_ids = []
+            if upload_mode == "single":
+                single_id = _extract_drive_id(drive_file_link, "file")
+                if not single_id:
+                    raise AirflowException("Invalid gcs.drive_file_link for single Drive upload.")
+                drive_file_ids = [single_id]
+            else:
+                if drive_input_mode == "directory":
+                    folder_id = _extract_drive_id(drive_directory_link, "folder")
+                    if not folder_id:
+                        raise AirflowException("Invalid gcs.drive_directory_link for directory upload.")
+                    page_token = None
+                    while True:
+                        resp = drive_service.files().list(
+                            q=f"'{folder_id}' in parents and trashed = false",
+                            fields="nextPageToken, files(id, name, mimeType)",
+                            pageToken=page_token,
+                        ).execute()
+                        for item in resp.get("files", []):
+                            if item.get("mimeType") == "application/vnd.google-apps.folder":
+                                continue
+                            if item.get("id"):
+                                drive_file_ids.append(item["id"])
+                        page_token = resp.get("nextPageToken")
+                        if not page_token:
+                            break
+                else:
+                    drive_file_ids = [
+                        _extract_drive_id(link, "file")
+                        for link in (drive_file_links or [])
+                        if str(link or "").strip()
+                    ]
+                    drive_file_ids = [item for item in drive_file_ids if item]
+
+                if not drive_file_ids:
+                    raise AirflowException("No Drive files resolved for multiple upload.")
+
+            for file_id in drive_file_ids:
+                local_path, _metadata = _download_drive_file_to_tmp(drive_service, file_id, downloaded_tmp_dir)
+                source_files.append(local_path)
+        else:
+            raise AirflowException(f"Unsupported gcs source type: {effective_source_type}")
+
+        if not source_files:
+            raise AirflowException("No source files resolved for GCS upload.")
+
+        client = _build_storage_client(service_account_file)
+        bucket_ref = client.bucket(bucket_name)
+
+        uploaded_objects = []
+        for local_path in source_files:
+            if not os.path.isfile(local_path):
+                raise AirflowException(f"Local file not found for GCS upload: {local_path}")
+            file_name = os.path.basename(local_path)
+            object_key = _join_object(destination_path, file_name)
+            blob = bucket_ref.blob(object_key)
+            blob.upload_from_filename(local_path)
+            uploaded_objects.append({"local_path": local_path, "object_name": object_key})
+
+        return {
+            "action": "upload",
+            "bucket_name": bucket_name,
+            "service_account_file": service_account_file,
+            "upload_mode": upload_mode,
+            "source_type": effective_source_type,
+            "uploaded_count": len(uploaded_objects),
+            "uploaded_objects": uploaded_objects,
+            "tmp_download_dir": downloaded_tmp_dir,
+        }
+
+    if action == "move":
+        if not source_object:
+            raise AirflowException("gcs.source_object is required for move.")
+        if not destination_bucket_name:
+            raise AirflowException("gcs.destination_bucket_name is required for move.")
+        if not destination_object:
+            raise AirflowException("gcs.destination_object is required for move.")
+
+        client = _build_storage_client(service_account_file)
+        source_bucket_ref = client.bucket(bucket_name)
+        destination_bucket_ref = client.bucket(destination_bucket_name)
+
+        source_blob = source_bucket_ref.blob(source_object)
+        source_bucket_ref.copy_blob(source_blob, destination_bucket_ref, destination_object)
+        source_blob.delete()
+
+        return {
+            "action": "move",
+            "service_account_file": service_account_file,
+            "source_bucket": bucket_name,
+            "source_object": source_object,
+            "destination_bucket": destination_bucket_name,
+            "destination_object": destination_object,
+            "moved": True,
+        }
+
+    if action == "delete":
+        if delete_mode == "single":
+            targets = [str(object_name or "").strip().lstrip("/")]
+        else:
+            explicit_names = [str(item).strip().lstrip("/") for item in (object_names or []) if str(item).strip()]
+            prefix = str(delete_object_prefix or "").strip().strip("/")
+            targets = []
+
+            if explicit_names:
+                targets = explicit_names
+            elif prefix:
+                client = _build_storage_client(service_account_file)
+                bucket_ref = client.bucket(bucket_name)
+                targets = [str(blob.name).strip() for blob in bucket_ref.list_blobs(prefix=prefix) if str(blob.name).strip()]
+            else:
+                raise AirflowException(
+                    "Provide gcs.object_names or gcs.delete_object_prefix for multiple delete."
+                )
+
+        targets = [item for item in targets if item]
+        if not targets:
+            raise AirflowException("No object names provided for GCS delete.")
+
+        client = _build_storage_client(service_account_file)
+        bucket_ref = client.bucket(bucket_name)
+
+        deleted = []
+        for target in targets:
+            blob = bucket_ref.blob(target)
+            blob.delete()
+            deleted.append(target)
+
+        return {
+            "action": "delete",
+            "service_account_file": service_account_file,
+            "bucket_name": bucket_name,
+            "delete_mode": delete_mode,
+            "deleted_count": len(deleted),
+            "deleted_objects": deleted,
+        }
+
+    raise AirflowException(f"Unsupported gcs.action: {action}")
+
+
+{{ task_var }} = {{ function_name }}()

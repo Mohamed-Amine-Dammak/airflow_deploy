@@ -1,0 +1,19 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Parallel Join">
+  <rect width="64" height="64" rx="12" fill="#0b3c5d"/>
+  <g fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 20h14"/>
+    <path d="M14 44h14"/>
+    <path d="M28 20h8"/>
+    <path d="M28 44h8"/>
+    <path d="M36 20v24"/>
+    <path d="M36 32h12"/>
+  </g>
+  <g fill="#ffffff">
+    <path d="M28 20l-5 -3v6z"/>
+    <path d="M28 44l-5 -3v6z"/>
+    <path d="M48 32l-5 -3v6z"/>
+  </g>
+  <circle cx="10" cy="20" r="4" fill="#00a3a3"/>
+  <circle cx="10" cy="44" r="4" fill="#00a3a3"/>
+  <circle cx="52" cy="32" r="4" fill="#f2a900"/>
+</svg>

@@ -1,0 +1,44 @@
+{
+  "pipeline": {
+    "dag_id": "my_pipeline",
+    "description": "Orchestration pipeline",
+    "schedule": null,
+    "schedule_mode": "manual",
+    "catchup": false,
+    "schedule_preset": "",
+    "schedule_cron": "",
+    "interval_value": "",
+    "interval_unit": "minutes",
+    "event_source": "",
+    "custom_schedule_text": "",
+    "retries": 3,
+    "retry_delay_minutes": 5,
+    "alert_emails": [],
+    "alert_mode": "both",
+    "tags": [
+      "demo",
+      "orchestration"
+    ],
+    "output_filename": "my_pipeline.py"
+  },
+  "nodes": [
+    {
+      "id": "node_1",
+      "type": "dataform",
+      "label": "Dataform 1",
+      "x": 375.5555419921875,
+      "y": 228.08330535888672,
+      "config": {
+        "project_mode": "single",
+        "project_id": "",
+        "project_count": 2,
+        "project_ids": [],
+        "region": "europe-west1",
+        "repository": "vortex_dev",
+        "service_account_file": "/opt/airflow/cred.json",
+        "compilation_id": "cb0c5ee9-7396-4180-8bb7-e4fca3e31318"
+      }
+    }
+  ],
+  "edges": []
+}

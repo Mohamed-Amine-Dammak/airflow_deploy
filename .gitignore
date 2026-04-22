@@ -1,0 +1,13 @@
+web_app/.env
+.env
+*.env
+
+web_app/.venv/
+.venv/
+
+__pycache__/
+*.pyc
+
+*.log
+flask_err.log
+flask_run.log

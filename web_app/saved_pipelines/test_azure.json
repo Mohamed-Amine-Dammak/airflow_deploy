@@ -1,0 +1,55 @@
+{
+  "pipeline": {
+    "dag_id": "test_azure",
+    "description": "",
+    "start_date": "2026-01-01",
+    "schedule": null,
+    "schedule_mode": "manual",
+    "catchup": false,
+    "schedule_preset": "",
+    "schedule_cron": "",
+    "interval_value": "",
+    "interval_unit": "minutes",
+    "event_source": "",
+    "custom_schedule_text": "",
+    "retries": 3,
+    "retry_delay_minutes": 5,
+    "alert_emails": [],
+    "alert_mode": "both",
+    "tags": [
+      "demo",
+      "orchestration"
+    ],
+    "output_filename": "test_azure.py"
+  },
+  "nodes": [
+    {
+      "id": "node_3",
+      "type": "azure",
+      "label": "Azure Blob Storage 3",
+      "x": 363,
+      "y": 194.97222137451172,
+      "config": {
+        "action": "upload",
+        "container_name": "my-container",
+        "upload_mode": "single",
+        "local_file_path": "dataops.png",
+        "local_file_paths": [],
+        "blob_name": "/uploads/datatest",
+        "blob_prefix": "",
+        "create_container": false,
+        "download_mode": "single",
+        "file_name": "",
+        "file_prefix": "",
+        "file_extension": ".csv",
+        "local_dir_download": "",
+        "delete_mode": "single",
+        "delete_blob_name": "",
+        "delete_prefix": "",
+        "local_file_browser": "dataops.png"
+      }
+    }
+  ],
+  "edges": [],
+  "group_boxes": []
+}

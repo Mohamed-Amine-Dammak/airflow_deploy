@@ -1,0 +1,182 @@
+{
+  "pipeline": {
+    "dag_id": "test_sftp",
+    "description": "Orchestration pipeline",
+    "schedule": null,
+    "schedule_mode": "manual",
+    "catchup": false,
+    "schedule_preset": "",
+    "schedule_cron": "",
+    "interval_value": "",
+    "interval_unit": "minutes",
+    "event_source": "",
+    "custom_schedule_text": "",
+    "retries": 3,
+    "retry_delay_minutes": 5,
+    "alert_emails": [],
+    "alert_mode": "both",
+    "tags": [
+      "demo",
+      "orchestration"
+    ],
+    "output_filename": "test_sftp.py"
+  },
+  "nodes": [
+    {
+      "id": "node_1",
+      "type": "azure",
+      "label": "Azure Download 1",
+      "x": 704.81497531467,
+      "y": 71.33004421657988,
+      "config": {
+        "action": "download",
+        "container_name": "my-container",
+        "download_mode": "multiple",
+        "file_extension": ".csv",
+        "file_name": "",
+        "file_prefix": "uploads/CUSTOMER_",
+        "local_dir_download": "/opt/airflow/dags/downloads"
+      }
+    },
+    {
+      "id": "node_2",
+      "type": "azure_blob_sensor",
+      "label": "Azure Blob Sensor 2",
+      "x": 398.1483764648436,
+      "y": 79.47830539279515,
+      "config": {
+        "container_name": "my-container",
+        "poke_interval": 30,
+        "prefix": "uploads/CUSTOMER_",
+        "timeout": 600,
+        "wasb_conn_id": "wasb_default"
+      }
+    },
+    {
+      "id": "node_3",
+      "type": "parallel_fork",
+      "label": "Parallel Fork 3",
+      "x": 1025.0620998806423,
+      "y": 88.36719428168404,
+      "config": {}
+    },
+    {
+      "id": "node_4",
+      "type": "sftp_sensor",
+      "label": "SFTP Sensor 4",
+      "x": 1358.1484442816839,
+      "y": 8,
+      "config": {
+        "remote_dir": "/uploads",
+        "sftp_prefix_sensor": "CUSTOMER_CUS_"
+      }
+    },
+    {
+      "id": "node_5",
+      "type": "sftp_upload",
+      "label": "SFTP Upload 5",
+      "x": 1353.9508531358506,
+      "y": 233.05849202473962,
+      "config": {
+        "local_file_path": "/opt/airflow/dags/downloads",
+        "remote_dir": "/uploads",
+        "upload_mode": "multiple",
+        "file_prefix": "CUSTOMER_"
+      }
+    },
+    {
+      "id": "node_6",
+      "type": "parallel_join",
+      "label": "Parallel Join 6",
+      "x": 1680.1236775716145,
+      "y": 114.04624430338544,
+      "config": {
+        "trigger_rule": "all_success"
+      }
+    },
+    {
+      "id": "node_7",
+      "type": "conditional_router",
+      "label": "Conditional Router 7",
+      "x": 1970.740810818142,
+      "y": 112.07101101345488,
+      "config": {
+        "input_source": "xcom_node:node_4.detected_file_name",
+        "rules": [
+          {
+            "match_type": "starts_with",
+            "target_branch_node_id": "node_8",
+            "value": "CUS"
+          },
+          {
+            "match_type": "starts_with",
+            "value": "ok",
+            "target_branch_node_id": "node_9"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_8",
+      "type": "n8n",
+      "label": "n8n 8",
+      "x": 2270.9876641167534,
+      "y": 112.07094319661459,
+      "config": {
+        "http_method": "GET",
+        "use_test_webhook": true,
+        "workflow_name": "test_airflow"
+      }
+    },
+    {
+      "id": "node_9",
+      "type": "n8n",
+      "label": "n8n 9",
+      "x": 2281.6050686306426,
+      "y": 271.8240220811632,
+      "config": {
+        "workflow_name": "test_airflow1",
+        "http_method": "GET",
+        "use_test_webhook": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "node_2",
+      "target": "node_1"
+    },
+    {
+      "source": "node_1",
+      "target": "node_3"
+    },
+    {
+      "source": "node_3",
+      "target": "node_4"
+    },
+    {
+      "source": "node_3",
+      "target": "node_5"
+    },
+    {
+      "source": "node_5",
+      "target": "node_6"
+    },
+    {
+      "source": "node_4",
+      "target": "node_6"
+    },
+    {
+      "source": "node_6",
+      "target": "node_7"
+    },
+    {
+      "source": "node_7",
+      "target": "node_8"
+    },
+    {
+      "source": "node_7",
+      "target": "node_9"
+    }
+  ]
+}

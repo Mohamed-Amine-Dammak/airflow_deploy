@@ -1,0 +1,51 @@
+{
+  "pipeline": {
+    "dag_id": "sftp_sensor_n8n",
+    "description": "Orchestration pipeline",
+    "schedule": null,
+    "schedule_mode": "manual",
+    "schedule_preset": "",
+    "schedule_cron": "",
+    "interval_value": "",
+    "interval_unit": "minutes",
+    "event_source": "",
+    "custom_schedule_text": "",
+    "retries": 3,
+    "retry_delay_minutes": 5,
+    "alert_emails": [],
+    "alert_mode": "both",
+    "tags": [
+      "demo",
+      "orchestration"
+    ],
+    "output_filename": "sftp_sensor_n8n.py"
+  },
+  "nodes": [
+    {
+      "id": "node_2",
+      "type": "sftp",
+      "label": "SFTP Sensor 2",
+      "config": {
+        "action": "sensor",
+        "remote_dir": "/uploads",
+        "sftp_prefix_sensor": "CUSTOMER_CUS_"
+      }
+    },
+    {
+      "id": "node_3",
+      "type": "n8n",
+      "label": "n8n 3",
+      "config": {
+        "workflow_name": "test_airflow",
+        "http_method": "GET",
+        "use_test_webhook": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "node_2",
+      "target": "node_3"
+    }
+  ]
+}

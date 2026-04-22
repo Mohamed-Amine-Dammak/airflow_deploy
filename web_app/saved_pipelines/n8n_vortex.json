@@ -1,0 +1,39 @@
+{
+  "pipeline": {
+    "dag_id": "n8n_vortex",
+    "description": "Orchestration pipeline",
+    "schedule": null,
+    "schedule_mode": "manual",
+    "catchup": false,
+    "schedule_preset": "",
+    "schedule_cron": "",
+    "interval_value": "",
+    "interval_unit": "minutes",
+    "event_source": "",
+    "custom_schedule_text": "",
+    "retries": 3,
+    "retry_delay_minutes": 5,
+    "alert_emails": [],
+    "alert_mode": "both",
+    "tags": [
+      "demo",
+      "orchestration"
+    ],
+    "output_filename": "n8n_vortex.py"
+  },
+  "nodes": [
+    {
+      "id": "node_1",
+      "type": "n8n",
+      "label": "n8n 1",
+      "x": 331.11114501953125,
+      "y": 162.88890075683594,
+      "config": {
+        "http_method": "GET",
+        "use_test_webhook": true,
+        "workflow_name": "VORTEX_DataSyncFlow_Full"
+      }
+    }
+  ],
+  "edges": []
+}

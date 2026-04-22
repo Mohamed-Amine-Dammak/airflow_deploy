@@ -1,0 +1,2346 @@
+{
+  "pipelines": {
+    "test_vortex_web": {
+      "current_version_id": "v2",
+      "versions": [
+        {
+          "pipeline_id": "test_vortex_web",
+          "version_id": "v1",
+          "dag_version": 1,
+          "airflow_dag_id": "test_vortex_web__v1",
+          "output_filename": "test_vortex_web__v1.py",
+          "created_at": "2026-04-16T08:32:13.613467+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "238e6f39a5a00e1186684f75b9a3f4a80520a7ac44ab2c89dc6aa5300fba4c95",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "test_vortex_web",
+              "description": "Sequential orchestration pipeline",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "test_vortex_web.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "n8n",
+                "label": "n8n",
+                "config": {
+                  "http_method": "GET",
+                  "use_test_webhook": true,
+                  "workflow_name": "VORTEX_DataSyncFlow_Full",
+                  "query_params": null,
+                  "request_body": null,
+                  "monitor_poll_interval_seconds": 5,
+                  "monitor_timeout_seconds": 300
+                }
+              },
+              {
+                "id": "node_2",
+                "type": "cloudrun",
+                "label": "Cloud Run",
+                "config": {
+                  "payload": {
+                    "dataset": "raw",
+                    "bucket_name": "os-dpf-vortex-prj-dev",
+                    "integration_source": "n8n",
+                    "data_source": "boond",
+                    "tables": {
+                      "ABSENCES": {
+                        "separator": ";",
+                        "mode": "full"
+                      },
+                      "ADMINISTRATIVE": {
+                        "separator": ";",
+                        "mode": "delta"
+                      },
+                      "AGENCIES": {
+                        "separator": ";",
+                        "mode": "full"
+                      },
+                      "COMPANIES": {
+                        "separator": ";",
+                        "mode": "full"
+                      },
+                      "CONTACTS": {
+                        "separator": ";",
+                        "mode": "full"
+                      },
+                      "DAYS_OFF": {
+                        "separator": ";",
+                        "mode": "full"
+                      },
+                      "DELIVERIES": {
+                        "separator": ";",
+                        "mode": "full"
+                      },
+                      "DICTIONARY": {
+                        "separator": ";",
+                        "mode": "full"
+                      },
+                      "INVOICES": {
+                        "separator": ";",
+                        "mode": "full"
+                      },
+                      "POSTPRODUCTION_DETAILS": {
+                        "separator": ";",
+                        "mode": "delta"
+                      },
+                      "PREV_YEAR_LEAVE_BALANCE": {
+                        "separator": ";",
+                        "mode": "full"
+                      },
+                      "PROJECTS": {
+                        "separator": ";",
+                        "mode": "full"
+                      },
+                      "RESOURCES": {
+                        "separator": ";",
+                        "mode": "full"
+                      },
+                      "EXTERNAL_DELIVERIES": {
+                        "separator": "|",
+                        "mode": "full"
+                      },
+                      "TIMESHEET": {
+                        "separator": ";",
+                        "mode": "full"
+                      },
+                      "RESOURCES_IMAGES": {
+                        "separator": ";",
+                        "mode": "delta"
+                      }
+                    }
+                  },
+                  "service_account_file": "/opt/airflow/cred.json",
+                  "url": "https://ingestioncloudrun-193541357649.europe-west1.run.app/primary_keys"
+                }
+              },
+              {
+                "id": "node_3",
+                "type": "dataform",
+                "label": "Dataform_STG",
+                "config": {
+                  "compilation_id": "2ceb50cd-f9a1-4a81-8e60-3a36b2b32466",
+                  "dataform_tags": [
+                    "STG_BOOND"
+                  ],
+                  "project_id": "os-dpf-vortex-prj-dev",
+                  "project_mode": "single",
+                  "region": "europe-west1",
+                  "repository": "vortex_dev",
+                  "service_account_file": "/opt/airflow/cred.json",
+                  "project_count": 2,
+                  "project_ids": []
+                }
+              },
+              {
+                "id": "node_4",
+                "type": "powerbi",
+                "label": "Power BI",
+                "config": {
+                  "dataset_id": "9a7c48a2-ac45-4850-a607-1c0e5d68664c",
+                  "workspace_id": "3c1c9bef-4e81-4e61-bf0f-f0d5bc4d515a",
+                  "monitor_poll_interval_seconds": 10,
+                  "monitor_timeout_seconds": 900
+                }
+              },
+              {
+                "id": "node_5",
+                "type": "dataform",
+                "label": "Dataform_DW",
+                "config": {
+                  "compilation_id": "2ceb50cd-f9a1-4a81-8e60-3a36b2b32466",
+                  "dataform_tags": [
+                    "DW_BOOND"
+                  ],
+                  "project_count": 2,
+                  "project_id": "os-dpf-vortex-prj-dev",
+                  "project_ids": [],
+                  "project_mode": "single",
+                  "region": "europe-west1",
+                  "repository": "vortex_dev",
+                  "service_account_file": "/opt/airflow/cred.json"
+                }
+              },
+              {
+                "id": "node_6",
+                "type": "dataform",
+                "label": "Dataform_DH",
+                "config": {
+                  "compilation_id": "2ceb50cd-f9a1-4a81-8e60-3a36b2b32466",
+                  "dataform_tags": [
+                    "DH_BOOND"
+                  ],
+                  "project_count": 2,
+                  "project_id": "os-dpf-vortex-prj-dev",
+                  "project_ids": [],
+                  "project_mode": "single",
+                  "region": "europe-west1",
+                  "repository": "vortex_dev",
+                  "service_account_file": "/opt/airflow/cred.json"
+                }
+              },
+              {
+                "id": "node_7",
+                "type": "parallel_fork",
+                "label": "Parallel Fork",
+                "config": {}
+              },
+              {
+                "id": "node_8",
+                "type": "dataform",
+                "label": "Dataform_SHC_SHR",
+                "config": {
+                  "compilation_id": "2ceb50cd-f9a1-4a81-8e60-3a36b2b32466",
+                  "dataform_tags": [
+                    "SH_BREVO"
+                  ],
+                  "project_count": 2,
+                  "project_id": "os-dpf-vortex-prj-dev",
+                  "project_ids": [],
+                  "project_mode": "single",
+                  "region": "europe-west1",
+                  "repository": "vortex_dev",
+                  "service_account_file": "/opt/airflow/cred.json"
+                }
+              },
+              {
+                "id": "node_9",
+                "type": "parallel_join",
+                "label": "Parallel Join",
+                "config": {
+                  "trigger_rule": "all_success"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_1",
+                "target": "node_2"
+              },
+              {
+                "source": "node_3",
+                "target": "node_6"
+              },
+              {
+                "source": "node_6",
+                "target": "node_5"
+              },
+              {
+                "source": "node_2",
+                "target": "node_7"
+              },
+              {
+                "source": "node_7",
+                "target": "node_3"
+              },
+              {
+                "source": "node_7",
+                "target": "node_8"
+              },
+              {
+                "source": "node_8",
+                "target": "node_9"
+              },
+              {
+                "source": "node_5",
+                "target": "node_9"
+              },
+              {
+                "source": "node_9",
+                "target": "node_4"
+              }
+            ]
+          },
+          "generated_local_path": "D:\\web_app_airflow\\web_app\\generated_dags\\test_vortex_web__v1.py",
+          "generated_airflow_path": "D:\\airflow\\dags\\test_vortex_web__v1.py",
+          "node_task_map": {
+            "node_1": [
+              "n8n_1_node_1"
+            ],
+            "node_2": [
+              "cloudrun_2_node_2"
+            ],
+            "node_7": [
+              "parallel_fork_3_node_7"
+            ],
+            "node_3": [
+              "dataform_stg_boond"
+            ],
+            "node_8": [
+              "dataform_sh_brevo"
+            ],
+            "node_6": [
+              "dataform_dh_boond"
+            ],
+            "node_5": [
+              "dataform_dw_boond"
+            ],
+            "node_9": [
+              "parallel_join_8_node_9"
+            ],
+            "node_4": [
+              "powerbi_9_node_4"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_1": "n8n_1_node_1",
+            "node_2": "cloudrun_2_node_2",
+            "node_7": "parallel_fork_3_node_7",
+            "node_3": "dataform_stg_boond",
+            "node_8": "dataform_sh_brevo",
+            "node_6": "dataform_dh_boond",
+            "node_5": "dataform_dw_boond",
+            "node_9": "parallel_join_8_node_9",
+            "node_4": "powerbi_9_node_4"
+          }
+        },
+        {
+          "pipeline_id": "test_vortex_web",
+          "version_id": "v2",
+          "dag_version": 2,
+          "airflow_dag_id": "test_vortex_web__v2",
+          "output_filename": "test_vortex_web__v2.py",
+          "created_at": "2026-04-16T08:33:48.550881+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "7ffcaca0cc05539d300ffa24f296839a56f46ed88dbb8c543aed994e868295c7",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "test_vortex_web",
+              "description": "Sequential orchestration pipeline",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "test_vortex_web.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "n8n",
+                "label": "n8n",
+                "config": {
+                  "http_method": "GET",
+                  "monitor_poll_interval_seconds": 5,
+                  "monitor_timeout_seconds": 300,
+                  "query_params": null,
+                  "request_body": null,
+                  "use_test_webhook": false,
+                  "workflow_name": "VORTEX_DataSyncFlow_Full"
+                }
+              },
+              {
+                "id": "node_2",
+                "type": "cloudrun",
+                "label": "Cloud Run",
+                "config": {
+                  "payload": {
+                    "bucket_name": "os-dpf-vortex-prj-dev",
+                    "data_source": "boond",
+                    "dataset": "raw",
+                    "integration_source": "n8n",
+                    "tables": {
+                      "ABSENCES": {
+                        "mode": "full",
+                        "separator": ";"
+                      },
+                      "ADMINISTRATIVE": {
+                        "mode": "delta",
+                        "separator": ";"
+                      },
+                      "AGENCIES": {
+                        "mode": "full",
+                        "separator": ";"
+                      },
+                      "COMPANIES": {
+                        "mode": "full",
+                        "separator": ";"
+                      },
+                      "CONTACTS": {
+                        "mode": "full",
+                        "separator": ";"
+                      },
+                      "DAYS_OFF": {
+                        "mode": "full",
+                        "separator": ";"
+                      },
+                      "DELIVERIES": {
+                        "mode": "full",
+                        "separator": ";"
+                      },
+                      "DICTIONARY": {
+                        "mode": "full",
+                        "separator": ";"
+                      },
+                      "EXTERNAL_DELIVERIES": {
+                        "mode": "full",
+                        "separator": "|"
+                      },
+                      "INVOICES": {
+                        "mode": "full",
+                        "separator": ";"
+                      },
+                      "POSTPRODUCTION_DETAILS": {
+                        "mode": "delta",
+                        "separator": ";"
+                      },
+                      "PREV_YEAR_LEAVE_BALANCE": {
+                        "mode": "full",
+                        "separator": ";"
+                      },
+                      "PROJECTS": {
+                        "mode": "full",
+                        "separator": ";"
+                      },
+                      "RESOURCES": {
+                        "mode": "full",
+                        "separator": ";"
+                      },
+                      "RESOURCES_IMAGES": {
+                        "mode": "delta",
+                        "separator": ";"
+                      },
+                      "TIMESHEET": {
+                        "mode": "full",
+                        "separator": ";"
+                      }
+                    }
+                  },
+                  "service_account_file": "/opt/airflow/cred.json",
+                  "url": "https://ingestioncloudrun-193541357649.europe-west1.run.app/primary_keys"
+                }
+              },
+              {
+                "id": "node_3",
+                "type": "dataform",
+                "label": "Dataform_STG",
+                "config": {
+                  "compilation_id": "2ceb50cd-f9a1-4a81-8e60-3a36b2b32466",
+                  "dataform_tags": [
+                    "STG_BOOND"
+                  ],
+                  "project_count": 2,
+                  "project_id": "os-dpf-vortex-prj-dev",
+                  "project_ids": [],
+                  "project_mode": "single",
+                  "region": "europe-west1",
+                  "repository": "vortex_dev",
+                  "service_account_file": "/opt/airflow/cred.json"
+                }
+              },
+              {
+                "id": "node_4",
+                "type": "powerbi",
+                "label": "Power BI",
+                "config": {
+                  "dataset_id": "9a7c48a2-ac45-4850-a607-1c0e5d68664c",
+                  "monitor_poll_interval_seconds": 10,
+                  "monitor_timeout_seconds": 900,
+                  "workspace_id": "3c1c9bef-4e81-4e61-bf0f-f0d5bc4d515a"
+                }
+              },
+              {
+                "id": "node_5",
+                "type": "dataform",
+                "label": "Dataform_DW",
+                "config": {
+                  "compilation_id": "2ceb50cd-f9a1-4a81-8e60-3a36b2b32466",
+                  "dataform_tags": [
+                    "DW_BOOND"
+                  ],
+                  "project_count": 2,
+                  "project_id": "os-dpf-vortex-prj-dev",
+                  "project_ids": [],
+                  "project_mode": "single",
+                  "region": "europe-west1",
+                  "repository": "vortex_dev",
+                  "service_account_file": "/opt/airflow/cred.json"
+                }
+              },
+              {
+                "id": "node_6",
+                "type": "dataform",
+                "label": "Dataform_DH",
+                "config": {
+                  "compilation_id": "2ceb50cd-f9a1-4a81-8e60-3a36b2b32466",
+                  "dataform_tags": [
+                    "DH_BOOND"
+                  ],
+                  "project_count": 2,
+                  "project_id": "os-dpf-vortex-prj-dev",
+                  "project_ids": [],
+                  "project_mode": "single",
+                  "region": "europe-west1",
+                  "repository": "vortex_dev",
+                  "service_account_file": "/opt/airflow/cred.json"
+                }
+              },
+              {
+                "id": "node_7",
+                "type": "parallel_fork",
+                "label": "Parallel Fork",
+                "config": {}
+              },
+              {
+                "id": "node_8",
+                "type": "dataform",
+                "label": "Dataform_SHC_SHR",
+                "config": {
+                  "compilation_id": "2ceb50cd-f9a1-4a81-8e60-3a36b2b32466",
+                  "dataform_tags": [
+                    "SH_BREVO"
+                  ],
+                  "project_count": 2,
+                  "project_id": "os-dpf-vortex-prj-dev",
+                  "project_ids": [],
+                  "project_mode": "single",
+                  "region": "europe-west1",
+                  "repository": "vortex_dev",
+                  "service_account_file": "/opt/airflow/cred.json"
+                }
+              },
+              {
+                "id": "node_9",
+                "type": "parallel_join",
+                "label": "Parallel Join",
+                "config": {
+                  "trigger_rule": "all_success"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_1",
+                "target": "node_2"
+              },
+              {
+                "source": "node_3",
+                "target": "node_6"
+              },
+              {
+                "source": "node_6",
+                "target": "node_5"
+              },
+              {
+                "source": "node_2",
+                "target": "node_7"
+              },
+              {
+                "source": "node_7",
+                "target": "node_3"
+              },
+              {
+                "source": "node_7",
+                "target": "node_8"
+              },
+              {
+                "source": "node_8",
+                "target": "node_9"
+              },
+              {
+                "source": "node_5",
+                "target": "node_9"
+              },
+              {
+                "source": "node_9",
+                "target": "node_4"
+              }
+            ]
+          },
+          "generated_local_path": "D:\\web_app_airflow\\web_app\\generated_dags\\test_vortex_web__v2.py",
+          "generated_airflow_path": "D:\\airflow\\dags\\test_vortex_web__v2.py",
+          "node_task_map": {
+            "node_1": [
+              "n8n_1_node_1"
+            ],
+            "node_2": [
+              "cloudrun_2_node_2"
+            ],
+            "node_7": [
+              "parallel_fork_3_node_7"
+            ],
+            "node_3": [
+              "dataform_stg_boond"
+            ],
+            "node_8": [
+              "dataform_sh_brevo"
+            ],
+            "node_6": [
+              "dataform_dh_boond"
+            ],
+            "node_5": [
+              "dataform_dw_boond"
+            ],
+            "node_9": [
+              "parallel_join_8_node_9"
+            ],
+            "node_4": [
+              "powerbi_9_node_4"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_1": "n8n_1_node_1",
+            "node_2": "cloudrun_2_node_2",
+            "node_7": "parallel_fork_3_node_7",
+            "node_3": "dataform_stg_boond",
+            "node_8": "dataform_sh_brevo",
+            "node_6": "dataform_dh_boond",
+            "node_5": "dataform_dw_boond",
+            "node_9": "parallel_join_8_node_9",
+            "node_4": "powerbi_9_node_4"
+          }
+        }
+      ],
+      "switch_events": [
+        {
+          "event_id": "1ba1bbad-02e9-4d7d-a35f-772fe91ec708",
+          "event_type": "create_and_set_current",
+          "from_version_id": null,
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-16T08:32:13.613467+00:00"
+        },
+        {
+          "event_id": "9fdfd29b-9734-4e15-bb1e-32afc8baf8e3",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v1",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-16T08:33:48.550881+00:00"
+        }
+      ]
+    },
+    "gcs": {
+      "current_version_id": "v10",
+      "versions": [
+        {
+          "pipeline_id": "gcs",
+          "version_id": "v1",
+          "dag_version": 1,
+          "airflow_dag_id": "gcs__v1",
+          "output_filename": "gcs__v1.py",
+          "created_at": "2026-04-17T10:27:56.464591+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "9ac5c58b6f23b6969e0013603f6878b0911d1a7a1c9fb9e2093c151bec81d1c5",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "gcs",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "gcs.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 336.7778015136719,
+                "y": 272.08336639404297,
+                "config": {
+                  "action": "delete",
+                  "bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "delete_mode": "single",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "CUSTOMER_CUS_TEST.csv",
+                  "destination_path": "sample_upload.txt",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "CUSTOMER_CUS_TEST.csv",
+                  "local_file_path": "/mnt/cegid/CUSTOMER_CUS_TEST.csv",
+                  "local_file_paths": [],
+                  "object_name": "CUSTOMER_CUS_TEST.csv",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "sample_upload.txt/CUSTOMER_CUS_TEST.csv",
+                  "source_type": "local",
+                  "upload_mode": "single"
+                }
+              }
+            ],
+            "edges": [],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\web_app\\generated_dags\\gcs__v1.py",
+          "generated_airflow_path": "D:\\airflow\\dags\\gcs__v1.py",
+          "node_task_map": {
+            "node_1": [
+              "gcs_1_node_1"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_1": "gcs_1_node_1"
+          },
+          "updated_at": "2026-04-17T11:12:40.455821+00:00",
+          "updated_by": "admin"
+        },
+        {
+          "pipeline_id": "gcs",
+          "version_id": "v2",
+          "dag_version": 2,
+          "airflow_dag_id": "gcs",
+          "output_filename": "gcs__v2.py",
+          "created_at": "2026-04-17T11:23:25.225743+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "2247309b0aea9bd322bc5488a2b5a5e5f5d47b804cbed95040936ae5a42096c0",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "gcs",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "gcs.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 336.7778015136719,
+                "y": 272.08336639404297,
+                "config": {
+                  "action": "upload",
+                  "bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "delete_mode": "single",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "CUSTOMER_CUS_TEST.csv",
+                  "destination_path": "CUSTOMER_CUS_TEST.csv",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "CUSTOMER_CUS_TEST.csv",
+                  "local_file_path": "/mnt/cegid/CUSTOMER_CUS_TEST.csv",
+                  "local_file_paths": [],
+                  "object_name": "CUSTOMER_CUS_TEST.csv",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "sample_upload.txt/CUSTOMER_CUS_TEST.csv",
+                  "source_type": "local",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_2",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 652.7778015136719,
+                "y": 274.3055953979492,
+                "config": {
+                  "action": "delete",
+                  "bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "delete_mode": "single",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "CUSTOMER_CUS_TEST.csv",
+                  "destination_path": "sample_upload.txt",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "CUSTOMER_CUS_TEST.csv",
+                  "local_file_path": "/mnt/cegid/CUSTOMER_CUS_TEST.csv",
+                  "local_file_paths": [],
+                  "object_name": "CUSTOMER_CUS_TEST.csv",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "sample_upload.txt/CUSTOMER_CUS_TEST.csv",
+                  "source_type": "local",
+                  "upload_mode": "single"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_1",
+                "target": "node_2"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\web_app\\generated_dags\\gcs__v2.py",
+          "generated_airflow_path": "D:\\airflow\\dags\\gcs__v2.py",
+          "node_task_map": {
+            "node_1": [
+              "gcs_1_node_1"
+            ],
+            "node_2": [
+              "gcs_2_node_2"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_1": "gcs_1_node_1",
+            "node_2": "gcs_2_node_2"
+          }
+        },
+        {
+          "pipeline_id": "gcs",
+          "version_id": "v3",
+          "dag_version": 3,
+          "airflow_dag_id": "gcs__v3",
+          "output_filename": "gcs__v3.py",
+          "created_at": "2026-04-17T12:34:56.375920+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "46dc5438ead32b6ac7d81833e21a5f6ce6041666a2b527c19f9aef050f73be92",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "gcs",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "gcs.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 336.7778015136719,
+                "y": 272.08336639404297,
+                "config": {
+                  "action": "upload",
+                  "bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "delete_mode": "single",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "CUSTOMER_CUS_TEST.csv",
+                  "destination_path": "CUSTOMER_CUS_TEST.csv",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "CUSTOMER_CUS_TEST.csv",
+                  "local_file_path": "/mnt/cegid/CUSTOMER_CUS_TEST.csv",
+                  "local_file_paths": [],
+                  "object_name": "CUSTOMER_CUS_TEST.csv",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "sample_upload.txt/CUSTOMER_CUS_TEST.csv",
+                  "source_type": "local",
+                  "upload_mode": "single"
+                }
+              }
+            ],
+            "edges": [],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\web_app\\generated_dags\\gcs__v3.py",
+          "generated_airflow_path": "D:\\airflow\\dags\\gcs__v3.py",
+          "node_task_map": {
+            "node_1": [
+              "gcs_1_node_1"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_1": "gcs_1_node_1"
+          }
+        },
+        {
+          "pipeline_id": "gcs",
+          "version_id": "v4",
+          "dag_version": 4,
+          "airflow_dag_id": "gcs__v4",
+          "output_filename": "gcs__v4.py",
+          "created_at": "2026-04-17T12:43:15.530820+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "6333fd48ade4cabc797130264e2bf61cef58c539a0c36078b1fa0f728873a3e6",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "gcs",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "gcs.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 336.7778015136719,
+                "y": 272.08336639404297,
+                "config": {
+                  "action": "upload",
+                  "bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "delete_mode": "single",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "CUSTOMER_CUS_TEST.csv",
+                  "destination_path": "",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "CUSTOMER_CUS_TEST.csv",
+                  "local_file_path": "/mnt/cegid/CUSTOMER_CUS_TEST.csv",
+                  "local_file_paths": [],
+                  "object_name": "CUSTOMER_CUS_TEST.csv",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "sample_upload.txt/CUSTOMER_CUS_TEST.csv",
+                  "source_type": "local",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_3",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 603.8890075683594,
+                "y": 284.08336639404297,
+                "config": {
+                  "action": "move",
+                  "bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "delete_mode": "single",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-dev",
+                  "destination_object": "CUSTOMER_CUS_TEST.csv",
+                  "destination_path": "CUSTOMER_CUS_TEST.csv",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "CUSTOMER_CUS_TEST.csv",
+                  "local_file_path": "/mnt/cegid/CUSTOMER_CUS_TEST.csv",
+                  "local_file_paths": [],
+                  "object_name": "CUSTOMER_CUS_TEST.csv",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "CUSTOMER_CUS_TEST.csv",
+                  "source_type": "local",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_4",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 921.6665954589844,
+                "y": 283.63890838623047,
+                "config": {
+                  "action": "upload",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "delete_mode": "single",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "CUSTOMER_CUS_TEST.csv",
+                  "destination_path": "CUSTOMER_CUS_TEST.csv",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "CUSTOMER_CUS_TEST.csv",
+                  "local_file_path": "/mnt/cegid/CUSTOMER_CUS_TEST.csv",
+                  "local_file_paths": [],
+                  "object_name": "CUSTOMER_CUS_TEST.csv",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "sample_upload.txt/CUSTOMER_CUS_TEST.csv",
+                  "source_type": "local",
+                  "upload_mode": "single"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_1",
+                "target": "node_3"
+              },
+              {
+                "source": "node_3",
+                "target": "node_4"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\web_app\\generated_dags\\gcs__v4.py",
+          "generated_airflow_path": "D:\\airflow\\dags\\gcs__v4.py",
+          "node_task_map": {
+            "node_1": [
+              "gcs_1_node_1"
+            ],
+            "node_3": [
+              "gcs_2_node_3"
+            ],
+            "node_4": [
+              "gcs_3_node_4"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_1": "gcs_1_node_1",
+            "node_3": "gcs_2_node_3",
+            "node_4": "gcs_3_node_4"
+          }
+        },
+        {
+          "pipeline_id": "gcs",
+          "version_id": "v5",
+          "dag_version": 5,
+          "airflow_dag_id": "gcs__v5",
+          "output_filename": "gcs__v5.py",
+          "created_at": "2026-04-17T12:51:07.694795+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "b88fa8e77c22b123510ea32a8b7cf0e617966b34b27d4b322f0dd5e89fcab71d",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "gcs",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "gcs.py"
+            },
+            "nodes": [
+              {
+                "id": "node_4",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 569.6665344238281,
+                "y": 280.08333587646484,
+                "config": {
+                  "action": "delete",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "delete_mode": "single",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "CUSTOMER_CUS_TEST.csv",
+                  "destination_path": "CUSTOMER_CUS_TEST.csv",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "CUSTOMER_CUS_TEST.csv",
+                  "local_file_path": "/mnt/cegid/CUSTOMER_CUS_TEST.csv",
+                  "local_file_paths": [],
+                  "object_name": "CUSTOMER_CUS_TEST.csv",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "sample_upload.txt/CUSTOMER_CUS_TEST.csv",
+                  "source_type": "local",
+                  "upload_mode": "single"
+                }
+              }
+            ],
+            "edges": [],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\web_app\\generated_dags\\gcs__v5.py",
+          "generated_airflow_path": "D:\\airflow\\dags\\gcs__v5.py",
+          "node_task_map": {
+            "node_4": [
+              "gcs_1_node_4"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_4": "gcs_1_node_4"
+          }
+        },
+        {
+          "pipeline_id": "gcs",
+          "version_id": "v6",
+          "dag_version": 6,
+          "airflow_dag_id": "gcs__v6",
+          "output_filename": "gcs__v6.py",
+          "created_at": "2026-04-17T13:38:29.272105+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "df20276b81f7c356385fb7a66c4603e8727da1be147450240009ac37afb8a2ca",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "gcs",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "gcs.py"
+            },
+            "nodes": [
+              {
+                "id": "node_4",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 569.6665344238281,
+                "y": 280.08333587646484,
+                "config": {
+                  "action": "upload",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "delete_mode": "single",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "CUSTOMER_CUS_TEST.csv",
+                  "destination_path": "",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "",
+                  "local_file_path": "D:\\app.txt",
+                  "local_file_paths": [],
+                  "object_name": "CUSTOMER_CUS_TEST.csv",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "sample_upload.txt/CUSTOMER_CUS_TEST.csv",
+                  "source_type": "local",
+                  "upload_mode": "single",
+                  "multiple_source_type": "local",
+                  "delete_multiple_source_type": "local",
+                  "delete_local_file_paths": [],
+                  "delete_drive_input_mode": "directory",
+                  "delete_drive_file_links": []
+                }
+              }
+            ],
+            "edges": [],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\web_app\\generated_dags\\gcs__v6.py",
+          "generated_airflow_path": "D:\\airflow\\dags\\gcs__v6.py",
+          "node_task_map": {
+            "node_4": [
+              "gcs_1_node_4"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_4": "gcs_1_node_4"
+          }
+        },
+        {
+          "pipeline_id": "gcs",
+          "version_id": "v7",
+          "dag_version": 7,
+          "airflow_dag_id": "gcs__v7",
+          "output_filename": "gcs__v7.py",
+          "created_at": "2026-04-17T13:44:01.591276+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "a3888ec8acb7ac3678ecfa186402197c4d46d72eec402d04a4435f5d4884006b",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "gcs",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "gcs.py"
+            },
+            "nodes": [
+              {
+                "id": "node_4",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 569.6665344238281,
+                "y": 280.08333587646484,
+                "config": {
+                  "action": "delete",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "delete_drive_file_links": [],
+                  "delete_drive_input_mode": "directory",
+                  "delete_local_file_paths": [],
+                  "delete_mode": "single",
+                  "delete_multiple_source_type": "local",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "CUSTOMER_CUS_TEST.csv",
+                  "destination_path": "",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "/opt/airflow/local_uploads/gcs/node_4/dataops.png",
+                  "local_file_path": "/opt/airflow/local_uploads/gcs/node_4/dataops.png",
+                  "local_file_paths": [],
+                  "multiple_source_type": "local",
+                  "object_name": "dataops.png",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "sample_upload.txt/CUSTOMER_CUS_TEST.csv",
+                  "source_type": "local",
+                  "upload_mode": "single"
+                }
+              }
+            ],
+            "edges": [],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\web_app\\generated_dags\\gcs__v7.py",
+          "generated_airflow_path": "D:\\airflow\\dags\\gcs__v7.py",
+          "node_task_map": {
+            "node_4": [
+              "gcs_1_node_4"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_4": "gcs_1_node_4"
+          },
+          "updated_at": "2026-04-17T15:16:55.758803+00:00",
+          "updated_by": "admin"
+        },
+        {
+          "pipeline_id": "gcs",
+          "version_id": "v8",
+          "dag_version": 8,
+          "airflow_dag_id": "gcs__v8",
+          "output_filename": "gcs__v8.py",
+          "created_at": "2026-04-20T07:24:15.546974+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "6f4840e960bbf8c146eb9cacce807222d0de1d39a8f6f2c218638a55bf5211c0",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "gcs",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "gcs.py"
+            },
+            "nodes": [
+              {
+                "id": "node_4",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 160.77764553493932,
+                "y": 315.63892534044055,
+                "config": {
+                  "action": "upload",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "delete_drive_file_links": [],
+                  "delete_drive_input_mode": "directory",
+                  "delete_local_file_paths": [],
+                  "delete_mode": "single",
+                  "delete_multiple_source_type": "local",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "CUSTOMER_CUS_TEST.csv",
+                  "destination_path": "CUSTOMER_CUS_TEST.csv",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "/opt/airflow/local_uploads/gcs/node_4",
+                  "local_file_browser": "/opt/airflow/local_uploads/gcs/node_4/dataops.png",
+                  "local_file_path": "/opt/airflow/local_uploads/gcs/node_4/elk.docx",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/gcs/node_4/elk.docx",
+                    "/opt/airflow/local_uploads/gcs/node_4/n8n_vs_langchain_langGraph.docx"
+                  ],
+                  "multiple_source_type": "local",
+                  "object_name": "dataops.png",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "sample_upload.txt/CUSTOMER_CUS_TEST.csv",
+                  "source_type": "local",
+                  "upload_mode": "multiple"
+                }
+              },
+              {
+                "id": "node_5",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 824.9258388943142,
+                "y": 156.08336978488495,
+                "config": {
+                  "action": "move",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "delete_drive_file_links": [],
+                  "delete_drive_input_mode": "directory",
+                  "delete_local_file_paths": [],
+                  "delete_mode": "single",
+                  "delete_multiple_source_type": "local",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "CUSTOMER_CUS_TEST.csv",
+                  "destination_path": "",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "/opt/airflow/local_uploads/gcs/node_4/dataops.png",
+                  "local_file_path": "/opt/airflow/local_uploads/gcs/node_4/dataops.png",
+                  "local_file_paths": [],
+                  "multiple_source_type": "local",
+                  "object_name": "dataops.png",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "CUSTOMER_CUS_TEST.csv/CUSTOMER_CUS_TEST.csv",
+                  "source_type": "local",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_6",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 1465.0668494814915,
+                "y": 286.0303951445079,
+                "config": {
+                  "action": "delete",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "delete_drive_file_links": [],
+                  "delete_drive_input_mode": "directory",
+                  "delete_local_directory_path": "n8n_vs_langchain_langGraph.docx",
+                  "delete_local_file_paths": [],
+                  "delete_mode": "multiple",
+                  "delete_multiple_source_type": "local",
+                  "delete_object_prefix": "n8n_vs_langchain_langGraph.docx",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "CUSTOMER_CUS_TEST.csv",
+                  "destination_path": "",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "/opt/airflow/local_uploads/gcs/node_4/dataops.png",
+                  "local_file_path": "/opt/airflow/local_uploads/gcs/node_4/dataops.png",
+                  "local_file_paths": [],
+                  "multiple_source_type": "local",
+                  "object_name": "dataops.png",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "sample_upload.txt/CUSTOMER_CUS_TEST.csv",
+                  "source_type": "local",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_7",
+                "type": "parallel_fork",
+                "label": "Parallel Fork 7",
+                "x": 440.3456759982641,
+                "y": 317.40447319878473,
+                "config": {}
+              },
+              {
+                "id": "node_8",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 826.0758594331286,
+                "y": 424.4643948267377,
+                "config": {
+                  "action": "move",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "delete_drive_file_links": [],
+                  "delete_drive_input_mode": "directory",
+                  "delete_local_file_paths": [],
+                  "delete_mode": "single",
+                  "delete_multiple_source_type": "local",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "elk.docx",
+                  "destination_path": "",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "/opt/airflow/local_uploads/gcs/node_4/dataops.png",
+                  "local_file_path": "/opt/airflow/local_uploads/gcs/node_4/dataops.png",
+                  "local_file_paths": [],
+                  "multiple_source_type": "local",
+                  "object_name": "dataops.png",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "CUSTOMER_CUS_TEST.csv/elk.docx",
+                  "source_type": "local",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_9",
+                "type": "parallel_join",
+                "label": "Parallel Join 9",
+                "x": 1143.9614180307542,
+                "y": 280.5438503689236,
+                "config": {
+                  "trigger_rule": "all_success"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_4",
+                "target": "node_7"
+              },
+              {
+                "source": "node_7",
+                "target": "node_5"
+              },
+              {
+                "source": "node_7",
+                "target": "node_8"
+              },
+              {
+                "source": "node_5",
+                "target": "node_9"
+              },
+              {
+                "source": "node_8",
+                "target": "node_9"
+              },
+              {
+                "source": "node_9",
+                "target": "node_6"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\web_app\\generated_dags\\gcs__v8.py",
+          "generated_airflow_path": "D:\\airflow\\dags\\gcs__v8.py",
+          "node_task_map": {
+            "node_4": [
+              "gcs_1_node_4"
+            ],
+            "node_7": [
+              "parallel_fork_2_node_7"
+            ],
+            "node_5": [
+              "gcs_3_node_5"
+            ],
+            "node_8": [
+              "gcs_4_node_8"
+            ],
+            "node_9": [
+              "parallel_join_5_node_9"
+            ],
+            "node_6": [
+              "gcs_6_node_6"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_4": "gcs_1_node_4",
+            "node_7": "parallel_fork_2_node_7",
+            "node_5": "gcs_3_node_5",
+            "node_8": "gcs_4_node_8",
+            "node_9": "parallel_join_5_node_9",
+            "node_6": "gcs_6_node_6"
+          },
+          "updated_at": "2026-04-20T07:49:48.964409+00:00",
+          "updated_by": "admin"
+        },
+        {
+          "pipeline_id": "gcs",
+          "version_id": "v9",
+          "dag_version": 9,
+          "airflow_dag_id": "gcs__v9",
+          "output_filename": "gcs__v9.py",
+          "created_at": "2026-04-20T08:03:31.693608+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "c474d13059c5f401b48489b50940d4df66bedccc288b63986d7521e1f54498e1",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "gcs",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "gcs.py"
+            },
+            "nodes": [
+              {
+                "id": "node_4",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 160.77764553493932,
+                "y": 315.63892534044055,
+                "config": {
+                  "action": "upload",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "delete_drive_file_links": [],
+                  "delete_drive_input_mode": "directory",
+                  "delete_local_file_paths": [],
+                  "delete_mode": "single",
+                  "delete_multiple_source_type": "local",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "CUSTOMER_CUS_TEST.csv",
+                  "destination_path": "CUSTOMER_CUS_TEST.csv",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "/opt/airflow/local_uploads/gcs/node_4",
+                  "local_file_browser": "/opt/airflow/local_uploads/gcs/node_4/dataops.png",
+                  "local_file_path": "/opt/airflow/local_uploads/gcs/node_4/elk.docx",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/gcs/node_4/elk.docx",
+                    "/opt/airflow/local_uploads/gcs/node_4/n8n_vs_langchain_langGraph.docx"
+                  ],
+                  "multiple_source_type": "local",
+                  "object_name": "dataops.png",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "sample_upload.txt/CUSTOMER_CUS_TEST.csv",
+                  "source_type": "local",
+                  "upload_mode": "multiple"
+                }
+              },
+              {
+                "id": "node_5",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 824.9258388943142,
+                "y": 156.08336978488495,
+                "config": {
+                  "action": "move",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "delete_drive_file_links": [],
+                  "delete_drive_input_mode": "directory",
+                  "delete_local_file_paths": [],
+                  "delete_mode": "single",
+                  "delete_multiple_source_type": "local",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "n8n_vs_langchain_langGraph.docx",
+                  "destination_path": "",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "/opt/airflow/local_uploads/gcs/node_4/dataops.png",
+                  "local_file_path": "/opt/airflow/local_uploads/gcs/node_4/dataops.png",
+                  "local_file_paths": [],
+                  "multiple_source_type": "local",
+                  "object_name": "dataops.png",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "CUSTOMER_CUS_TEST.csv/n8n_vs_langchain_langGraph.docx",
+                  "source_type": "local",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_7",
+                "type": "parallel_fork",
+                "label": "Parallel Fork 7",
+                "x": 440.3456759982641,
+                "y": 317.40447319878473,
+                "config": {}
+              },
+              {
+                "id": "node_8",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 826.0758594331286,
+                "y": 424.4643948267377,
+                "config": {
+                  "action": "move",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "delete_drive_file_links": [],
+                  "delete_drive_input_mode": "directory",
+                  "delete_local_file_paths": [],
+                  "delete_mode": "single",
+                  "delete_multiple_source_type": "local",
+                  "destination_bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "destination_object": "elk.docx",
+                  "destination_path": "",
+                  "drive_directory_link": "",
+                  "drive_file_link": "",
+                  "drive_file_links": [],
+                  "drive_input_mode": "directory",
+                  "local_directory_path": "",
+                  "local_file_browser": "/opt/airflow/local_uploads/gcs/node_4/dataops.png",
+                  "local_file_path": "/opt/airflow/local_uploads/gcs/node_4/dataops.png",
+                  "local_file_paths": [],
+                  "multiple_source_type": "local",
+                  "object_name": "dataops.png",
+                  "object_names": [],
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "source_object": "CUSTOMER_CUS_TEST.csv/elk.docx",
+                  "source_type": "local",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_9",
+                "type": "parallel_join",
+                "label": "Parallel Join 9",
+                "x": 1143.9614180307542,
+                "y": 280.5438503689236,
+                "config": {
+                  "trigger_rule": "all_success"
+                }
+              },
+              {
+                "id": "node_10",
+                "type": "gcs",
+                "label": "Google Cloud Storage 10",
+                "x": 1440.8730692182269,
+                "y": 284.4705750601632,
+                "config": {
+                  "action": "delete",
+                  "bucket_name": "os-dpf-ariflow-prj-shr-dev",
+                  "service_account_file": "/opt/airflow/credgcp.json",
+                  "destination_path": "",
+                  "upload_mode": "single",
+                  "source_type": "local",
+                  "multiple_source_type": "local",
+                  "local_file_path": "",
+                  "local_directory_path": "",
+                  "local_file_paths": [],
+                  "drive_file_link": "",
+                  "drive_input_mode": "directory",
+                  "drive_directory_link": "",
+                  "drive_file_links": [],
+                  "source_object": "",
+                  "destination_bucket_name": "",
+                  "destination_object": "",
+                  "delete_mode": "multiple",
+                  "object_name": "",
+                  "object_names": [
+                    "elk.docx",
+                    "n8n_vs_langchain_langGraph.docx"
+                  ],
+                  "delete_object_prefix": ""
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_4",
+                "target": "node_7"
+              },
+              {
+                "source": "node_7",
+                "target": "node_5"
+              },
+              {
+                "source": "node_7",
+                "target": "node_8"
+              },
+              {
+                "source": "node_5",
+                "target": "node_9"
+              },
+              {
+                "source": "node_8",
+                "target": "node_9"
+              },
+              {
+                "source": "node_9",
+                "target": "node_10"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\web_app\\generated_dags\\gcs__v9.py",
+          "generated_airflow_path": "D:\\airflow\\dags\\gcs__v9.py",
+          "node_task_map": {
+            "node_4": [
+              "gcs_1_node_4"
+            ],
+            "node_7": [
+              "parallel_fork_2_node_7"
+            ],
+            "node_5": [
+              "gcs_3_node_5"
+            ],
+            "node_8": [
+              "gcs_4_node_8"
+            ],
+            "node_9": [
+              "parallel_join_5_node_9"
+            ],
+            "node_10": [
+              "gcs_6_node_10"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_4": "gcs_1_node_4",
+            "node_7": "parallel_fork_2_node_7",
+            "node_5": "gcs_3_node_5",
+            "node_8": "gcs_4_node_8",
+            "node_9": "parallel_join_5_node_9",
+            "node_10": "gcs_6_node_10"
+          }
+        },
+        {
+          "pipeline_id": "gcs",
+          "version_id": "v10",
+          "dag_version": 10,
+          "airflow_dag_id": "gcs__v10",
+          "output_filename": "gcs__v10.py",
+          "created_at": "2026-04-20T12:13:24.644542+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "422ce144a88825df8f5103bcfd358b59666897dd9a5b90d0a10ee348182ba3d0",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "gcs",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "gcs.py"
+            },
+            "nodes": [
+              {
+                "id": "node_11",
+                "type": "gcs",
+                "label": "Google Cloud Storage 11",
+                "x": 828.8887091742621,
+                "y": 449.877661810981,
+                "config": {
+                  "action": "upload",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "gcp_connection_id": "gcp_conn",
+                  "destination_path": "CUSTOMER_CUS_TEST.csv",
+                  "upload_mode": "single",
+                  "source_type": "local",
+                  "multiple_source_type": "local",
+                  "local_file_path": "/opt/airflow/local_uploads/gcs/node_11/CUSTOMER_CUS_TEST.csv",
+                  "local_directory_path": "",
+                  "local_file_paths": [],
+                  "drive_file_link": "",
+                  "drive_input_mode": "directory",
+                  "drive_directory_link": "",
+                  "drive_file_links": [],
+                  "source_object": "",
+                  "destination_bucket_name": "",
+                  "destination_object": "",
+                  "delete_mode": "single",
+                  "object_name": "",
+                  "object_names": [],
+                  "delete_object_prefix": "",
+                  "local_file_browser": "/opt/airflow/local_uploads/gcs/node_11/CUSTOMER_CUS_TEST.csv",
+                  "service_account_file": "/opt/airflow/credgcp.json"
+                }
+              }
+            ],
+            "edges": [],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\web_app\\generated_dags\\gcs__v10.py",
+          "generated_airflow_path": "D:\\airflow\\dags\\gcs__v10.py",
+          "node_task_map": {
+            "node_11": [
+              "gcs_1_node_11"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_11": "gcs_1_node_11"
+          }
+        }
+      ],
+      "switch_events": [
+        {
+          "event_id": "10bfea51-8c5c-4aae-bd05-3263d7a8c27d",
+          "event_type": "create_and_set_current",
+          "from_version_id": null,
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T10:27:56.464591+00:00"
+        },
+        {
+          "event_id": "09d7a168-45bd-4910-9d8d-e09dc8b8c8cc",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T10:40:53.307959+00:00"
+        },
+        {
+          "event_id": "f562cb23-555c-4b37-8024-c01607028aae",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T10:45:17.839824+00:00"
+        },
+        {
+          "event_id": "7d5cbdff-d365-4ea7-a353-706a46d9c06d",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T10:48:39.560801+00:00"
+        },
+        {
+          "event_id": "6dd6888b-74eb-4ef4-a72a-43d173952427",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T10:50:04.608481+00:00"
+        },
+        {
+          "event_id": "5080f368-3b62-47c5-a343-4430f95d0638",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T11:08:31.220429+00:00"
+        },
+        {
+          "event_id": "091361be-9015-4ec8-b940-ea98a8e08f3c",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T11:10:18.918356+00:00"
+        },
+        {
+          "event_id": "b121af7d-16e5-42d2-b791-14bb692bd291",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T11:12:40.455821+00:00"
+        },
+        {
+          "event_id": "ed6de45f-9b41-4264-88e9-e9507652139a",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v1",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-17T11:23:25.225743+00:00"
+        },
+        {
+          "event_id": "3b91b04d-9f14-4cef-bbce-846cedc78278",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v2",
+          "to_version_id": "v3",
+          "actor": "admin",
+          "at": "2026-04-17T12:34:56.375920+00:00"
+        },
+        {
+          "event_id": "9c1e5180-62c2-49e9-b7cb-bd60bb2574af",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v3",
+          "to_version_id": "v4",
+          "actor": "admin",
+          "at": "2026-04-17T12:43:15.530820+00:00"
+        },
+        {
+          "event_id": "33cd6814-f7c9-494b-b894-75300c86dab8",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v4",
+          "to_version_id": "v5",
+          "actor": "admin",
+          "at": "2026-04-17T12:51:07.694795+00:00"
+        },
+        {
+          "event_id": "24c653b6-e1e8-4062-a93c-9ea4a3afda82",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v5",
+          "to_version_id": "v6",
+          "actor": "admin",
+          "at": "2026-04-17T13:38:29.272105+00:00"
+        },
+        {
+          "event_id": "7d2f7535-5236-44b9-b948-4b53d821c7f3",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v6",
+          "to_version_id": "v7",
+          "actor": "admin",
+          "at": "2026-04-17T13:44:01.591276+00:00"
+        },
+        {
+          "event_id": "55887b48-14f6-43d7-a7d7-acba4a950904",
+          "event_type": "update_version_definition",
+          "from_version_id": "v7",
+          "to_version_id": "v7",
+          "actor": "admin",
+          "at": "2026-04-17T15:16:07.451253+00:00"
+        },
+        {
+          "event_id": "d81b31ab-6d50-416c-8776-f5a59ff3a3be",
+          "event_type": "update_version_definition",
+          "from_version_id": "v7",
+          "to_version_id": "v7",
+          "actor": "admin",
+          "at": "2026-04-17T15:16:55.758803+00:00"
+        },
+        {
+          "event_id": "39f5fa94-65d3-41f3-9fa5-5c6d7c83eb1e",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v7",
+          "to_version_id": "v8",
+          "actor": "admin",
+          "at": "2026-04-20T07:24:15.546974+00:00"
+        },
+        {
+          "event_id": "24f6df19-6220-473d-a231-355cac1838df",
+          "event_type": "update_version_definition",
+          "from_version_id": "v8",
+          "to_version_id": "v8",
+          "actor": "admin",
+          "at": "2026-04-20T07:49:48.964409+00:00"
+        },
+        {
+          "event_id": "51e4a81d-2319-4b88-b885-61620b6f9a8d",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v8",
+          "to_version_id": "v9",
+          "actor": "admin",
+          "at": "2026-04-20T08:03:31.693608+00:00"
+        },
+        {
+          "event_id": "580e12a2-d317-4abf-9712-51b4fd27f4b7",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v9",
+          "to_version_id": "v10",
+          "actor": "admin",
+          "at": "2026-04-20T12:13:24.644542+00:00"
+        }
+      ]
+    },
+    "my_pipeline": {
+      "current_version_id": "v1",
+      "versions": [
+        {
+          "pipeline_id": "my_pipeline",
+          "version_id": "v1",
+          "dag_version": 1,
+          "airflow_dag_id": "my_pipeline__v1",
+          "output_filename": "my_pipeline__v1.py",
+          "created_at": "2026-04-17T15:46:04.267401+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "36a263fae30c6164fe3aa0684d50ac6ae27502d779aee2fc75ab51432d657f60",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "my_pipeline",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "my_pipeline.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "azure",
+                "label": "Azure Blob Storage 1",
+                "x": 338,
+                "y": 188.97222137451172,
+                "config": {
+                  "action": "upload",
+                  "container_name": "my-container",
+                  "upload_mode": "single",
+                  "local_file_path": "dataops.png",
+                  "local_file_paths": [],
+                  "blob_name": "uploads/testdata",
+                  "blob_prefix": "",
+                  "create_container": false,
+                  "download_mode": "single",
+                  "file_name": "",
+                  "file_prefix": "",
+                  "file_extension": ".csv",
+                  "local_dir_download": "",
+                  "delete_mode": "single",
+                  "delete_blob_name": "",
+                  "delete_prefix": "",
+                  "local_file_browser": "dataops.png"
+                }
+              }
+            ],
+            "edges": [],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\web_app\\generated_dags\\my_pipeline__v1.py",
+          "generated_airflow_path": "D:\\airflow\\dags\\my_pipeline__v1.py",
+          "node_task_map": {
+            "node_1": [
+              "azure_1_node_1"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_1": "azure_1_node_1"
+          }
+        }
+      ],
+      "switch_events": [
+        {
+          "event_id": "80ce1810-0770-44f9-bcb3-58415fbc8ad5",
+          "event_type": "create_and_set_current",
+          "from_version_id": null,
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T15:46:04.267401+00:00"
+        }
+      ]
+    },
+    "test_azure": {
+      "current_version_id": "v1",
+      "versions": [
+        {
+          "pipeline_id": "test_azure",
+          "version_id": "v1",
+          "dag_version": 1,
+          "airflow_dag_id": "test_azure__v1",
+          "output_filename": "test_azure__v1.py",
+          "created_at": "2026-04-17T15:47:34.340472+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "bcabe7c928495349318f9f186d5037d938f338516887d57b64fc455ea09b3315",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "test_azure",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "test_azure.py"
+            },
+            "nodes": [
+              {
+                "id": "node_3",
+                "type": "azure",
+                "label": "Azure Blob Storage 3",
+                "x": 363,
+                "y": 194.97222137451172,
+                "config": {
+                  "action": "download",
+                  "blob_name": "uploads/datatest",
+                  "blob_prefix": "",
+                  "container_name": "my-container",
+                  "create_container": false,
+                  "delete_blob_name": "/uploads/datatest",
+                  "delete_mode": "single",
+                  "delete_prefix": "",
+                  "download_mode": "single",
+                  "file_extension": ".txt",
+                  "file_name": "app",
+                  "file_prefix": "",
+                  "local_dir_download": "/opt",
+                  "local_file_browser": "dataops.png",
+                  "local_file_path": "dataops.png",
+                  "local_file_paths": [],
+                  "upload_mode": "single",
+                  "local_file_path_container": "/opt/airflow/local_uploads/test_azure/node_3/dataops.png"
+                }
+              }
+            ],
+            "edges": [],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\web_app\\generated_dags\\test_azure__v1.py",
+          "generated_airflow_path": "D:\\airflow\\dags\\test_azure__v1.py",
+          "node_task_map": {
+            "node_3": [
+              "azure_1_node_3"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_3": "azure_1_node_3"
+          },
+          "updated_at": "2026-04-17T16:16:44.322300+00:00",
+          "updated_by": "admin"
+        }
+      ],
+      "switch_events": [
+        {
+          "event_id": "c709a23a-233d-4cbc-8e31-ac2196e3a5d1",
+          "event_type": "create_and_set_current",
+          "from_version_id": null,
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T15:47:34.340472+00:00"
+        },
+        {
+          "event_id": "75b54149-ea31-4b24-9254-dd76be2f97af",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T15:57:58.061392+00:00"
+        },
+        {
+          "event_id": "e841a8fd-eee8-42f2-b98e-527f856d9f93",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T16:06:47.676157+00:00"
+        },
+        {
+          "event_id": "c96b6651-6f37-425a-8aa0-ab9ea6fcb3a8",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T16:07:40.351458+00:00"
+        },
+        {
+          "event_id": "99e93f95-28ed-48b0-a47d-eafac38ba6a4",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T16:09:51.697474+00:00"
+        },
+        {
+          "event_id": "39d5f2b1-720e-4eb4-92e9-7961473ba5f3",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T16:10:45.031662+00:00"
+        },
+        {
+          "event_id": "0e2071e2-f0f1-4a27-a48b-ebc9960258f7",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T16:14:41.558131+00:00"
+        },
+        {
+          "event_id": "245eafd1-e11b-4401-a7b1-4346b0834107",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T16:16:08.429528+00:00"
+        },
+        {
+          "event_id": "169a6751-d92d-4f4a-8ecf-cacbaa9b20f9",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-17T16:16:44.322300+00:00"
+        }
+      ]
+    }
+  }
+}

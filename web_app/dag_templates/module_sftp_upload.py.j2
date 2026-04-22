@@ -1,0 +1,61 @@
+@task(task_id={{ task_id | pyrepr }})
+def {{ function_name }}():
+    local_file_path = {{ config.get("local_file_path") | pyrepr }}
+    remote_dir = {{ config.get("remote_dir") | pyrepr }}
+    upload_mode = {{ config.get("upload_mode", "single") | pyrepr }}
+    file_prefix = {{ config.get("file_prefix", "") | pyrepr }}
+    hook = SFTPHook(ssh_conn_id="sftp")
+
+    if upload_mode == "multiple":
+        if not os.path.isdir(local_file_path):
+            raise AirflowException(f"SFTP upload directory not found for multiple mode: {local_file_path}")
+        prefix = str(file_prefix or "")
+        if not prefix:
+            raise AirflowException("sftp_upload.file_prefix is required when upload_mode is multiple.")
+
+        matched_files = []
+        for file_name in sorted(os.listdir(local_file_path)):
+            full_path = os.path.join(local_file_path, file_name)
+            if not os.path.isfile(full_path):
+                continue
+            if not file_name.startswith(prefix):
+                continue
+            matched_files.append(full_path)
+
+        if not matched_files:
+            raise AirflowException(
+                f"No local files found with prefix '{prefix}' in directory: {local_file_path}"
+            )
+
+        uploaded_remote_paths = []
+        for full_path in matched_files:
+            file_name = os.path.basename(full_path)
+            remote_path = f"{remote_dir.rstrip('/')}/{file_name}"
+            hook.store_file(remote_full_path=remote_path, local_full_path=full_path)
+            uploaded_remote_paths.append(remote_path)
+
+        return {
+            "uploaded": True,
+            "upload_mode": "multiple",
+            "local_directory": local_file_path,
+            "file_prefix": prefix,
+            "uploaded_count": len(uploaded_remote_paths),
+            "remote_paths": uploaded_remote_paths,
+        }
+
+    if not os.path.exists(local_file_path):
+        raise AirflowException(f"SFTP upload file not found: {local_file_path}")
+
+    file_name = os.path.basename(local_file_path)
+    remote_path = f"{remote_dir.rstrip('/')}/{file_name}"
+    hook.store_file(remote_full_path=remote_path, local_full_path=local_file_path)
+
+    return {
+        "uploaded": True,
+        "upload_mode": "single",
+        "local_file_path": local_file_path,
+        "remote_path": remote_path,
+    }
+
+
+{{ task_var }} = {{ function_name }}()

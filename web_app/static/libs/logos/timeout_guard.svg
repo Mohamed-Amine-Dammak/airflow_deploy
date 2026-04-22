@@ -1,0 +1,8 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Timeout Guard">
+  <rect width="64" height="64" rx="12" fill="#0b3c5d"/>
+  <path d="M32 10l16 6v12c0 11-7 20-16 24-9-4-16-13-16-24V16l16-6z" fill="#00a3a3"/>
+  <circle cx="32" cy="28" r="8" fill="#ffffff"/>
+  <path d="M32 28v-4" stroke="#0b3c5d" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M32 28l4 3" stroke="#0b3c5d" stroke-width="2.8" stroke-linecap="round"/>
+  <rect x="29" y="38" width="6" height="7" rx="2" fill="#f2a900"/>
+</svg>

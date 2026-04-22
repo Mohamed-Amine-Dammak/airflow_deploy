@@ -1,0 +1,172 @@
+{
+  "pipeline": {
+    "dag_id": "wave2_simple_test",
+    "description": "Simple Wave 2 control modules test pipeline.",
+    "schedule_mode": "manual",
+    "catchup": false,
+    "retries": 1,
+    "retry_delay_minutes": 2,
+    "alert_emails": [
+      "qa@example.com"
+    ],
+    "alert_mode": "both",
+    "tags": [
+      "wave2",
+      "control-modules"
+    ],
+    "output_filename": "wave2_simple_test.py"
+  },
+  "nodes": [
+    {
+      "id": "node_1",
+      "type": "retry_wrapper",
+      "label": "Retry Wrapper",
+      "config": {
+        "retries": 2,
+        "retry_delay_minutes": 1,
+        "retry_exponential_backoff": false
+      }
+    },
+    {
+      "id": "node_2",
+      "type": "parallel_limit",
+      "label": "Parallel Limit",
+      "config": {
+        "max_parallel_branches": 2
+      }
+    },
+    {
+      "id": "node_3",
+      "type": "n8n",
+      "label": "Branch A",
+      "config": {
+        "workflow_name": "wf_a",
+        "http_method": "GET",
+        "use_test_webhook": true
+      }
+    },
+    {
+      "id": "node_4",
+      "type": "n8n",
+      "label": "Branch B",
+      "config": {
+        "workflow_name": "wf_b",
+        "http_method": "GET",
+        "use_test_webhook": true
+      }
+    },
+    {
+      "id": "node_5",
+      "type": "quorum_join",
+      "label": "Quorum Join",
+      "config": {
+        "min_success_count": 1
+      }
+    },
+    {
+      "id": "node_6",
+      "type": "try_catch",
+      "label": "Try/Catch",
+      "config": {
+        "success_branch_node_id": "node_7",
+        "catch_branch_node_id": "node_8"
+      }
+    },
+    {
+      "id": "node_7",
+      "type": "n8n",
+      "label": "Success Path",
+      "config": {
+        "workflow_name": "wf_success",
+        "http_method": "GET",
+        "use_test_webhook": true
+      }
+    },
+    {
+      "id": "node_8",
+      "type": "n8n",
+      "label": "Catch Path",
+      "config": {
+        "workflow_name": "wf_catch",
+        "http_method": "GET",
+        "use_test_webhook": true
+      }
+    },
+    {
+      "id": "node_9",
+      "type": "parallel_join",
+      "label": "Join",
+      "config": {
+        "trigger_rule": "none_failed_min_one_success"
+      }
+    },
+    {
+      "id": "node_10",
+      "type": "semaphore_lock",
+      "label": "Semaphore Lock",
+      "config": {
+        "pool_name": "orchestration_lock_pool",
+        "pool_slots": 1
+      }
+    },
+    {
+      "id": "node_11",
+      "type": "powerbi",
+      "label": "Power BI Refresh",
+      "config": {
+        "workspace_id": "demo_workspace",
+        "dataset_id": "demo_dataset"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "node_1",
+      "target": "node_2"
+    },
+    {
+      "source": "node_2",
+      "target": "node_3"
+    },
+    {
+      "source": "node_2",
+      "target": "node_4"
+    },
+    {
+      "source": "node_3",
+      "target": "node_5"
+    },
+    {
+      "source": "node_4",
+      "target": "node_5"
+    },
+    {
+      "source": "node_5",
+      "target": "node_6"
+    },
+    {
+      "source": "node_6",
+      "target": "node_7"
+    },
+    {
+      "source": "node_6",
+      "target": "node_8"
+    },
+    {
+      "source": "node_7",
+      "target": "node_9"
+    },
+    {
+      "source": "node_8",
+      "target": "node_9"
+    },
+    {
+      "source": "node_9",
+      "target": "node_10"
+    },
+    {
+      "source": "node_10",
+      "target": "node_11"
+    }
+  ]
+}

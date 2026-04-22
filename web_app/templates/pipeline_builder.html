@@ -1,0 +1,25 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pipeline Builder</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='libs/airflow-favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20260416a">
+</head>
+<body>
+  <div id="app-root"></div>
+  <script>
+    window.IS_ADMIN = {{ "true" if is_admin else "false" }};
+    window.CURRENT_ROLES = {{ current_roles|tojson }};
+    window.CURRENT_PERMISSIONS = {{ current_permissions|tojson }};
+  </script>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="{{ url_for('static', filename='js/modules.js') }}?v=20260403n"></script>
+  <script src="{{ url_for('static', filename='js/canvas.js') }}?v=20260403n"></script>
+  <script src="{{ url_for('static', filename='js/forms.js') }}?v=20260403n"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}?v=20260416d"></script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Airflow Connections | Airflow Pipeline Builder</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='libs/airflow-favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20260403n">
+</head>
+<body class="connections-page">
+  <div class="connections-shell">
+    <header class="connections-page-head">
+      <div>
+        <h1>Airflow Connections</h1>
+        <p>
+          {% if 'connections_manage' not in current_permissions and not is_admin %}
+            Read-only connections view (HTTP, Azure Blob Storage, and Google Service Account).
+          {% else %}
+            Manage HTTP, Azure Blob Storage, and Google Service Account connections directly from the orchestration app.
+          {% endif %}
+        </p>
+      </div>
+      <div class="connections-head-actions">
+        <a class="btn btn-secondary" href="{{ url_for('builder') }}">Back To Builder</a>
+        <a class="btn btn-secondary" href="{{ url_for('logout') }}">Logout</a>
+      </div>
+    </header>
+
+    <div id="connections-status" class="connections-status" aria-live="polite"></div>
+
+    <main class="connections-main">
+      <section class="connections-card connections-list-card">
+        <div class="connections-card-head">
+          <h2>Available Connections</h2>
+          <div class="connections-toolbar">
+            <input id="connections-search" type="text" class="module-search" placeholder="Search by ID, type, or description" autocomplete="off" spellcheck="false">
+            <button id="connections-refresh" class="btn btn-secondary" type="button">Refresh</button>
+            <button id="connections-create" class="btn btn-primary" type="button">Create Connection</button>
+          </div>
+        </div>
+
+        <div class="connections-table-wrap">
+          <table class="connections-table">
+            <thead>
+              <tr>
+                <th>Connection ID</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="connections-table-body">
+              <tr>
+                <td colspan="4" class="connections-empty-row">Loading connections...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <div id="connections-editor-overlay" class="connections-editor-overlay" hidden>
+      <div id="connections-editor-card" class="connections-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="conn-editor-title">
+        <div class="connections-editor-head">
+          <h2 id="conn-editor-title">Create Connection</h2>
+          <div class="connections-editor-head-actions">
+            <button id="conn-editor-reset" class="btn btn-secondary" type="button">Reset</button>
+            <button id="conn-modal-close" class="btn btn-secondary" type="button">Close</button>
+          </div>
+        </div>
+
+        <div class="connections-editor-fields">
+          <div class="field">
+            <label for="conn-id">Connection ID *</label>
+            <input id="conn-id" type="text" placeholder="e.g. n8n_local or wasb_default">
+            <div id="err-connection_id" class="field-error" hidden></div>
+          </div>
+
+          <div class="field">
+            <label for="conn-type">Connection Type *</label>
+            <select id="conn-type">
+              <option value="">Select a connection type</option>
+              <option value="http">HTTP</option>
+              <option value="wasb">Azure Blob Storage</option>
+              <option value="gcp_service_account">Google Service Account</option>
+            </select>
+            <div id="err-connection_type" class="field-error" hidden></div>
+          </div>
+
+          <div class="field">
+            <label for="conn-description">Description</label>
+            <input id="conn-description" type="text" placeholder="Optional connection description">
+          </div>
+
+          <div id="http-fields" hidden>
+            <div class="field">
+              <label for="conn-host">Host *</label>
+              <input id="conn-host" type="text" placeholder="https://your-host.example.com">
+              <div id="err-host" class="field-error" hidden></div>
+            </div>
+            <div class="field-inline-combo">
+              <div class="field">
+                <label for="conn-login">Login</label>
+                <input id="conn-login" type="text" placeholder="Optional">
+              </div>
+              <div class="field">
+                <label for="conn-password">Password</label>
+                <input id="conn-password" type="password" placeholder="Optional">
+              </div>
+            </div>
+            <div class="field-inline-combo">
+              <div class="field">
+                <label for="conn-port">Port</label>
+                <input id="conn-port" type="number" min="1" placeholder="443">
+                <div id="err-port" class="field-error" hidden></div>
+              </div>
+              <div class="field">
+                <label for="conn-schema">Schema</label>
+                <input id="conn-schema" type="text" placeholder="https">
+              </div>
+            </div>
+          </div>
+
+          <div id="wasb-fields" hidden>
+            <div class="field">
+              <label for="conn-account-url">Account URL (Active Directory Auth) *</label>
+              <input id="conn-account-url" type="text" placeholder="https://youraccount.blob.core.windows.net">
+              <div id="err-account_url" class="field-error" hidden></div>
+            </div>
+            <div class="field-inline-combo">
+              <div class="field">
+                <label for="conn-blob-login">Blob Storage Login (optional)</label>
+                <input id="conn-blob-login" type="text" placeholder="Optional">
+              </div>
+              <div class="field">
+                <label for="conn-blob-key">Blob Storage Key (optional)</label>
+                <input id="conn-blob-key" type="password" placeholder="Optional">
+              </div>
+            </div>
+          </div>
+
+          <div id="gcp-fields" hidden>
+            <div class="field">
+              <label for="conn-gcp-service-account-file">Service Account JSON File *</label>
+              <input id="conn-gcp-service-account-file" type="file" accept=".json,application/json">
+              <small class="field-help">
+                Upload once to sync it to Airflow containers and use it from Google modules via connection name.
+              </small>
+              <div id="err-service_account_file_upload" class="field-error" hidden></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="conn-extra">Extra JSON (optional)</label>
+            <textarea id="conn-extra" placeholder='{"key": "value"}'></textarea>
+            <div id="err-extra" class="field-error" hidden></div>
+          </div>
+        </div>
+
+        <div class="connections-editor-actions">
+          <button id="conn-cancel" class="btn btn-secondary" type="button">Cancel</button>
+          <button id="conn-save" class="btn btn-primary" type="button">Save Connection</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.CAN_VIEW_CONNECTIONS = {{ "true" if ('connections_view' in current_permissions or is_admin) else "false" }};
+    window.CAN_MANAGE_CONNECTIONS = {{ "true" if ('connections_manage' in current_permissions or is_admin) else "false" }};
+  </script>
+  <script src="{{ url_for('static', filename='js/connections_page.js') }}?v=20260403n"></script>
+</body>
+</html>

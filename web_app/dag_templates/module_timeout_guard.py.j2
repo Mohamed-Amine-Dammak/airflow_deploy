@@ -1,0 +1,4 @@
+{{ task_var }} = EmptyOperator(
+    task_id={{ task_id | pyrepr }},
+    execution_timeout=timedelta(minutes=int({{ config.get("timeout_minutes", 30) | pyrepr }})),
+)
