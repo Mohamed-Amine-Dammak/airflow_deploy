@@ -11,3 +11,6 @@ __pycache__/
 *.log
 flask_err.log
 flask_run.log
+CLAUDE.md
+Refonte_UI_UX_Airflow_Builder.md
+*.claude

@@ -1,0 +1,478 @@
+/* ═══════════════════════════════════════════════════════════════
+   animations.css — Airflow Builder Animation Library
+   Dépend de : design-tokens.css
+   Usage : <link rel="stylesheet" href="/static/css/animations.css">
+
+   Convention de nommage :
+     @keyframes  → kebab-case
+     Classes utilitaires → .anim-[nom]
+     Framer Motion équivalent → commenté sur chaque bloc
+
+   Tous les @keyframes respectent prefers-reduced-motion via :
+     @media (prefers-reduced-motion: reduce) en bas de fichier
+   ═══════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: SHIMMER — fond animé pour états running / skeleton
+   Framer Motion équivalent :
+     animate={{ backgroundPosition: ['200% 0', '-200% 0'] }}
+     transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.anim-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* Version skeleton (surfaces sombres) */
+.anim-shimmer-dark {
+  background-image: linear-gradient(
+    90deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: PULSE GLOW — indicateur de polling / left bar running
+   Framer Motion équivalent :
+     animate={{ opacity: [0.5, 1, 0.5] }}
+     transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%       { opacity: 1;    transform: scale(1.08); }
+}
+
+.anim-pulse {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Pulse dot (status indicator) */
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
+  70%       { box-shadow: 0 0 0 6px transparent; opacity: 0.6; }
+}
+
+.anim-pulse-dot {
+  animation: pulse-dot 2s ease infinite;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: SHAKE — badge failed / node failed au mount
+   Framer Motion équivalent :
+     initial={{ x: 0 }}
+     animate={{ x: [-3, 3, -3, 3, 0] }}
+     transition={{ duration: 0.35, ease: 'easeInOut' }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-3px); }
+  40%       { transform: translateX(3px); }
+  60%       { transform: translateX(-3px); }
+  80%       { transform: translateX(2px); }
+}
+
+.anim-shake {
+  animation: shake 0.35s ease;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: FADE SLIDE UP — entrée par défaut de la plupart des éléments
+   Framer Motion équivalent :
+     initial={{ opacity: 0, y: 8 }}
+     animate={{ opacity: 1, y: 0 }}
+     transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes fade-slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.anim-fade-up {
+  animation: fade-slide-up var(--dur-normal) var(--ease-out) both;
+}
+
+/* Variantes de délai pour stagger */
+.anim-fade-up--d1 { animation-delay: 80ms;  }
+.anim-fade-up--d2 { animation-delay: 160ms; }
+.anim-fade-up--d3 { animation-delay: 240ms; }
+.anim-fade-up--d4 { animation-delay: 320ms; }
+.anim-fade-up--d5 { animation-delay: 400ms; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: STAGGER — enfants d'un conteneur entrent en cascade
+   Framer Motion équivalent :
+     variants={{ container: { staggerChildren: 0.08 } }}
+   ═══════════════════════════════════════════════════════════════ */
+.anim-stagger > *:nth-child(1) { animation: fade-slide-up var(--dur-normal) var(--ease-out) 0ms   both; }
+.anim-stagger > *:nth-child(2) { animation: fade-slide-up var(--dur-normal) var(--ease-out) 80ms  both; }
+.anim-stagger > *:nth-child(3) { animation: fade-slide-up var(--dur-normal) var(--ease-out) 160ms both; }
+.anim-stagger > *:nth-child(4) { animation: fade-slide-up var(--dur-normal) var(--ease-out) 240ms both; }
+.anim-stagger > *:nth-child(5) { animation: fade-slide-up var(--dur-normal) var(--ease-out) 320ms both; }
+.anim-stagger > *:nth-child(6) { animation: fade-slide-up var(--dur-normal) var(--ease-out) 400ms both; }
+.anim-stagger > *:nth-child(7) { animation: fade-slide-up var(--dur-normal) var(--ease-out) 480ms both; }
+.anim-stagger > *:nth-child(8) { animation: fade-slide-up var(--dur-normal) var(--ease-out) 560ms both; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: SLIDE IN RIGHT — config panel ouverture
+   Framer Motion équivalent :
+     initial={{ x: 360, opacity: 0 }}
+     animate={{ x: 0, opacity: 1 }}
+     exit={{ x: 360, opacity: 0 }}
+     transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes slide-in-right {
+  from { transform: translateX(360px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+@keyframes slide-out-right {
+  from { transform: translateX(0);     opacity: 1; }
+  to   { transform: translateX(360px); opacity: 0; }
+}
+
+.anim-slide-right-in  { animation: slide-in-right  var(--dur-normal) var(--ease-out) both; }
+.anim-slide-right-out { animation: slide-out-right var(--dur-normal) var(--ease-out) both; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: SLIDE UP — run monitor drawer ouverture
+   Framer Motion équivalent :
+     initial={{ y: '100%' }}
+     animate={{ y: 0 }}
+     exit={{ y: '100%' }}
+     transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes slide-down {
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(100%); opacity: 0; }
+}
+
+.anim-slide-up   { animation: slide-up   var(--dur-normal) var(--ease-out) both; }
+.anim-slide-down { animation: slide-down var(--dur-normal) var(--ease-out) both; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: SCALE IN — dropdown menus / popovers
+   Framer Motion équivalent :
+     initial={{ scaleY: 0, opacity: 0 }}
+     animate={{ scaleY: 1, opacity: 1 }}
+     exit={{ scaleY: 0, opacity: 0 }}
+     style={{ transformOrigin: 'top' }}
+     transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes scale-in-top {
+  from { transform: scaleY(0); opacity: 0; }
+  to   { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes scale-out-top {
+  from { transform: scaleY(1); opacity: 1; }
+  to   { transform: scaleY(0); opacity: 0; }
+}
+
+.anim-dropdown-in {
+  transform-origin: top;
+  animation: scale-in-top var(--dur-fast) var(--ease-out) both;
+}
+.anim-dropdown-out {
+  transform-origin: top;
+  animation: scale-out-top var(--dur-fast) var(--ease-out) both;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: TOAST IN/OUT — notifications
+   Framer Motion équivalent :
+     initial={{ x: 400, opacity: 0 }}
+     animate={{ x: 0,   opacity: 1 }}
+     exit={{ x: 400, opacity: 0, scale: 0.95 }}
+     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes toast-in {
+  from { transform: translateX(420px) scale(0.95); opacity: 0; }
+  to   { transform: translateX(0)      scale(1);    opacity: 1; }
+}
+
+@keyframes toast-out {
+  from { transform: translateX(0)      scale(1);    opacity: 1; }
+  to   { transform: translateX(420px) scale(0.95); opacity: 0; }
+}
+
+.anim-toast-in  { animation: toast-in  var(--dur-normal) var(--ease-spring) both; }
+.anim-toast-out { animation: toast-out var(--dur-fast)   var(--ease-out)    both; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: DRAW SVG — checkmark success / path edge
+   Framer Motion équivalent (SVG path) :
+     initial={{ pathLength: 0, opacity: 0 }}
+     animate={{ pathLength: 1, opacity: 1 }}
+     transition={{ duration: 0.4, ease: 'easeOut' }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes draw-path {
+  from { stroke-dashoffset: 100; opacity: 0; }
+  to   { stroke-dashoffset: 0;   opacity: 1; }
+}
+
+.anim-draw {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: draw-path var(--dur-slow) var(--ease-out) forwards;
+}
+
+/* Checkmark SVG */
+.anim-checkmark {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: draw-path var(--dur-slow) var(--ease-out) 0.1s forwards;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: DASH FLOW — arête SVG "data flowing"
+   Framer Motion équivalent :
+     animate={{ strokeDashoffset: [0, -25] }}
+     transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes dash-flow {
+  to { stroke-dashoffset: -25; }
+}
+
+.anim-dash-flow {
+  stroke-dasharray: 8 4;
+  animation: dash-flow 1.5s linear infinite;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: SPIN — icône loading, clock queued
+   Framer Motion équivalent :
+     animate={{ rotate: 360 }}
+     transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.anim-spin { animation: spin 0.8s linear infinite; }
+.anim-spin-slow { animation: spin 2s linear infinite; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: FADE IN — fade simple sans translation
+   Framer Motion équivalent :
+     initial={{ opacity: 0 }}
+     animate={{ opacity: 1 }}
+     transition={{ duration: 0.25 }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.anim-fade-in { animation: fade-in var(--dur-normal) ease both; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: PAGE TRANSITION — route changes
+   Framer Motion équivalent :
+     initial={{ opacity: 0, y: 12 }}
+     animate={{ opacity: 1, y: 0 }}
+     exit={{ opacity: 0, y: -8 }}
+     transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes page-exit {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+
+.anim-page-enter { animation: page-enter var(--dur-slow) var(--ease-out) both; }
+.anim-page-exit  { animation: page-exit  var(--dur-normal) ease both; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: COLLAPSE HEIGHT — accordéon config panel
+   Note : @keyframes ne supporte pas height:auto
+   Utilisez max-height avec overflow:hidden en JS pour l'accordéon,
+   ou la lib css-doodle/auto-animate.
+   Framer Motion équivalent :
+     animate={{ height: 'auto' }}
+     initial={{ height: 0 }}
+     transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+   ═══════════════════════════════════════════════════════════════ */
+.anim-collapse {
+  overflow: hidden;
+  transition: max-height var(--dur-normal) var(--ease-out),
+              opacity    var(--dur-fast)   ease;
+}
+.anim-collapse--closed {
+  max-height: 0;
+  opacity: 0;
+}
+.anim-collapse--open {
+  max-height: 800px;
+  opacity: 1;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: RIPPLE — bouton submit login / CTA
+   Framer Motion équivalent :
+     animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
+     transition={{ duration: 0.6, ease: 'easeOut' }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes ripple {
+  from { transform: scale(0); opacity: 0.4; }
+  to   { transform: scale(2.5); opacity: 0; }
+}
+
+.anim-ripple-container {
+  position: relative;
+  overflow: hidden;
+}
+.anim-ripple-container .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  animation: ripple 0.6s var(--ease-out) forwards;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: DRAG — node drag start/end (CSS part)
+   La rotation et le scale sont appliqués via JS classList
+   Framer Motion équivalent :
+     whileDrag={{ scale: 1.03, rotate: -1.5 }}
+     drag={{ type: 'spring', stiffness: 400, damping: 30 }}
+   ═══════════════════════════════════════════════════════════════ */
+.anim-dragging {
+  transform: scale(1.04) rotate(-1.5deg) !important;
+  box-shadow: var(--shadow-high), 0 0 0 2px var(--accent-glow) !important;
+  z-index: 999 !important;
+  transition: transform var(--dur-fast) var(--ease-spring),
+              box-shadow var(--dur-fast) ease !important;
+}
+
+.anim-drop-spring {
+  transition: transform var(--dur-normal) var(--ease-spring) !important;
+}
+
+/* Ghost placeholder sur le slot de départ */
+.anim-drag-ghost {
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--r-card);
+  background: var(--bg-surface-2);
+  opacity: 0.5;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: PROGRESS BAR — DAG generation CTA
+   Framer Motion équivalent :
+     animate={{ scaleX: [0, 1] }}
+     style={{ transformOrigin: 'left' }}
+     transition={{ duration: 2, ease: 'easeInOut' }}
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes progress-fill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+.anim-progress {
+  transform-origin: left;
+  animation: progress-fill 2s var(--ease-out) both;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: FLOW GRAPH (Login page background)
+   Nœuds qui dérivent lentement — pur CSS, pas de JS
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes float-node-1 {
+  0%, 100% { transform: translate(0, 0); }
+  33%       { transform: translate(18px, -12px); }
+  66%       { transform: translate(-10px, 8px); }
+}
+@keyframes float-node-2 {
+  0%, 100% { transform: translate(0, 0); }
+  33%       { transform: translate(-14px, 10px); }
+  66%       { transform: translate(20px, -6px); }
+}
+@keyframes float-node-3 {
+  0%, 100% { transform: translate(0, 0); }
+  50%       { transform: translate(12px, 14px); }
+}
+@keyframes float-node-4 {
+  0%, 100% { transform: translate(0, 0); }
+  40%       { transform: translate(-8px, -16px); }
+  80%       { transform: translate(16px, 4px); }
+}
+@keyframes edge-pulse {
+  0%, 100% { opacity: 0.15; }
+  50%       { opacity: 0.4;  }
+}
+
+.float-node-1 { animation: float-node-1 8s ease-in-out infinite; }
+.float-node-2 { animation: float-node-2 10s ease-in-out infinite; }
+.float-node-3 { animation: float-node-3 7s ease-in-out infinite; }
+.float-node-4 { animation: float-node-4 12s ease-in-out infinite; }
+.edge-pulse   { animation: edge-pulse 3s ease-in-out infinite; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: PREFERS-REDUCED-MOTION
+   Désactive toutes les animations si l'utilisateur le demande
+   ═══════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1      !important;
+    transition-duration:       0.01ms !important;
+    scroll-behavior:           auto   !important;
+  }
+
+  /* Garder les états visuels finaux visibles */
+  .anim-fade-up,
+  .anim-fade-in,
+  .anim-page-enter,
+  .anim-slide-right-in,
+  .anim-slide-up,
+  .anim-stagger > * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

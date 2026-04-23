@@ -1,0 +1,447 @@
+/* ═══════════════════════════════════════════════════════════════
+   style-bridge.css — Pont entre le design system (design-tokens.css
+   + components.css) et les class names rendus par React (app.js /
+   canvas.js). Doit être chargé APRÈS style.css.
+   ═══════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: APP SHELL
+   ═══════════════════════════════════════════════════════════════ */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-app);
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: TOPBAR
+   ═══════════════════════════════════════════════════════════════ */
+.topbar {
+  background: var(--topbar-bg) !important;
+  border-bottom: 1px solid var(--topbar-border) !important;
+  color: var(--topbar-text);
+}
+
+.topbar-title {
+  color: var(--topbar-text) !important;
+  font-family: var(--font-ui);
+  font-weight: var(--fw-semibold);
+}
+
+.topbar-version {
+  color: var(--topbar-muted) !important;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.topbar-subtitle {
+  color: var(--topbar-muted) !important;
+  font-size: var(--text-xs);
+}
+
+/* Tous les boutons dans la topbar */
+.topbar .btn,
+.topbar button {
+  font-family: var(--font-ui);
+  transition: all var(--dur-fast) ease;
+}
+
+.topbar .btn-primary {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+  border-radius: var(--r-input) !important;
+}
+.topbar .btn-primary:hover {
+  background: var(--accent-hover) !important;
+  border-color: var(--accent-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--accent-glow) !important;
+}
+
+.topbar .btn-secondary {
+  background: rgba(255,255,255,0.07) !important;
+  border-color: rgba(255,255,255,0.18) !important;
+  color: var(--topbar-text) !important;
+  border-radius: var(--r-input) !important;
+}
+.topbar .btn-secondary:hover {
+  background: rgba(255,255,255,0.13) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: WORKSPACE
+   ═══════════════════════════════════════════════════════════════ */
+.workspace {
+  background: var(--bg-app);
+}
+
+/* Left panel (module palette) */
+.panel,
+.panel-left {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: CANVAS
+   ═══════════════════════════════════════════════════════════════ */
+.canvas-wrap {
+  background-color: var(--canvas-bg) !important;
+  background-image: radial-gradient(circle, var(--canvas-dot) 1px, transparent 1px) !important;
+  background-size: 22px 22px !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: NODE CARDS
+   ═══════════════════════════════════════════════════════════════ */
+.node-card {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-low) !important;
+  border-radius: var(--r-card) !important;
+  transition:
+    box-shadow var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    transform var(--dur-fast) ease !important;
+}
+
+.node-card:hover {
+  box-shadow: var(--shadow-med) !important;
+  border-color: var(--accent) !important;
+}
+
+.node-card.selected {
+  border-color: var(--accent) !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 0 3px var(--accent-glow), var(--shadow-med) !important;
+}
+
+.node-card.dragging {
+  transform: scale(1.03) rotate(-1deg) !important;
+  box-shadow: var(--shadow-high) !important;
+}
+
+/* État Running — shimmer animé */
+.node-card.node-run-running {
+  border-color: var(--running-border) !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 0 2px rgba(96,165,250,0.2), var(--shadow-med) !important;
+  background-image: linear-gradient(
+    90deg,
+    transparent 25%,
+    rgba(96,165,250,0.06) 50%,
+    transparent 75%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer 2.5s linear infinite !important;
+}
+
+/* État Failed — shake au mount + bordure rouge */
+.node-card.node-run-failed {
+  border-color: var(--danger-border) !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 0 2px rgba(220,38,38,0.15), var(--shadow-med) !important;
+  animation: shake 0.35s ease !important;
+}
+
+/* État Success — bordure verte */
+.node-card.node-run-success {
+  border-color: var(--success-border) !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 0 2px rgba(110,231,183,0.2), var(--shadow-med) !important;
+}
+
+/* État Retry */
+.node-card.node-run-retry {
+  border-color: var(--warning-border) !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 0 2px rgba(252,211,77,0.2) !important;
+}
+
+/* État Queued */
+.node-card.node-run-queued {
+  border-color: var(--queued-border) !important;
+  border-width: 2px !important;
+}
+
+/* État Skipped */
+.node-card.node-run-skipped {
+  border-color: var(--skipped-border) !important;
+  border-width: 1px !important;
+  opacity: 0.75;
+}
+
+/* Node head — supprime le gradient bleu, applique surface neutre */
+.node-head {
+  background: var(--bg-surface-2) !important;
+  border-bottom-color: var(--border) !important;
+  cursor: move;
+}
+
+.node-head b {
+  color: var(--text-primary) !important;
+  font-size: var(--text-sm) !important;
+  font-family: var(--font-ui);
+}
+
+.node-body {
+  color: var(--text-muted) !important;
+  font-size: var(--text-xs) !important;
+  font-family: var(--font-mono);
+  background: var(--bg-surface) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: NODE RUN BADGES
+   Remplace les couleurs hardcodées par les tokens sémantiques
+   ═══════════════════════════════════════════════════════════════ */
+.node-run-badge {
+  font-family: var(--font-mono) !important;
+  font-size: var(--text-xs) !important;
+  font-weight: var(--fw-semibold) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  border-radius: var(--r-pill) !important;
+  padding: 2px 8px !important;
+}
+
+.node-run-badge-success {
+  background: var(--success-bg) !important;
+  border-color: var(--success-border) !important;
+  color: var(--success-text) !important;
+}
+
+.node-run-badge-failed {
+  background: var(--danger-bg) !important;
+  border-color: var(--danger-border) !important;
+  color: var(--danger-text) !important;
+}
+
+.node-run-badge-running {
+  background: var(--running-bg) !important;
+  border-color: var(--running-border) !important;
+  color: var(--running-text) !important;
+  background-image: linear-gradient(
+    90deg,
+    transparent 30%,
+    rgba(96,165,250,0.15) 50%,
+    transparent 70%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer 2s linear infinite !important;
+}
+
+.node-run-badge-retry,
+.node-run-badge-queued {
+  background: var(--queued-bg) !important;
+  border-color: var(--queued-border) !important;
+  color: var(--queued-text) !important;
+}
+
+.node-run-badge-skipped {
+  background: var(--skipped-bg) !important;
+  border-color: var(--skipped-border) !important;
+  color: var(--skipped-text) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: NODE ACTION BUTTONS
+   ═══════════════════════════════════════════════════════════════ */
+.node-action-btn {
+  background: var(--bg-surface-2) !important;
+  border-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+  border-radius: var(--r-input) !important;
+  font-family: var(--font-ui) !important;
+  transition: all var(--dur-fast) ease !important;
+}
+.node-action-btn:hover:not(:disabled) {
+  background: var(--bg-hover) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-primary) !important;
+}
+
+.node-action-delete:hover {
+  background: var(--danger-bg) !important;
+  border-color: var(--danger-border) !important;
+  color: var(--danger-text) !important;
+}
+
+.node-action-retry:hover:not(:disabled) {
+  background: var(--warning-bg) !important;
+  border-color: var(--warning-border) !important;
+  color: var(--warning-text) !important;
+}
+
+.node-action-logs:hover:not(:disabled) {
+  background: var(--info-bg) !important;
+  border-color: var(--info-border) !important;
+  color: var(--info-text) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: STATUS BAR
+   ═══════════════════════════════════════════════════════════════ */
+.status-bar {
+  background: var(--bg-surface) !important;
+  border-top-color: var(--border) !important;
+  color: var(--text-muted) !important;
+  font-family: var(--font-mono) !important;
+  font-size: var(--text-xs) !important;
+}
+
+/* Dag run state pill dans la status bar */
+.dag-run-state {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: var(--r-pill);
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface-2);
+  color: var(--text-secondary);
+}
+
+.dag-run-state.state-running {
+  background: var(--running-bg);
+  border-color: var(--running-border);
+  color: var(--running-text);
+}
+.dag-run-state.state-success {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+.dag-run-state.state-failed,
+.dag-run-state.state-run_failed {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+}
+.dag-run-state.state-retrying,
+.dag-run-state.state-up_for_retry {
+  background: var(--queued-bg);
+  border-color: var(--queued-border);
+  color: var(--queued-text);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: GENERIC BUTTONS (hors topbar)
+   ═══════════════════════════════════════════════════════════════ */
+.btn {
+  font-family: var(--font-ui) !important;
+  border-radius: var(--r-input) !important;
+  transition: all var(--dur-fast) ease !important;
+}
+
+.btn-primary {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+}
+.btn-primary:hover {
+  background: var(--accent-hover) !important;
+  border-color: var(--accent-hover) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px var(--accent-glow) !important;
+}
+
+.btn-secondary {
+  background: var(--bg-surface-2) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+.btn-secondary:hover {
+  background: var(--bg-hover) !important;
+  border-color: var(--border-strong) !important;
+}
+
+.btn-danger {
+  background: var(--danger-bg) !important;
+  border-color: var(--danger-border) !important;
+  color: var(--danger-text) !important;
+}
+.btn-danger:hover {
+  background: var(--danger-solid) !important;
+  color: #fff !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: PANELS / CARDS
+   ═══════════════════════════════════════════════════════════════ */
+.panel-right {
+  background: var(--bg-surface) !important;
+  border-left-color: var(--border) !important;
+}
+
+.admin-card,
+.form-card,
+.card {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-low) !important;
+  border-radius: var(--r-card) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: FORM INPUTS
+   ═══════════════════════════════════════════════════════════════ */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="search"],
+textarea,
+select {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  border-radius: var(--r-input) !important;
+  font-family: var(--font-ui) !important;
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease !important;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-glow) !important;
+  outline: none !important;
+}
+
+label {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-medium);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION: SCROLLBAR (appliqué globalement)
+   ═══════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--text-muted); border-radius: var(--r-pill); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
