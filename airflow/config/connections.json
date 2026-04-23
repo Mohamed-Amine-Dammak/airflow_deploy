@@ -1,0 +1,16 @@
+{
+    "my_postgres": {
+        "conn_type": "postgres",
+        "host": "localhost",
+        "login": "username",
+        "password": "password",
+        "schema": "mydb",
+        "extra": "{\"port\": 5432}"
+    },
+    "my_api": {
+        "conn_type": "http",
+        "login": "user",
+        "password": "pass",
+        "extra": "{\"headers\":{\"Authorization\":\"Bearer TOKEN\"}}"
+    }
+}
