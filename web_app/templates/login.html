@@ -1,74 +1,559 @@
-﻿<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login | Airflow Pipeline Builder</title>
+  <title>Connexion — Airflow Pipeline Builder</title>
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='libs/airflow-favicon.svg') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20260420b">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/design-tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+
+  <style>
+    body {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg-app);
+    }
+
+    /* ── Panneau gauche — canvas animé ── */
+    .login-left {
+      flex: 0 0 55%;
+      position: relative;
+      background: #0a0c12;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-left__gradient {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 30% 40%, hsla(168, 100%, 36%, 0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 80% at 70% 60%, hsla(217, 91%, 60%, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .login-left__dot-grid {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .flow-graph {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .login-left__brand {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      animation: fade-slide-up 0.8s var(--ease-out) 0.3s both;
+    }
+
+    .login-left__logo {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: var(--accent);
+      display: grid;
+      place-items: center;
+      font-size: 32px;
+      font-weight: 700;
+      color: #fff;
+      box-shadow: 0 0 40px var(--accent-glow);
+    }
+
+    .login-left__title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .login-left__title span { color: var(--accent); }
+
+    .login-left__subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.45);
+      max-width: 300px;
+      line-height: 1.6;
+    }
+
+    .login-left__features {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .feature-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      font-size: 12px;
+      color: rgba(255,255,255,0.65);
+    }
+
+    .feature-pill__dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ── Panneau droit — formulaire ── */
+    .login-right {
+      flex: 0 0 45%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      background: var(--bg-app);
+      overflow-y: auto;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 380px;
+      animation: fade-slide-up 0.6s var(--ease-out) 0.1s both;
+    }
+
+    .login-card__header { margin-bottom: 32px; }
+
+    .login-card__eyebrow {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .login-card__title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .login-card__subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* ── Champs flottants ── */
+    .login-form { display: flex; flex-direction: column; gap: 16px; }
+
+    .input-float { position: relative; }
+
+    .input-float__field {
+      width: 100%;
+      padding: 18px 14px 8px;
+      font-size: 14px;
+      font-family: var(--font-ui);
+      border-radius: var(--r-input);
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      outline: none;
+      transition: all var(--dur-fast) ease;
+    }
+
+    .input-float__field:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .input-float__label {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: var(--text-muted);
+      pointer-events: none;
+      transition: all var(--dur-fast) var(--ease-out);
+    }
+
+    .input-float__field:focus + .input-float__label,
+    .input-float__field:not(:placeholder-shown) + .input-float__label {
+      top: 10px;
+      transform: none;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .input-float__toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 4px;
+      transition: color var(--dur-fast) ease;
+    }
+    .input-float__toggle:hover { color: var(--text-primary); }
+
+    .login-form__options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .login-form__remember {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .login-form__remember input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 14px;
+      height: 14px;
+    }
+
+    /* ── Bouton submit ── */
+    .login-submit {
+      position: relative;
+      width: 100%;
+      padding: 13px 20px;
+      border-radius: var(--r-input);
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      overflow: hidden;
+      transition: all var(--dur-fast) ease;
+      margin-top: 4px;
+    }
+    .login-submit:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+    .login-submit:active { transform: scale(0.99); }
+
+    .login-submit .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      pointer-events: none;
+      transform: scale(0);
+      animation: ripple 0.6s var(--ease-out) forwards;
+    }
+
+    .login-submit--loading { cursor: wait; pointer-events: none; }
+    .login-submit--loading::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 3px; width: 100%;
+      background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.5) 50%, transparent 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s linear infinite;
+    }
+
+    /* ── Séparateur ── */
+    .login-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .login-divider::before,
+    .login-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── Bouton SSO Microsoft ── */
+    .btn-sso {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 11px 20px;
+      border-radius: var(--r-input);
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: all var(--dur-fast) ease;
+      text-decoration: none;
+    }
+    .btn-sso:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-med);
+    }
+    .btn-sso__logo { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5px; width: 18px; height: 18px; }
+    .btn-sso__logo span { width: 8px; height: 8px; display: block; }
+    .ms-r1 { background: #f25022; border-radius: 1px 0 0 0; }
+    .ms-r2 { background: #7fba00; border-radius: 0 1px 0 0; }
+    .ms-r3 { background: #00a4ef; border-radius: 0 0 0 1px; }
+    .ms-r4 { background: #ffb900; border-radius: 0 0 1px 0; }
+
+    /* ── Message d'erreur Flask ── */
+    .login-error {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: var(--r-input);
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      color: var(--danger-text);
+      font-size: 12px;
+      font-weight: 500;
+      animation: fade-slide-up 0.2s ease;
+    }
+
+    .login-footer {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .theme-toggle-float {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--r-card);
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+      box-shadow: var(--shadow-med);
+      transition: all var(--dur-fast) ease;
+    }
+    .theme-toggle-float:hover { background: var(--bg-hover); color: var(--text-primary); }
+  </style>
 </head>
-<body class="auth-page">
-  <main class="auth-card" role="main" aria-labelledby="auth-title">
-    <div class="auth-brand">
-      <img src="{{ url_for('static', filename='libs/airflow-favicon.svg') }}" alt="" aria-hidden="true">
+<body>
+
+  <!-- Panneau gauche — Canvas animé SVG -->
+  <div class="login-left">
+    <div class="login-left__gradient"></div>
+    <div class="login-left__dot-grid"></div>
+
+    <svg class="flow-graph" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g class="edge-pulse">
+        <path d="M 160 180 C 260 180, 280 260, 380 260" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.5"/>
+        <path d="M 380 260 C 480 260, 500 160, 600 160" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.35"/>
+        <path d="M 600 160 C 680 160, 700 320, 640 380" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.3"/>
+        <path d="M 380 260 C 400 360, 440 400, 480 440" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.3"/>
+        <path d="M 160 420 C 230 400, 300 380, 380 260" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.25"/>
+      </g>
+      <g class="float-node-1">
+        <rect x="110" y="155" width="100" height="50" rx="8" fill="rgba(0,194,168,0.08)" stroke="rgba(0,194,168,0.25)" stroke-width="1"/>
+        <rect x="118" y="163" width="4" height="34" rx="2" fill="var(--accent)" opacity="0.8"/>
+        <rect x="130" y="172" width="60" height="8" rx="4" fill="rgba(255,255,255,0.15)"/>
+        <rect x="130" y="186" width="40" height="6" rx="3" fill="rgba(255,255,255,0.07)"/>
+        <circle cx="160" cy="155" r="5" fill="var(--accent)" opacity="0.6"/>
+        <circle cx="160" cy="205" r="5" fill="var(--accent)" opacity="0.6"/>
+      </g>
+      <g class="float-node-2">
+        <rect x="330" y="235" width="100" height="50" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
+        <rect x="338" y="243" width="4" height="34" rx="2" fill="#3b82f6" opacity="0.8"/>
+        <rect x="350" y="252" width="60" height="8" rx="4" fill="rgba(255,255,255,0.15)"/>
+        <rect x="350" y="266" width="40" height="6" rx="3" fill="rgba(255,255,255,0.07)"/>
+        <circle cx="380" cy="235" r="5" fill="#3b82f6" opacity="0.6"/>
+        <circle cx="380" cy="285" r="5" fill="#3b82f6" opacity="0.6"/>
+      </g>
+      <g class="float-node-3">
+        <rect x="550" y="135" width="100" height="50" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
+        <rect x="558" y="143" width="4" height="34" rx="2" fill="#8b5cf6" opacity="0.8"/>
+        <rect x="570" y="152" width="60" height="8" rx="4" fill="rgba(255,255,255,0.15)"/>
+        <rect x="570" y="166" width="40" height="6" rx="3" fill="rgba(255,255,255,0.07)"/>
+        <circle cx="600" cy="135" r="5" fill="#8b5cf6" opacity="0.6"/>
+        <circle cx="600" cy="185" r="5" fill="#8b5cf6" opacity="0.6"/>
+      </g>
+      <g class="float-node-4">
+        <rect x="110" y="395" width="100" height="50" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+        <rect x="118" y="403" width="4" height="34" rx="2" fill="#f59e0b" opacity="0.8"/>
+        <rect x="130" y="412" width="60" height="8" rx="4" fill="rgba(255,255,255,0.15)"/>
+        <rect x="130" y="426" width="40" height="6" rx="3" fill="rgba(255,255,255,0.07)"/>
+      </g>
+      <g class="float-node-1" style="animation-delay: -3s;">
+        <rect x="430" y="415" width="100" height="50" rx="8" fill="rgba(234,75,113,0.08)" stroke="rgba(234,75,113,0.25)" stroke-width="1"/>
+        <rect x="438" y="423" width="4" height="34" rx="2" fill="#ea4b71" opacity="0.8"/>
+        <rect x="450" y="432" width="60" height="8" rx="4" fill="rgba(255,255,255,0.15)"/>
+        <rect x="450" y="446" width="40" height="6" rx="3" fill="rgba(255,255,255,0.07)"/>
+      </g>
+    </svg>
+
+    <div class="login-left__brand">
+      <div class="login-left__logo">⬡</div>
       <div>
-        <strong>Airflow Pipeline Builder</strong>
-        <small>Admin login</small>
+        <div class="login-left__title">Airflow <span>Pipeline</span><br>Builder</div>
+        <div class="login-left__subtitle">Composez, générez et monitorez vos DAGs Apache Airflow sans écrire une ligne de Python.</div>
+      </div>
+      <div class="login-left__features">
+        <div class="feature-pill"><span class="feature-pill__dot"></span>Visual DAG builder drag &amp; drop</div>
+        <div class="feature-pill"><span class="feature-pill__dot"></span>Génération automatique de code Python</div>
+        <div class="feature-pill"><span class="feature-pill__dot"></span>Monitoring temps réel des runs</div>
       </div>
     </div>
+  </div>
 
-    <h1 id="auth-title">Sign in</h1>
-    <p class="auth-subtitle">Use your admin account to access the orchestration workspace.</p>
 
-    {% if error %}
-      <div class="auth-error" role="alert">{{ error }}</div>
-    {% endif %}
+  <!-- Panneau droit — Formulaire -->
+  <div class="login-right">
+    <div class="login-card">
 
-    <form method="post" class="auth-form" autocomplete="off" id="login-form">
-      <input type="hidden" name="next" value="{{ next_path }}">
-
-      <label for="username">Username</label>
-      <input id="username" name="username" type="text" required autofocus>
-
-      <label for="password">Password</label>
-      <input id="password" name="password" type="password" required>
-
-      <button type="submit" class="auth-btn auth-btn-primary auth-btn-submit" id="login-submit-btn">
-        <span class="auth-btn-spinner" aria-hidden="true"></span>
-        <span class="auth-btn-text">Login</span>
-      </button>
-    </form>
-
-    {% if azure_sso_enabled %}
-      <div class="auth-divider" role="separator" aria-label="OR">
-        <span>OR</span>
+      <div class="login-card__header">
+        <div class="login-card__eyebrow">Airflow Builder</div>
+        <div class="login-card__title">Connexion</div>
+        <div class="login-card__subtitle">Entrez vos identifiants pour accéder à l'espace de travail.</div>
       </div>
-      <a
-        class="auth-btn auth-btn-microsoft"
-        href="{{ url_for('login_azure', next=next_path) }}"
-        aria-label="Sign in with Microsoft single sign-on"
-      >
-        <svg class="microsoft-logo" viewBox="0 0 21 21" aria-hidden="true" focusable="false">
-          <rect x="1" y="1" width="9" height="9" fill="#f25022"></rect>
-          <rect x="11" y="1" width="9" height="9" fill="#7fba00"></rect>
-          <rect x="1" y="11" width="9" height="9" fill="#00a4ef"></rect>
-          <rect x="11" y="11" width="9" height="9" fill="#ffb900"></rect>
-        </svg>
-        <span>Continue with Microsoft</span>
+
+      {% if error %}
+      <div class="login-error" style="margin-bottom: 16px;">
+        <span>⚠</span> {{ error }}
+      </div>
+      {% endif %}
+
+      <form class="login-form" id="loginForm" action="{{ url_for('login') }}" method="POST" autocomplete="off">
+        <input type="hidden" name="next" value="{{ next_path }}">
+
+        <div class="input-float">
+          <input
+            class="input-float__field"
+            type="text"
+            id="username"
+            name="username"
+            placeholder=" "
+            autocomplete="username"
+            autofocus
+            required
+          >
+          <label class="input-float__label" for="username">Nom d'utilisateur</label>
+        </div>
+
+        <div class="input-float">
+          <input
+            class="input-float__field"
+            type="password"
+            id="password"
+            name="password"
+            placeholder=" "
+            autocomplete="current-password"
+            required
+            style="padding-right: 44px;"
+          >
+          <label class="input-float__label" for="password">Mot de passe</label>
+          <button type="button" class="input-float__toggle" id="togglePassword" aria-label="Afficher le mot de passe">👁</button>
+        </div>
+
+        <button type="submit" class="login-submit anim-ripple-container" id="loginBtn">
+          Se connecter
+        </button>
+      </form>
+
+      {% if azure_sso_enabled %}
+      <div class="login-divider" style="margin-top: 20px;">ou</div>
+      <a href="{{ url_for('login_azure', next=next_path) }}" class="btn-sso" style="margin-top: 12px;">
+        <div class="btn-sso__logo">
+          <span class="ms-r1"></span>
+          <span class="ms-r2"></span>
+          <span class="ms-r3"></span>
+          <span class="ms-r4"></span>
+        </div>
+        Continuer avec Microsoft
       </a>
-    {% endif %}
-  </main>
+      {% endif %}
+
+      <div class="login-footer">
+        Airflow Pipeline Builder v1 · Olive Soft Company
+      </div>
+    </div>
+  </div>
+
+  <button class="theme-toggle-float" id="themeToggle" title="Changer le thème">☽</button>
+
   <script>
-    (function () {
-      var form = document.getElementById("login-form");
-      var submitBtn = document.getElementById("login-submit-btn");
-      if (!form || !submitBtn) return;
-      form.addEventListener("submit", function () {
-        submitBtn.disabled = true;
-        submitBtn.classList.add("is-loading");
-        submitBtn.setAttribute("aria-busy", "true");
-      });
-    })();
+    // Toggle password
+    document.getElementById('togglePassword').addEventListener('click', function() {
+      var f = document.getElementById('password');
+      var hidden = f.type === 'password';
+      f.type = hidden ? 'text' : 'password';
+      this.textContent = hidden ? '🙈' : '👁';
+    });
+
+    // Ripple on submit
+    document.getElementById('loginBtn').addEventListener('click', function(e) {
+      var btn = this, rect = btn.getBoundingClientRect();
+      var size = Math.max(rect.width, rect.height);
+      var circle = document.createElement('span');
+      circle.classList.add('ripple');
+      circle.style.cssText = 'width:'+size+'px;height:'+size+'px;left:'+(e.clientX-rect.left-size/2)+'px;top:'+(e.clientY-rect.top-size/2)+'px;';
+      btn.appendChild(circle);
+      circle.addEventListener('animationend', function() { circle.remove(); });
+    });
+
+    // Loading on submit
+    document.getElementById('loginForm').addEventListener('submit', function() {
+      var btn = document.getElementById('loginBtn');
+      btn.textContent = 'Connexion…';
+      btn.classList.add('login-submit--loading');
+    });
+
+    // Theme toggle
+    var themeToggle = document.getElementById('themeToggle');
+    var currentTheme = localStorage.getItem('airflow-theme') || 'dark';
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      themeToggle.textContent = theme === 'dark' ? '☀' : '☽';
+      localStorage.setItem('airflow-theme', theme);
+      currentTheme = theme;
+    }
+    applyTheme(currentTheme);
+    themeToggle.addEventListener('click', function() {
+      applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    });
   </script>
 </body>
 </html>
