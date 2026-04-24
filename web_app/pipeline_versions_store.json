@@ -2404,7 +2404,19 @@
           },
           "node_primary_task_map": {
             "node_1": "delay_1_node_1"
-          }
+          },
+          "publish_status": "pr_open",
+          "workflow_name": "test",
+          "workflow_slug": "test",
+          "repo_file_path": "airflow/dags/test__v1.py",
+          "git_branch_name": "feature/workflow/test",
+          "pull_request_number": 6,
+          "pull_request_url": "https://github.com/Olive-Soft-Company/APACHE-AIRFLOW/pull/6",
+          "commit_sha": "096e256c9d2e2b762f028a25af1fd090588622b2",
+          "requested_by_user_id": "admin",
+          "requested_by_email": "",
+          "requested_by_display_name": "admin",
+          "updated_at": "2026-04-24T15:40:28.142288+00:00"
         }
       ],
       "switch_events": [
