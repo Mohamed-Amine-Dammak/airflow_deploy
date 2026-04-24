@@ -1,25 +1,102 @@
-﻿<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pipeline Builder</title>
+  <title>{{ pipeline_name if pipeline_name else 'Pipeline Builder' }} — Airflow Builder</title>
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='libs/airflow-favicon.svg') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20260416a">
+
+  <!-- Design System — doit être chargé AVANT style.css pour que les tokens CSS soient disponibles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/design-tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+  <!-- style.css existant -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20260423a">
+  <!-- Bridge : mappe les class names React vers les nouveaux tokens -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style-bridge.css') }}?v=20260423a">
 </head>
 <body>
+
+  <!-- Point de montage React principal (inchangé) -->
   <div id="app-root"></div>
+
+  <!-- Toast container global (utilisé par window.showToast) -->
+  <div id="toastContainer" class="toast-container" style="position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;"></div>
+
+  <!-- ═══ DONNÉES FLASK ═══ -->
   <script>
-    window.IS_ADMIN = {{ "true" if is_admin else "false" }};
-    window.CURRENT_ROLES = {{ current_roles|tojson }};
+    window.IS_ADMIN            = {{ "true" if is_admin else "false" }};
+    window.CURRENT_ROLES       = {{ current_roles|tojson }};
     window.CURRENT_PERMISSIONS = {{ current_permissions|tojson }};
   </script>
 
+  <!-- ═══ REACT CDN ═══ -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- ═══ APPLICATION JS ═══ -->
   <script src="{{ url_for('static', filename='js/modules.js') }}?v=20260403n"></script>
   <script src="{{ url_for('static', filename='js/canvas.js') }}?v=20260403n"></script>
   <script src="{{ url_for('static', filename='js/forms.js') }}?v=20260403n"></script>
   <script src="{{ url_for('static', filename='js/app.js') }}?v=20260424a"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}?v=20260416d"></script>
+
+  <!-- ═══ AJOUTS UI (theme, toasts, animations) ═══ -->
+  <script>
+    /* ── Thème clair/sombre ── */
+    (function () {
+      var saved = localStorage.getItem('airflow-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+
+      /* Injecte le bouton theme dans la topbar une fois React monté */
+      function injectThemeToggle() {
+        /* Cherche la topbar rendue par React */
+        var topbar = document.querySelector('.topbar');
+        if (!topbar) { setTimeout(injectThemeToggle, 500); return; }
+        if (document.getElementById('globalThemeBtn')) return;
+
+        var btn = document.createElement('button');
+        btn.id        = 'globalThemeBtn';
+        btn.title     = 'Changer le thème';
+        btn.className = 'topbar__theme-btn';
+        btn.textContent = saved === 'dark' ? '☀' : '☽';
+        btn.style.cssText = 'margin-left:4px;flex-shrink:0;';
+        topbar.appendChild(btn);
+
+        btn.addEventListener('click', function () {
+          var current = document.documentElement.getAttribute('data-theme') || 'dark';
+          var next    = current === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          localStorage.setItem('airflow-theme', next);
+          btn.textContent = next === 'dark' ? '☀' : '☽';
+        });
+      }
+      injectThemeToggle();
+    })();
+
+    /* ── Toast global (disponible pour app.js et canvas.js) ── */
+    window.showToast = function (message, type, duration) {
+      type     = type     || 'info';
+      duration = duration || 4000;
+      var container = document.getElementById('toastContainer');
+      if (!container) return;
+      var toast   = document.createElement('div');
+      var icons   = { success: '✓', danger: '✕', warning: '⚠', info: 'ℹ' };
+      toast.className   = 'toast toast--' + type + ' anim-toast-in';
+      toast.style.pointerEvents = 'auto';
+      toast.innerHTML =
+        '<span style="font-size:16px;">' + (icons[type] || 'ℹ') + '</span>' +
+        '<span style="flex:1;font-size:12px;">' + message + '</span>' +
+        '<button onclick="this.parentElement.remove()" ' +
+          'style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:14px;padding:0 4px;">✕</button>';
+      container.appendChild(toast);
+      setTimeout(function () {
+        if (!toast.parentElement) return;
+        toast.classList.replace('anim-toast-in', 'anim-toast-out');
+        setTimeout(function () { toast.remove(); }, 250);
+      }, duration);
+    };
+  </script>
+
 </body>
 </html>
