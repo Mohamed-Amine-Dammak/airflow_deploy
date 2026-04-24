@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Connexion — Airflow Pipeline Builder</title>
+  <title>Login - Airflow Pipeline Builder</title>
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='libs/airflow-favicon.svg') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/design-tokens.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
@@ -16,7 +16,7 @@
       background: var(--bg-app);
     }
 
-    /* ── Panneau gauche — canvas animé ── */
+    /* â”€â”€ Panneau gauche â€” canvas animÃ© â”€â”€ */
     .login-left {
       flex: 0 0 55%;
       position: relative;
@@ -118,7 +118,7 @@
       flex-shrink: 0;
     }
 
-    /* ── Panneau droit — formulaire ── */
+    /* â”€â”€ Panneau droit â€” formulaire â”€â”€ */
     .login-right {
       flex: 0 0 45%;
       display: flex;
@@ -161,7 +161,7 @@
       margin-top: 6px;
     }
 
-    /* ── Champs flottants ── */
+    /* â”€â”€ Champs flottants â”€â”€ */
     .login-form { display: flex; flex-direction: column; gap: 16px; }
 
     .input-float { position: relative; }
@@ -242,7 +242,7 @@
       height: 14px;
     }
 
-    /* ── Bouton submit ── */
+    /* â”€â”€ Bouton submit â”€â”€ */
     .login-submit {
       position: relative;
       width: 100%;
@@ -286,7 +286,7 @@
       animation: shimmer 1.2s linear infinite;
     }
 
-    /* ── Séparateur ── */
+    /* â”€â”€ SÃ©parateur â”€â”€ */
     .login-divider {
       display: flex;
       align-items: center;
@@ -297,7 +297,7 @@
     .login-divider::before,
     .login-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-    /* ── Bouton SSO Microsoft ── */
+    /* â”€â”€ Bouton SSO Microsoft â”€â”€ */
     .btn-sso {
       width: 100%;
       display: flex;
@@ -329,7 +329,7 @@
     .ms-r3 { background: #00a4ef; border-radius: 0 0 0 1px; }
     .ms-r4 { background: #ffb900; border-radius: 0 0 1px 0; }
 
-    /* ── Message d'erreur Flask ── */
+    /* â”€â”€ Message d'erreur Flask â”€â”€ */
     .login-error {
       display: flex;
       align-items: center;
@@ -373,7 +373,7 @@
 </head>
 <body>
 
-  <!-- Panneau gauche — Canvas animé SVG -->
+  <!-- Panneau gauche â€” Canvas animÃ© SVG -->
   <div class="login-left">
     <div class="login-left__gradient"></div>
     <div class="login-left__dot-grid"></div>
@@ -425,33 +425,33 @@
     </svg>
 
     <div class="login-left__brand">
-      <div class="login-left__logo">⬡</div>
+      <div class="login-left__logo">&#x2B21;</div>
       <div>
         <div class="login-left__title">Airflow <span>Pipeline</span><br>Builder</div>
-        <div class="login-left__subtitle">Composez, générez et monitorez vos DAGs Apache Airflow sans écrire une ligne de Python.</div>
+        <div class="login-left__subtitle">Compose, generate, and monitor your Apache Airflow DAGs without writing a single line of Python.</div>
       </div>
       <div class="login-left__features">
         <div class="feature-pill"><span class="feature-pill__dot"></span>Visual DAG builder drag &amp; drop</div>
-        <div class="feature-pill"><span class="feature-pill__dot"></span>Génération automatique de code Python</div>
-        <div class="feature-pill"><span class="feature-pill__dot"></span>Monitoring temps réel des runs</div>
+        <div class="feature-pill"><span class="feature-pill__dot"></span>Automatic Python code generation</div>
+        <div class="feature-pill"><span class="feature-pill__dot"></span>Real-time run monitoring</div>
       </div>
     </div>
   </div>
 
 
-  <!-- Panneau droit — Formulaire -->
+  <!-- Panneau droit â€” Formulaire -->
   <div class="login-right">
     <div class="login-card">
 
       <div class="login-card__header">
         <div class="login-card__eyebrow">Airflow Builder</div>
-        <div class="login-card__title">Connexion</div>
-        <div class="login-card__subtitle">Entrez vos identifiants pour accéder à l'espace de travail.</div>
+        <div class="login-card__title">Login</div>
+        <div class="login-card__subtitle">Enter your credentials to access the workspace.</div>
       </div>
 
       {% if error %}
       <div class="login-error" style="margin-bottom: 16px;">
-        <span>⚠</span> {{ error }}
+        <span>âš </span> {{ error }}
       </div>
       {% endif %}
 
@@ -469,7 +469,7 @@
             autofocus
             required
           >
-          <label class="input-float__label" for="username">Nom d'utilisateur</label>
+          <label class="input-float__label" for="username">Username</label>
         </div>
 
         <div class="input-float">
@@ -483,17 +483,15 @@
             required
             style="padding-right: 44px;"
           >
-          <label class="input-float__label" for="password">Mot de passe</label>
-          <button type="button" class="input-float__toggle" id="togglePassword" aria-label="Afficher le mot de passe">👁</button>
+          <label class="input-float__label" for="password">Password</label>
+          <button type="button" class="input-float__toggle" id="togglePassword" aria-label="Show password"></button>
         </div>
 
-        <button type="submit" class="login-submit anim-ripple-container" id="loginBtn">
-          Se connecter
-        </button>
+        <button type="submit" class="login-submit anim-ripple-container" id="loginBtn">Sign in</button>
       </form>
 
       {% if azure_sso_enabled %}
-      <div class="login-divider" style="margin-top: 20px;">ou</div>
+      <div class="login-divider" style="margin-top: 20px;">or</div>
       <a href="{{ url_for('login_azure', next=next_path) }}" class="btn-sso" style="margin-top: 12px;">
         <div class="btn-sso__logo">
           <span class="ms-r1"></span>
@@ -501,7 +499,7 @@
           <span class="ms-r3"></span>
           <span class="ms-r4"></span>
         </div>
-        Continuer avec Microsoft
+        Continue with Microsoft
       </a>
       {% endif %}
 
@@ -511,15 +509,21 @@
     </div>
   </div>
 
-  <button class="theme-toggle-float" id="themeToggle" title="Changer le thème">☽</button>
+  <button class="theme-toggle-float" id="themeToggle" title="Change theme"></button>
 
   <script>
     // Toggle password
-    document.getElementById('togglePassword').addEventListener('click', function() {
-      var f = document.getElementById('password');
-      var hidden = f.type === 'password';
-      f.type = hidden ? 'text' : 'password';
-      this.textContent = hidden ? '🙈' : '👁';
+    var passwordToggle = document.getElementById('togglePassword');
+    var passwordField = document.getElementById('password');
+    function refreshPasswordToggle(isHidden) {
+      passwordToggle.textContent = isHidden ? '\u{1F441}' : '\u{1F648}';
+      passwordToggle.setAttribute('aria-label', isHidden ? 'Show password' : 'Hide password');
+    }
+    refreshPasswordToggle(true);
+    passwordToggle.addEventListener('click', function() {
+      var hidden = passwordField.type === 'password';
+      passwordField.type = hidden ? 'text' : 'password';
+      refreshPasswordToggle(!hidden);
     });
 
     // Ripple on submit
@@ -536,7 +540,7 @@
     // Loading on submit
     document.getElementById('loginForm').addEventListener('submit', function() {
       var btn = document.getElementById('loginBtn');
-      btn.textContent = 'Connexion…';
+      btn.textContent = 'Signing in...';
       btn.classList.add('login-submit--loading');
     });
 
@@ -546,7 +550,8 @@
 
     function applyTheme(theme) {
       document.documentElement.setAttribute('data-theme', theme);
-      themeToggle.textContent = theme === 'dark' ? '☀' : '☽';
+      themeToggle.textContent = theme === 'dark' ? '\u2600' : '\u263D';
+      themeToggle.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
       localStorage.setItem('airflow-theme', theme);
       currentTheme = theme;
     }
@@ -557,3 +562,5 @@
   </script>
 </body>
 </html>
+
+

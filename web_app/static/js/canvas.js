@@ -5,8 +5,8 @@
   const useRef = React.useRef;
   const useState = React.useState;
 
-  const NODE_WIDTH = 220;
-  const NODE_HEIGHT = 88;
+  const NODE_WIDTH = 240;
+  const NODE_HEIGHT = 136;
   const STAGE_WIDTH = 6000;
   const STAGE_HEIGHT = 4000;
   const MIN_SCALE = 0.45;
@@ -212,6 +212,9 @@
       if (target.closest(".group-box-title-editor")) {
         return false;
       }
+      if (target.closest("button, input, select, textarea, a, [role='button']")) {
+        return false;
+      }
       return true;
     }
 
@@ -235,7 +238,8 @@
           width: Math.max(GROUP_BOX_MIN_WIDTH, Number(groupBox.width) || GROUP_BOX_MIN_WIDTH) + "px",
           height: Math.max(GROUP_BOX_MIN_HEIGHT, Number(groupBox.height) || GROUP_BOX_MIN_HEIGHT) + "px",
           borderColor: boxColor,
-          backgroundColor: colorToTint(boxColor, 0.12),
+          backgroundColor: colorToTint(boxColor, 0.07),
+          "--group-color": boxColor,
         },
         onPointerDown: handleBoxPointerDown,
       },
@@ -486,7 +490,7 @@
         kind: "palette",
         item: paletteItem,
         x: Math.max(8, point.x - NODE_WIDTH / 2),
-        y: Math.max(8, point.y - 36),
+        y: Math.max(8, point.y - NODE_HEIGHT / 2),
       });
     }
 
@@ -535,6 +539,14 @@
         originX: vp.x,
         originY: vp.y,
       });
+    }
+
+    function handleCanvasPointerMove(event) {
+      if (!props.onCanvasPointerWorldChange) {
+        return;
+      }
+      const world = toWorld(event.clientX, event.clientY);
+      props.onCanvasPointerWorldChange(world);
     }
 
     function beginNodeDrag(event, node) {
@@ -830,6 +842,7 @@
         onDrop: handleCanvasDrop,
         onWheel: handleCanvasWheel,
         onPointerDown: handleCanvasPointerDown,
+        onPointerMove: handleCanvasPointerMove,
       },
       h(
         "div",
@@ -994,20 +1007,20 @@
               },
             },
             h(
-                  "button",
-                  {
-                    type: "button",
-                    className:
-                      "connector-zone connector-zone-in" +
-                      (isValidTarget ? " connector-valid" : "") +
-                      (isHoveredTarget ? " connector-hover" : "") +
-                      (props.readOnly ? " connector-disabled" : ""),
-                    "data-node-id": node.id,
-                    title: "Target connector",
-                    disabled: Boolean(props.readOnly),
-                    onPointerDown: function (event) {
-                      event.stopPropagation();
-                    },
+              "button",
+              {
+                type: "button",
+                className:
+                  "connector-zone connector-zone-in" +
+                  (isValidTarget ? " connector-valid" : "") +
+                  (isHoveredTarget ? " connector-hover" : "") +
+                  (props.readOnly ? " connector-disabled" : ""),
+                "data-node-id": node.id,
+                title: "Target connector",
+                disabled: Boolean(props.readOnly),
+                onPointerDown: function (event) {
+                  event.stopPropagation();
+                },
               },
               h("span", { className: "connector-core" })
             ),
