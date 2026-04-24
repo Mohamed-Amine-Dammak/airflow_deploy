@@ -78,6 +78,22 @@ class AppConfig:
         if item.strip()
     ]
     USERS_FILE = BASE_DIR / "users.json"
+    DAG_PUBLISH_STORE_FILE = BASE_DIR / "dag_publish_store.json"
+
+    GITHUB_APP_ID = os.getenv("GITHUB_APP_ID", "").strip()
+    GITHUB_APP_CLIENT_ID = os.getenv("GITHUB_APP_CLIENT_ID", "").strip()
+    GITHUB_APP_PRIVATE_KEY = os.getenv("GITHUB_APP_PRIVATE_KEY", "").strip()
+    GITHUB_APP_PRIVATE_KEY_PATH = os.getenv("GITHUB_APP_PRIVATE_KEY_PATH", "").strip()
+    GITHUB_APP_INSTALLATION_ID = os.getenv("GITHUB_APP_INSTALLATION_ID", "").strip()
+    GITHUB_OWNER = os.getenv("GITHUB_OWNER", "").strip()
+    GITHUB_REPO = os.getenv("GITHUB_REPO", "").strip()
+    GITHUB_BASE_BRANCH = os.getenv("GITHUB_BASE_BRANCH", "main").strip() or "main"
+    GITHUB_DAGS_REPO_DIR = os.getenv("GITHUB_DAGS_REPO_DIR", "airflow/dags").strip() or "airflow/dags"
+    GITHUB_API_BASE_URL = os.getenv("GITHUB_API_BASE_URL", "https://api.github.com").rstrip("/")
+    GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET", "").strip()
+    GITHUB_BRANCH_COLLISION_STRATEGY = (
+        os.getenv("GITHUB_BRANCH_COLLISION_STRATEGY", "suffix").strip().lower() or "suffix"
+    )
 
 
 def ensure_app_directories() -> None:
@@ -92,5 +108,10 @@ def ensure_app_directories() -> None:
     if not AppConfig.GCP_CONNECTIONS_STORE_FILE.exists():
         AppConfig.GCP_CONNECTIONS_STORE_FILE.write_text(
             json.dumps({"connections": []}, indent=2),
+            encoding="utf-8",
+        )
+    if not AppConfig.DAG_PUBLISH_STORE_FILE.exists():
+        AppConfig.DAG_PUBLISH_STORE_FILE.write_text(
+            json.dumps({"records": [], "processed_webhook_deliveries": []}, indent=2),
             encoding="utf-8",
         )

@@ -1,13 +1,31 @@
+# -----------------------------
+# web_app
+# -----------------------------
 web_app/.env
-.env
-*.env
-
 web_app/.venv/
-.venv/
+web_app/__pycache__/
+web_app/*.pyc
+web_app/*.log
+web_app\github_app_private_key.pem
 
-__pycache__/
-*.pyc
+# -----------------------------
+# airflow
+# -----------------------------
+airflow/.env
+airflow/.venv/
+airflow/__pycache__/
+airflow/*.pyc
+airflow/logs/
+airflow/*.log
+airflow/pipelines/*/evaluation/history/*.tmp.json
+airflow/actions-runner/
+airflow/credgcp.json
 
+# -----------------------------
+# application root
+# -----------------------------
+*.env
 *.log
 flask_err.log
 flask_run.log
+

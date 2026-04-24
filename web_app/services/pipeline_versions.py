@@ -291,3 +291,27 @@ def clear_versions(store_path: Path, pipeline_id: str) -> dict[str, Any]:
         "removed_versions": removed_versions,
         "removed_versions_count": len(removed_versions),
     }
+
+
+def patch_version_fields(
+    store_path: Path,
+    *,
+    pipeline_id: str,
+    version_id: str,
+    patch: dict[str, Any],
+) -> dict[str, Any]:
+    if not isinstance(patch, dict) or not patch:
+        raise ValueError("patch must be a non-empty dictionary.")
+
+    store = _load_store(store_path)
+    entry = _pipeline_entry(store, pipeline_id)
+    current_version_id = str(entry.get("current_version_id") or "").strip()
+    versions = [item for item in entry.get("versions", []) if isinstance(item, dict)]
+    matched = next((item for item in versions if str(item.get("version_id", "")).strip() == version_id), None)
+    if not matched:
+        raise ValueError(f"Version '{version_id}' not found for pipeline '{pipeline_id}'.")
+
+    matched.update(copy.deepcopy(patch))
+    matched["updated_at"] = _now_iso()
+    _save_store(store_path, store)
+    return _normalize_version(matched, current_version_id)

@@ -58,6 +58,15 @@ from services.pipeline_versions import (
 )
 from services.pipeline_validator import validate_pipeline
 from services.schema_registry import get_module_schema, list_modules
+from services.github_app_client import GitHubAppClient, GitHubAppSettings, GitHubClientError, load_private_key_from_config
+from services.pr_publish_service import (
+    PublishError,
+    RequesterIdentity,
+    create_pull_request_for_version,
+    handle_pull_request_closed_event,
+    select_version_identifier,
+    validate_webhook_signature,
+)
 
 
 app = Flask(__name__)
@@ -75,6 +84,10 @@ PERMISSION_DEFINITIONS: dict[str, dict[str, str]] = {
     "pipeline_validate": {"label": "Validate pipeline", "description": "Run validation checks from the builder."},
     "pipeline_layout": {"label": "Auto layout", "description": "Rearrange nodes automatically on canvas."},
     "dag_generate": {"label": "Generate DAG", "description": "Generate and export Airflow DAG files."},
+    "pr_publish": {
+        "label": "Publish DAG version to GitHub PR",
+        "description": "Create GitHub branches/commits/pull requests for selected DAG versions.",
+    },
     "dag_run": {"label": "Run DAG", "description": "Trigger DAG runs from builder."},
     "dag_retry": {"label": "Retry DAG run", "description": "Trigger DAG retry from header action."},
     "task_retry": {"label": "Retry failed module", "description": "Retry failed/up-for-retry task instances."},
@@ -118,6 +131,18 @@ PREDEFINED_ROLE_DEFINITIONS: dict[str, dict[str, Any]] = {
             "dag_generate",
             "logs_view",
             "connections_view",
+        ],
+    },
+    "publisher": {
+        "description": "Publish tested DAG versions to GitHub through pull requests.",
+        "privileges": [
+            "View pipeline versions",
+            "Create GitHub pull requests for selected DAG versions",
+        ],
+        "permissions": [
+            "builder_view",
+            "pipeline_load",
+            "pr_publish",
         ],
     },
     "operator": {
@@ -245,6 +270,71 @@ TASK_STATE_PRIORITY: dict[str, int] = {
 
 def _current_actor_username() -> str:
     return str(session.get("username", "")).strip()
+
+
+def _current_requester_identity() -> RequesterIdentity:
+    username = _current_actor_username()
+    if not username:
+        return RequesterIdentity(user_id="", email="", display_name="", username="")
+
+    store = _load_users_store()
+    users = [item for item in (store.get("users") or []) if isinstance(item, dict)]
+    matched = next(
+        (
+            item
+            for item in users
+            if str(item.get("username", "")).strip().lower() == username.lower()
+        ),
+        None,
+    )
+    if not matched:
+        return RequesterIdentity(user_id=username, email="", display_name=username, username=username)
+
+    user_id = str(matched.get("id", "")).strip() or username
+    email = str(matched.get("email", "")).strip()
+    display_name = str(matched.get("display_name", "")).strip() or username
+    return RequesterIdentity(user_id=user_id, email=email, display_name=display_name, username=username)
+
+
+def _github_app_client() -> GitHubAppClient:
+    private_key = load_private_key_from_config(
+        AppConfig.GITHUB_APP_PRIVATE_KEY,
+        AppConfig.GITHUB_APP_PRIVATE_KEY_PATH,
+        AppConfig.GENERATED_DAGS_DIR.parent,
+    )
+    if not AppConfig.GITHUB_APP_ID:
+        raise PublishError("GitHub App is not configured: missing GITHUB_APP_ID.", code="config_error", status_code=500)
+    if not private_key:
+        raise PublishError(
+            "GitHub App is not configured: missing private key value/path.",
+            code="config_error",
+            status_code=500,
+        )
+    if not AppConfig.GITHUB_APP_INSTALLATION_ID:
+        raise PublishError(
+            "GitHub App is not configured: missing GITHUB_APP_INSTALLATION_ID.",
+            code="config_error",
+            status_code=500,
+        )
+    if not AppConfig.GITHUB_OWNER or not AppConfig.GITHUB_REPO:
+        raise PublishError(
+            "GitHub App is not configured: missing GITHUB_OWNER or GITHUB_REPO.",
+            code="config_error",
+            status_code=500,
+        )
+
+    settings = GitHubAppSettings(
+        app_id=AppConfig.GITHUB_APP_ID,
+        private_key=private_key,
+        installation_id=AppConfig.GITHUB_APP_INSTALLATION_ID,
+        owner=AppConfig.GITHUB_OWNER,
+        repo=AppConfig.GITHUB_REPO,
+        base_branch=AppConfig.GITHUB_BASE_BRANCH,
+        dags_repo_dir=AppConfig.GITHUB_DAGS_REPO_DIR,
+        api_base_url=AppConfig.GITHUB_API_BASE_URL,
+        branch_collision_strategy=AppConfig.GITHUB_BRANCH_COLLISION_STRATEGY,
+    )
+    return GitHubAppClient(settings=settings)
 
 
 def _pipeline_topology_signature(payload: dict[str, Any] | None) -> dict[str, Any]:
@@ -3419,6 +3509,102 @@ def api_pipeline_version_task_logs(pipeline_id: str, version_id: str, task_id: s
             **payload,
         }
     )
+
+
+@app.post("/api/workflows/<workflow_id>/pull-requests")
+def api_create_workflow_pull_request(workflow_id: str):
+    forbidden = _require_permission("pr_publish", "You do not have permission to create pull requests.")
+    if forbidden is not None:
+        return forbidden
+
+    payload = request.get_json(silent=True) or {}
+    workflow_name = str(payload.get("workflow_name", "")).strip()
+    pr_description = str(payload.get("description", "") or payload.get("pr_description", "")).strip()
+    if not workflow_name:
+        return _json_error("workflow_name is required.", 400)
+
+    try:
+        version_identifier = select_version_identifier(payload)
+        requester = _current_requester_identity()
+        result = create_pull_request_for_version(
+            pipeline_versions_store_path=AppConfig.PIPELINE_VERSIONS_STORE_FILE,
+            publish_store_path=AppConfig.DAG_PUBLISH_STORE_FILE,
+            github_client=_github_app_client(),
+            pipeline_id=str(workflow_id or "").strip(),
+            workflow_name=workflow_name,
+            version_identifier=version_identifier,
+            pr_description=pr_description,
+            requester=requester,
+        )
+    except PublishError as exc:
+        return _json_error(str(exc), exc.status_code, code=exc.code)
+    except GitHubClientError as exc:
+        return _json_error(f"GitHub API error: {exc}", 502, code="github_api_error")
+    except Exception as exc:  # noqa: BLE001
+        return _json_error(f"Unable to create pull request: {exc}", 500, code="publish_internal_error")
+
+    return jsonify(
+        {
+            "success": True,
+            "status": result.get("status"),
+            "pipeline_id": result.get("pipeline_id"),
+            "version_id": result.get("version_id"),
+            "pull_request_number": result.get("pull_request_number"),
+            "pull_request_url": result.get("pull_request_url"),
+            "branch_name": result.get("branch_name"),
+            "commit_sha": result.get("commit_sha"),
+            "repo_file_path": result.get("repo_file_path"),
+            "branch_reused": bool(result.get("branch_reused", False)),
+            "requested_by": {
+                "user_id": requester.user_id,
+                "email": requester.email,
+                "display_name": requester.display_name,
+                "username": requester.username,
+            },
+        }
+    )
+
+
+@app.post("/api/github/webhooks")
+def api_github_webhooks():
+    if not AppConfig.GITHUB_WEBHOOK_SECRET:
+        return _json_error("GitHub webhook secret is not configured.", 500)
+
+    body = request.get_data(cache=False, as_text=False) or b""
+    signature = str(request.headers.get("X-Hub-Signature-256", "")).strip()
+    if not validate_webhook_signature(AppConfig.GITHUB_WEBHOOK_SECRET, body, signature):
+        return _json_error("Invalid GitHub webhook signature.", 401)
+
+    event_type = str(request.headers.get("X-GitHub-Event", "")).strip()
+    delivery_id = str(request.headers.get("X-GitHub-Delivery", "")).strip()
+    payload = request.get_json(silent=True) or {}
+
+    if event_type == "ping":
+        return jsonify({"success": True, "event": "ping"})
+
+    if event_type != "pull_request":
+        return jsonify({"success": True, "ignored": True, "reason": f"event_not_handled:{event_type}"})
+
+    action = str(payload.get("action", "")).strip()
+    if action != "closed":
+        return jsonify({"success": True, "ignored": True, "reason": f"action_not_handled:{action}"})
+
+    try:
+        result = handle_pull_request_closed_event(
+            payload=payload,
+            delivery_id=delivery_id,
+            publish_store_path=AppConfig.DAG_PUBLISH_STORE_FILE,
+            pipeline_versions_store_path=AppConfig.PIPELINE_VERSIONS_STORE_FILE,
+            github_client=_github_app_client(),
+        )
+    except PublishError as exc:
+        return _json_error(str(exc), exc.status_code, code=exc.code)
+    except GitHubClientError as exc:
+        return _json_error(f"GitHub webhook processing failed: {exc}", 502, code="github_api_error")
+    except Exception as exc:  # noqa: BLE001
+        return _json_error(f"Webhook processing failed: {exc}", 500, code="webhook_internal_error")
+
+    return jsonify({"success": True, **result})
 
 
 @app.get("/api/generated-dag/<filename>")
