@@ -453,6 +453,10 @@
   }
 
   function App() {
+    const GROUP_BOX_DEFAULT_WIDTH = 380;
+    const GROUP_BOX_DEFAULT_HEIGHT = 220;
+    const CANVAS_STAGE_WIDTH = 6000;
+    const CANVAS_STAGE_HEIGHT = 4000;
     const apiBaseOverride = getApiBaseOverride();
     const isAdminUser = Boolean(window.IS_ADMIN);
     const currentPermissions = Array.isArray(window.CURRENT_PERMISSIONS)
@@ -524,6 +528,8 @@
       result: null,
     });
     const [moduleSearch, setModuleSearch] = useState("");
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const lastCanvasPointerWorldRef = useRef(null);
     const [executionOrder, setExecutionOrder] = useState([]);
     const [dagPreview, setDagPreview] = useState("");
     const [showPreview, setShowPreview] = useState(false);
@@ -706,6 +712,49 @@
         : saveState === "unsaved"
         ? "Pipeline has unsaved changes."
         : "Pipeline is saved.";
+    function PipelineContextIcon() {
+      return h(
+        "svg",
+        {
+          viewBox: "0 0 24 24",
+          className: "pipeline-context-icon-svg",
+          "aria-hidden": "true",
+          focusable: "false",
+        },
+        h("path", {
+          d: "M6 4.8A2.2 2.2 0 1 0 6 9.2A2.2 2.2 0 1 0 6 4.8ZM18 4.8A2.2 2.2 0 1 0 18 9.2A2.2 2.2 0 1 0 18 4.8ZM12 16.8A2.2 2.2 0 1 0 12 21.2A2.2 2.2 0 1 0 12 16.8ZM8 6.8H16V8.2H8zM7.5 8.8L11.6 16.2L10.4 16.9L6.3 9.5zM16.5 8.8L17.7 9.5L13.6 16.9L12.4 16.2z",
+          fill: "currentColor",
+        })
+      );
+    }
+    function SidebarCollapseIcon() {
+      return h(
+        "svg",
+        { viewBox: "0 0 24 24", className: "sidebar-toggle-icon", "aria-hidden": "true", focusable: "false" },
+        h("path", {
+          d: "M15 6L9 12L15 18",
+          fill: "none",
+          stroke: "currentColor",
+          strokeWidth: "2",
+          strokeLinecap: "round",
+          strokeLinejoin: "round",
+        })
+      );
+    }
+    function SidebarExpandIcon() {
+      return h(
+        "svg",
+        { viewBox: "0 0 24 24", className: "sidebar-toggle-icon", "aria-hidden": "true", focusable: "false" },
+        h("path", {
+          d: "M9 6L15 12L9 18",
+          fill: "none",
+          stroke: "currentColor",
+          strokeWidth: "2",
+          strokeLinecap: "round",
+          strokeLinejoin: "round",
+        })
+      );
+    }
     const dagRunStateClass = "dag-run-state state-" + normalizeDagRunStateClass(dagRunState);
     const effectiveNodeTaskMap = useMemo(
       function () {
@@ -1699,19 +1748,40 @@
       setSaveState("unsaved");
     }
 
+    function handleCanvasPointerWorldChange(position) {
+      if (!position) {
+        return;
+      }
+      const x = Number(position.x);
+      const y = Number(position.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        return;
+      }
+      lastCanvasPointerWorldRef.current = { x: x, y: y };
+    }
+
     function handleAddGroupBox() {
       if (!canEditPipeline) {
         warnViewerReadOnly("add group boxes");
         return;
       }
       const id = "group_box_" + nextGroupSeq;
+      const pointer = lastCanvasPointerWorldRef.current;
+      const maxX = Math.max(8, CANVAS_STAGE_WIDTH - GROUP_BOX_DEFAULT_WIDTH - 8);
+      const maxY = Math.max(8, CANVAS_STAGE_HEIGHT - GROUP_BOX_DEFAULT_HEIGHT - 8);
+      const nextX = pointer
+        ? Math.max(8, Math.min(maxX, Number(pointer.x) - GROUP_BOX_DEFAULT_WIDTH / 2))
+        : 120;
+      const nextY = pointer
+        ? Math.max(8, Math.min(maxY, Number(pointer.y) - GROUP_BOX_DEFAULT_HEIGHT / 2))
+        : 120;
       const groupBox = {
         id: id,
         title: "Group " + nextGroupSeq,
-        x: 120,
-        y: 120,
-        width: 380,
-        height: 220,
+        x: nextX,
+        y: nextY,
+        width: GROUP_BOX_DEFAULT_WIDTH,
+        height: GROUP_BOX_DEFAULT_HEIGHT,
         color: "#2f6ea2",
       };
       setGroupBoxes(function (prev) {
@@ -3956,7 +4026,7 @@
               h(
                 "div",
                 { className: "context-title-wrap" },
-                h("span", { className: "context-icon", "aria-hidden": "true" }, ""),
+                h("span", { className: "context-icon", "aria-hidden": "true" }, h(PipelineContextIcon)),
                 h("span", { className: "context-label" }, "Pipeline"),
                 h("strong", { className: "context-value", title: pipelineTitle }, pipelineTitle)
               ),
@@ -3975,8 +4045,18 @@
             h(
               "div",
               { className: "context-meta-reveal" },
-              h("span", { className: "context-chip" }, "File: " + activeFileLabel),
-              h("span", { className: "context-chip" }, "Last generated: " + generatedLabel)
+              h(
+                "div",
+                { className: "context-meta-row" },
+                h("span", { className: "context-meta-label" }, "File"),
+                h("span", { className: "context-meta-value context-meta-value-file", title: activeFileLabel }, activeFileLabel)
+              ),
+              h(
+                "div",
+                { className: "context-meta-row" },
+                h("span", { className: "context-meta-label" }, "Last generated"),
+                h("span", { className: "context-meta-value" }, generatedLabel)
+              )
             )
           ),
           h(
@@ -4324,104 +4404,147 @@
       ),
       h(
         "section",
-        { className: "workspace" },
+        { className: "workspace" + (isSidebarOpen ? "" : " workspace--sidebar-collapsed") },
         h(
           "aside",
-          { className: "panel" },
-          h("h2", null, "Available Modules"),
+          { className: "panel panel-left" + (isSidebarOpen ? "" : " panel-left-collapsed") },
           h(
             "div",
-            { className: "sidebar-toolbar" },
-            h("input", {
-              type: "text",
-              className: "module-search",
-              placeholder: "Search modules...",
-              value: moduleSearch,
-              onChange: function (event) {
-                setModuleSearch(event.target.value);
-              },
-            }),
+            { className: "sidebar-panel-head" },
+            h("h2", null, "Available Modules"),
             h(
-              "small",
-              null,
-              canDragModules
-                ? "Drag modules to canvas. Use control-flow nodes for parallelism and branching."
-                : "Viewer mode: modules are visible, drag-and-drop is disabled."
+              "button",
+              {
+                type: "button",
+                className: "sidebar-toggle-btn",
+                title: "Collapse modules panel",
+                "aria-label": "Collapse modules panel",
+                onClick: function () {
+                  setIsSidebarOpen(false);
+                },
+              },
+              h(SidebarCollapseIcon)
             )
           ),
-          h(
-            "div",
-            { className: "sidebar-list" },
-            filteredPaletteItems.length === 0
-              ? h("div", { className: "module-empty" }, "No module matched your search.")
-              : filteredPaletteItems.map(function (item) {
-              return h(
-                "div",
-                {
-                  key: item.palette_id,
-                  className: "module-item" + (canDragModules ? "" : " module-item-readonly"),
-                  draggable: canDragModules,
-                  onDragStart: function (event) {
-                    if (!canDragModules) {
-                      event.preventDefault();
-                      return;
-                    }
-                    event.dataTransfer.setData("application/x-palette-item", JSON.stringify(item));
-                    event.dataTransfer.effectAllowed = "copy";
-                  },
-                },
+          isSidebarOpen
+            ? h(
+                React.Fragment,
+                null,
                 h(
                   "div",
-                  { className: "module-row" },
-                  item.logo
-                    ? h("img", {
-                        className: "module-logo",
-                        src: item.logo,
-                        alt: item.display_name + " logo",
-                        draggable: false,
-                      })
-                    : null,
-                  h("strong", null, item.display_name)
+                  { className: "sidebar-toolbar" },
+                  h("input", {
+                    type: "text",
+                    className: "module-search",
+                    placeholder: "Search modules...",
+                    value: moduleSearch,
+                    onChange: function (event) {
+                      setModuleSearch(event.target.value);
+                    },
+                  }),
+                  h(
+                    "small",
+                    null,
+                    canDragModules
+                      ? "Drag modules to canvas. Use control-flow nodes for parallelism and branching."
+                      : "Viewer mode: modules are visible, drag-and-drop is disabled."
+                  )
                 ),
-                h("small", null, item.description)
-              );
-            })
-          )
+                h(
+                  "div",
+                  { className: "sidebar-list" },
+                  filteredPaletteItems.length === 0
+                    ? h("div", { className: "module-empty" }, "No module matched your search.")
+                    : filteredPaletteItems.map(function (item) {
+                        return h(
+                          "div",
+                          {
+                            key: item.palette_id,
+                            className: "module-item" + (canDragModules ? "" : " module-item-readonly"),
+                            draggable: canDragModules,
+                            onDragStart: function (event) {
+                              if (!canDragModules) {
+                                event.preventDefault();
+                                return;
+                              }
+                              event.dataTransfer.setData("application/x-palette-item", JSON.stringify(item));
+                              event.dataTransfer.effectAllowed = "copy";
+                            },
+                          },
+                          h(
+                            "div",
+                            { className: "module-row" },
+                            item.logo
+                              ? h("img", {
+                                  className: "module-logo",
+                                  src: item.logo,
+                                  alt: item.display_name + " logo",
+                                  draggable: false,
+                                })
+                              : null,
+                            h("strong", null, item.display_name)
+                          ),
+                          h("small", null, item.description)
+                        );
+                      })
+                )
+              )
+            : null
         ),
-        h(window.PipelineCanvas, {
-          nodes: nodes,
-          edges: edges,
-          groupBoxes: groupBoxes,
-          selectedNodeId: selectedNodeId,
-          selectedNodeIds: selectedNodeIds,
-          selectedGroupBoxId: selectedGroupBoxId,
-          selectedEdge: selectedEdge,
-          connectingFromId: connectingFromId,
-          executionOrder: executionOrder,
-          activeRun: activeRun,
-          nodeRunStatusMap: nodeRunStatusMap,
-          nodeRetryingById: nodeRetryingById,
-          readOnly: !canEditPipeline,
-          canRetryNodeAction: canRetryNodeActions,
-          canViewLogs: canViewLogs,
-          onSelectNode: handleNodeClick,
-          onSelectGroupBox: handleSelectGroupBox,
-          onDuplicateNode: handleDuplicateNode,
-          onSelectEdge: handleSelectEdge,
-          onClearSelection: handleCanvasClearSelection,
-          onAddGroupBox: handleAddGroupBox,
-          onMoveGroupBox: handleGroupBoxMoved,
-          onResizeGroupBox: handleGroupBoxResized,
-          onChangeGroupBox: handleGroupBoxChange,
-          onDeleteGroupBox: handleDeleteGroupBox,
-          onDeleteNode: handleDeleteNode,
-          onConnectNodes: connectNodes,
-          onConnectorClick: handleConnectorClick,
-          onCanvasDrop: handleCanvasDrop,
-          onNodeMoved: handleNodeMoved,
-          onOpenNodeLogs: openNodeLogs,
-          onRetryNode: handleRetryNode,
-        }),
+        h(
+          "div",
+          { className: "canvas-area" },
+          !isSidebarOpen
+            ? h(
+                "button",
+                {
+                  type: "button",
+                  className: "sidebar-reopen-btn",
+                  title: "Expand modules panel",
+                  "aria-label": "Expand modules panel",
+                  onClick: function () {
+                    setIsSidebarOpen(true);
+                  },
+                },
+                h(SidebarExpandIcon)
+              )
+            : null,
+          h(window.PipelineCanvas, {
+            nodes: nodes,
+            edges: edges,
+            groupBoxes: groupBoxes,
+            selectedNodeId: selectedNodeId,
+            selectedNodeIds: selectedNodeIds,
+            selectedGroupBoxId: selectedGroupBoxId,
+            selectedEdge: selectedEdge,
+            connectingFromId: connectingFromId,
+            executionOrder: executionOrder,
+            activeRun: activeRun,
+            nodeRunStatusMap: nodeRunStatusMap,
+            nodeRetryingById: nodeRetryingById,
+            readOnly: !canEditPipeline,
+            canRetryNodeAction: canRetryNodeActions,
+            canViewLogs: canViewLogs,
+            onSelectNode: handleNodeClick,
+            onSelectGroupBox: handleSelectGroupBox,
+            onDuplicateNode: handleDuplicateNode,
+            onSelectEdge: handleSelectEdge,
+            onClearSelection: handleCanvasClearSelection,
+            onAddGroupBox: handleAddGroupBox,
+            onMoveGroupBox: handleGroupBoxMoved,
+            onResizeGroupBox: handleGroupBoxResized,
+            onChangeGroupBox: handleGroupBoxChange,
+            onDeleteGroupBox: handleDeleteGroupBox,
+            onDeleteNode: handleDeleteNode,
+            onConnectNodes: connectNodes,
+            onConnectorClick: handleConnectorClick,
+            onCanvasDrop: handleCanvasDrop,
+            onNodeMoved: handleNodeMoved,
+            onOpenNodeLogs: openNodeLogs,
+            onRetryNode: handleRetryNode,
+            onCanvasPointerWorldChange: handleCanvasPointerWorldChange,
+          })
+        ),
         h(
           "aside",
           { className: "panel panel-right" },
