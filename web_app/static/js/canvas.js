@@ -6,7 +6,7 @@
   const useState = React.useState;
 
   const NODE_WIDTH = 220;
-  const NODE_HEIGHT = 120;
+  const NODE_HEIGHT = 88;
   const STAGE_WIDTH = 6000;
   const STAGE_HEIGHT = 4000;
   const MIN_SCALE = 0.45;
