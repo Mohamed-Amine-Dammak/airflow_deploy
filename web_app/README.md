@@ -172,6 +172,42 @@ Then open `http://127.0.0.1:5000/login`.
 - `GET /api/load-pipeline` (list saved JSON files)
 - `POST /api/load-pipeline` (load one saved JSON file)
 - `GET /api/generated-dag/<filename>`
+- `POST /api/workflows/<workflow_id>/pull-requests`
+- `POST /api/github/webhooks`
+
+## GitHub App Publishing (PR Flow)
+
+This platform supports publishing a selected DAG version to GitHub through an organization-owned GitHub App.
+
+### Required GitHub App permissions
+
+- Repository `Contents`: Read & write
+- Repository `Pull requests`: Read & write
+- Repository `Metadata`: Read-only
+
+### Required webhook event
+
+- `pull_request` (used to detect `closed` + `merged=true`)
+
+### Environment variables
+
+Use `.env.example` as reference and configure:
+
+- `GITHUB_APP_ID`
+- `GITHUB_APP_PRIVATE_KEY_PATH` (or `GITHUB_APP_PRIVATE_KEY`)
+- `GITHUB_APP_INSTALLATION_ID`
+- `GITHUB_OWNER`
+- `GITHUB_REPO`
+- `GITHUB_BASE_BRANCH` (default `main`)
+- `GITHUB_DAGS_REPO_DIR` (default `airflow/dags`)
+- `GITHUB_WEBHOOK_SECRET`
+- `GITHUB_BRANCH_COLLISION_STRATEGY` (`suffix` or `reuse_or_suffix`)
+
+### Publish behavior
+
+- PR creation always targets an explicitly selected DAG version ID.
+- The committed file path is `<GITHUB_DAGS_REPO_DIR>/<selected_output_filename>.py`.
+- Local DAG file deletion happens only after merge confirmation from webhook processing.
 
 ## UI Behavior
 

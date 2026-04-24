@@ -487,6 +487,7 @@
     const canManageConnections = hasPermission("connections_manage");
     const canSavePipeline = hasPermission("pipeline_save");
     const canCreateNewPipeline = hasPermission("pipeline_new");
+    const canPrPublish = hasPermission("pr_publish");
     const canDragModules = canEditPipeline;
     const canAutoLayout = hasPermission("pipeline_layout");
     const [pipeline, setPipeline] = useState(hydrateScheduleForUi(defaultPipeline));
@@ -517,6 +518,11 @@
     const [selectedVersionSummary, setSelectedVersionSummary] = useState(null);
     const [versionSummaryLoading, setVersionSummaryLoading] = useState(false);
     const [versionSummaryError, setVersionSummaryError] = useState("");
+    const [prPublishUi, setPrPublishUi] = useState({
+      isSubmitting: false,
+      error: "",
+      result: null,
+    });
     const [moduleSearch, setModuleSearch] = useState("");
     const [executionOrder, setExecutionOrder] = useState([]);
     const [dagPreview, setDagPreview] = useState("");
@@ -795,6 +801,17 @@
           });
       },
       [versionExecutionHistory]
+    );
+
+    useEffect(
+      function () {
+        setPrPublishUi({
+          isSubmitting: false,
+          error: "",
+          result: null,
+        });
+      },
+      [selectedVersionId, pipeline.dag_id]
     );
     const filteredConnections = useMemo(
       function () {
@@ -1189,6 +1206,90 @@
         setStatusText(error && error.message ? error.message : "Failed to clear versions.");
       } finally {
         setVersionsLoading(false);
+      }
+    }
+
+    async function handleCreatePullRequest() {
+      if (!canPrPublish) {
+        warnViewerReadOnly("publish DAG versions as pull requests");
+        return;
+      }
+      const pipelineId = String((pipeline && pipeline.dag_id) || "").trim();
+      const versionId = String(selectedVersionId || "").trim();
+      if (!pipelineId || !versionId) {
+        setStatusKind("status-warn");
+        setStatusText("Select a pipeline DAG ID and version before creating a PR.");
+        return;
+      }
+
+      const workflowNameInput = window.prompt(
+        "Workflow name for pull request title:",
+        String((pipeline && pipeline.dag_id) || "").trim()
+      );
+      if (workflowNameInput == null) {
+        return;
+      }
+      const workflowName = String(workflowNameInput || "").trim();
+      if (!workflowName) {
+        setStatusKind("status-warn");
+        setStatusText("Workflow name is required to create a pull request.");
+        return;
+      }
+
+      const descriptionInput = window.prompt("Optional PR description (leave empty if not needed):", "");
+      const description = descriptionInput == null ? "" : String(descriptionInput || "").trim();
+
+      setPrPublishUi(function (prev) {
+        return Object.assign({}, prev, { isSubmitting: true, error: "", result: null });
+      });
+      setStatusKind("status-warn");
+      setStatusText("Creating pull request for " + versionId + "...");
+
+      try {
+        const resp = await fetchApi("/api/workflows/" + encodeURIComponent(pipelineId) + "/pull-requests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workflow_name: workflowName,
+            dag_version_id: versionId,
+            description: description,
+          }),
+        });
+        const data = await parseApiJson(resp);
+        if (!resp.ok || !data.success) {
+          throw new Error((data && data.error) || "Failed to create pull request.");
+        }
+
+        setPrPublishUi({
+          isSubmitting: false,
+          error: "",
+          result: {
+            status: String(data.status || ""),
+            pull_request_number: Number(data.pull_request_number) || 0,
+            pull_request_url: String(data.pull_request_url || "").trim(),
+            branch_name: String(data.branch_name || "").trim(),
+            commit_sha: String(data.commit_sha || "").trim(),
+            version_id: String(data.version_id || versionId),
+            repo_file_path: String(data.repo_file_path || ""),
+          },
+        });
+
+        setStatusKind("status-ok");
+        setStatusText(
+          "Pull request ready: #" +
+            String(data.pull_request_number || "-") +
+            (data.pull_request_url ? " (" + data.pull_request_url + ")" : "")
+        );
+        await refreshPipelineVersions(pipelineId, versionId);
+      } catch (error) {
+        const message = error && error.message ? error.message : "Failed to create pull request.";
+        setPrPublishUi({
+          isSubmitting: false,
+          error: message,
+          result: null,
+        });
+        setStatusKind("status-error");
+        setStatusText(message);
       }
     }
 
@@ -4436,6 +4537,17 @@
                         {
                           className: "btn btn-primary",
                           type: "button",
+                          onClick: handleCreatePullRequest,
+                          disabled: !selectedVersionId || versionsLoading || !canPrPublish || prPublishUi.isSubmitting,
+                          title: canPrPublish ? "Create pull request for selected DAG version" : "No permission to publish",
+                        },
+                        prPublishUi.isSubmitting ? "Creating PR..." : "Create PR"
+                      ),
+                      h(
+                        "button",
+                        {
+                          className: "btn btn-primary",
+                          type: "button",
                           onClick: handleSetCurrentVersion,
                           disabled: !selectedVersionId || selectedVersionId === currentVersionId || !canGenerateDag,
                         },
@@ -4476,6 +4588,38 @@
                         "Keep Selected Version"
                       )
                     ),
+                    !canPrPublish
+                      ? h("p", { className: "field-error" }, "You do not have permission to create pull requests.")
+                      : null,
+                    prPublishUi.error
+                      ? h("p", { className: "field-error" }, prPublishUi.error)
+                      : null,
+                    prPublishUi.result
+                      ? h(
+                          "div",
+                          { className: "version-card" },
+                          h("div", { className: "version-row" }, h("span", { className: "version-key" }, "PR"), h("span", { className: "version-val" }, "#" + String(prPublishUi.result.pull_request_number || "-"))),
+                          h(
+                            "div",
+                            { className: "version-row" },
+                            h("span", { className: "version-key" }, "URL"),
+                            prPublishUi.result.pull_request_url
+                              ? h(
+                                  "a",
+                                  {
+                                    className: "version-val",
+                                    href: prPublishUi.result.pull_request_url,
+                                    target: "_blank",
+                                    rel: "noopener noreferrer",
+                                  },
+                                  prPublishUi.result.pull_request_url
+                                )
+                              : h("span", { className: "version-val" }, "-")
+                          ),
+                          h("div", { className: "version-row" }, h("span", { className: "version-key" }, "Branch"), h("span", { className: "version-val" }, String(prPublishUi.result.branch_name || "-"))),
+                          h("div", { className: "version-row" }, h("span", { className: "version-key" }, "Commit"), h("span", { className: "version-val" }, String(prPublishUi.result.commit_sha || "-")))
+                        )
+                      : null,
                     selectedVersion
                       ? h(
                           "div",

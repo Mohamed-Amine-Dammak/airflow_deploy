@@ -1,0 +1,28 @@
+{
+  "records": [
+    {
+      "id": "test:v1",
+      "pipeline_id": "test",
+      "version_id": "v1",
+      "workflow_name": "test",
+      "workflow_slug": "test",
+      "version_name": "v1",
+      "local_file_name": "test__v1.py",
+      "local_file_path": "D:\\airflow\\airflow\\dags\\test__v1.py",
+      "repo_file_path": "airflow/dags/test__v1.py",
+      "git_branch_name": "feature/workflow/test",
+      "pull_request_number": 6,
+      "pull_request_url": "https://github.com/Olive-Soft-Company/APACHE-AIRFLOW/pull/6",
+      "commit_sha": "096e256c9d2e2b762f028a25af1fd090588622b2",
+      "status": "pr_open",
+      "requested_by_user_id": "admin",
+      "requested_by_email": "",
+      "requested_by_display_name": "admin",
+      "requested_by_username": "admin",
+      "source_hash": "4dadd862f7833d1a2b54b26ef3d409c25f2b13fa362dbf214c00544d6fc2f7e4",
+      "created_at": "2026-04-24T15:40:23.682846+00:00",
+      "updated_at": "2026-04-24T15:40:28.140275+00:00"
+    }
+  ],
+  "processed_webhook_deliveries": []
+}
