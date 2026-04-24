@@ -28,4 +28,3 @@ airflow/credgcp.json
 *.log
 flask_err.log
 flask_run.log
-

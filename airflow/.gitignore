@@ -1,0 +1,9 @@
+﻿__pycache__/
+*.pyc
+.env
+.venv/
+logs/
+*.log
+pipelines/*/evaluation/history/*.tmp.json
+actions-runner/
+credgcp.json
