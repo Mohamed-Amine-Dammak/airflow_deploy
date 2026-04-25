@@ -304,12 +304,14 @@
       const requestId = String(item.id || "");
       const status = String(item.status || "pending").toLowerCase();
       const row = document.createElement("tr");
+      const statusBadgeClass = status === "finished" ? "admin-status-badge is-finished" : "admin-status-badge is-pending";
+      const statusLabel = status === "finished" ? "Finished" : "Pending";
       row.innerHTML =
         "<td>" + requestTypeLabel(item.request_type) + "</td>" +
         "<td>" + (item.title || "-") + "</td>" +
         "<td>" + (item.description || "-") + "</td>" +
         "<td>" + (item.requester_username || item.requester_user_id || "-") + "</td>" +
-        "<td>" + (status === "finished" ? "Finished" : "Pending") + "</td>" +
+        '<td><span class="' + statusBadgeClass + '">' + statusLabel + "</span></td>" +
         "<td>" + (item.created_at || "-") + "</td>" +
         '<td class="connections-actions-cell"></td>';
 
@@ -317,7 +319,7 @@
       if (status !== "finished") {
         const finishBtn = document.createElement("button");
         finishBtn.type = "button";
-        finishBtn.className = "btn btn-secondary";
+        finishBtn.className = "btn btn-primary admin-mark-finished";
         finishBtn.textContent = "Mark Finished";
         finishBtn.addEventListener("click", function () {
           markRequestFinished(requestId);

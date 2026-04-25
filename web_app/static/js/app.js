@@ -453,6 +453,10 @@
   }
 
   function App() {
+    const GROUP_BOX_DEFAULT_WIDTH = 380;
+    const GROUP_BOX_DEFAULT_HEIGHT = 220;
+    const CANVAS_STAGE_WIDTH = 6000;
+    const CANVAS_STAGE_HEIGHT = 4000;
     const apiBaseOverride = getApiBaseOverride();
     const isAdminUser = Boolean(window.IS_ADMIN);
     const currentPermissions = Array.isArray(window.CURRENT_PERMISSIONS)
@@ -523,7 +527,15 @@
       error: "",
       result: null,
     });
+    const [prCreateDialog, setPrCreateDialog] = useState({
+      isOpen: false,
+      title: "",
+      description: "",
+      error: "",
+    });
     const [moduleSearch, setModuleSearch] = useState("");
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const lastCanvasPointerWorldRef = useRef(null);
     const [executionOrder, setExecutionOrder] = useState([]);
     const [dagPreview, setDagPreview] = useState("");
     const [showPreview, setShowPreview] = useState(false);
@@ -706,6 +718,49 @@
         : saveState === "unsaved"
         ? "Pipeline has unsaved changes."
         : "Pipeline is saved.";
+    function PipelineContextIcon() {
+      return h(
+        "svg",
+        {
+          viewBox: "0 0 24 24",
+          className: "pipeline-context-icon-svg",
+          "aria-hidden": "true",
+          focusable: "false",
+        },
+        h("path", {
+          d: "M6 4.8A2.2 2.2 0 1 0 6 9.2A2.2 2.2 0 1 0 6 4.8ZM18 4.8A2.2 2.2 0 1 0 18 9.2A2.2 2.2 0 1 0 18 4.8ZM12 16.8A2.2 2.2 0 1 0 12 21.2A2.2 2.2 0 1 0 12 16.8ZM8 6.8H16V8.2H8zM7.5 8.8L11.6 16.2L10.4 16.9L6.3 9.5zM16.5 8.8L17.7 9.5L13.6 16.9L12.4 16.2z",
+          fill: "currentColor",
+        })
+      );
+    }
+    function SidebarCollapseIcon() {
+      return h(
+        "svg",
+        { viewBox: "0 0 24 24", className: "sidebar-toggle-icon", "aria-hidden": "true", focusable: "false" },
+        h("path", {
+          d: "M15 6L9 12L15 18",
+          fill: "none",
+          stroke: "currentColor",
+          strokeWidth: "2",
+          strokeLinecap: "round",
+          strokeLinejoin: "round",
+        })
+      );
+    }
+    function SidebarExpandIcon() {
+      return h(
+        "svg",
+        { viewBox: "0 0 24 24", className: "sidebar-toggle-icon", "aria-hidden": "true", focusable: "false" },
+        h("path", {
+          d: "M9 6L15 12L9 18",
+          fill: "none",
+          stroke: "currentColor",
+          strokeWidth: "2",
+          strokeLinecap: "round",
+          strokeLinejoin: "round",
+        })
+      );
+    }
     const dagRunStateClass = "dag-run-state state-" + normalizeDagRunStateClass(dagRunState);
     const effectiveNodeTaskMap = useMemo(
       function () {
@@ -1209,7 +1264,19 @@
       }
     }
 
-    async function handleCreatePullRequest() {
+    function closeCreatePrDialog() {
+      if (prPublishUi.isSubmitting) {
+        return;
+      }
+      setPrCreateDialog({
+        isOpen: false,
+        title: "",
+        description: "",
+        error: "",
+      });
+    }
+
+    function openCreatePrDialog() {
       if (!canPrPublish) {
         warnViewerReadOnly("publish DAG versions as pull requests");
         return;
@@ -1221,24 +1288,22 @@
         setStatusText("Select a pipeline DAG ID and version before creating a PR.");
         return;
       }
+      setPrCreateDialog({
+        isOpen: true,
+        title: String((pipeline && pipeline.dag_id) || "").trim(),
+        description: "",
+        error: "",
+      });
+    }
 
-      const workflowNameInput = window.prompt(
-        "Workflow name for pull request title:",
-        String((pipeline && pipeline.dag_id) || "").trim()
-      );
-      if (workflowNameInput == null) {
-        return;
-      }
-      const workflowName = String(workflowNameInput || "").trim();
-      if (!workflowName) {
+    async function submitCreatePullRequest(workflowName, description) {
+      const pipelineId = String((pipeline && pipeline.dag_id) || "").trim();
+      const versionId = String(selectedVersionId || "").trim();
+      if (!pipelineId || !versionId) {
         setStatusKind("status-warn");
-        setStatusText("Workflow name is required to create a pull request.");
-        return;
+        setStatusText("Select a pipeline DAG ID and version before creating a PR.");
+        return false;
       }
-
-      const descriptionInput = window.prompt("Optional PR description (leave empty if not needed):", "");
-      const description = descriptionInput == null ? "" : String(descriptionInput || "").trim();
-
       setPrPublishUi(function (prev) {
         return Object.assign({}, prev, { isSubmitting: true, error: "", result: null });
       });
@@ -1281,6 +1346,7 @@
             (data.pull_request_url ? " (" + data.pull_request_url + ")" : "")
         );
         await refreshPipelineVersions(pipelineId, versionId);
+        return true;
       } catch (error) {
         const message = error && error.message ? error.message : "Failed to create pull request.";
         setPrPublishUi({
@@ -1290,6 +1356,32 @@
         });
         setStatusKind("status-error");
         setStatusText(message);
+        return false;
+      }
+    }
+
+    async function handleCreatePullRequest() {
+      const workflowName = String((prCreateDialog && prCreateDialog.title) || "").trim();
+      const description = String((prCreateDialog && prCreateDialog.description) || "").trim();
+      if (!workflowName) {
+        setPrCreateDialog(function (prev) {
+          return Object.assign({}, prev, { error: "Workflow name is required to create a pull request." });
+        });
+        setStatusKind("status-warn");
+        setStatusText("Workflow name is required to create a pull request.");
+        return;
+      }
+      setPrCreateDialog(function (prev) {
+        return Object.assign({}, prev, { error: "" });
+      });
+      const success = await submitCreatePullRequest(workflowName, description);
+      if (success) {
+        setPrCreateDialog({
+          isOpen: false,
+          title: "",
+          description: "",
+          error: "",
+        });
       }
     }
 
@@ -1699,19 +1791,40 @@
       setSaveState("unsaved");
     }
 
+    function handleCanvasPointerWorldChange(position) {
+      if (!position) {
+        return;
+      }
+      const x = Number(position.x);
+      const y = Number(position.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        return;
+      }
+      lastCanvasPointerWorldRef.current = { x: x, y: y };
+    }
+
     function handleAddGroupBox() {
       if (!canEditPipeline) {
         warnViewerReadOnly("add group boxes");
         return;
       }
       const id = "group_box_" + nextGroupSeq;
+      const pointer = lastCanvasPointerWorldRef.current;
+      const maxX = Math.max(8, CANVAS_STAGE_WIDTH - GROUP_BOX_DEFAULT_WIDTH - 8);
+      const maxY = Math.max(8, CANVAS_STAGE_HEIGHT - GROUP_BOX_DEFAULT_HEIGHT - 8);
+      const nextX = pointer
+        ? Math.max(8, Math.min(maxX, Number(pointer.x) - GROUP_BOX_DEFAULT_WIDTH / 2))
+        : 120;
+      const nextY = pointer
+        ? Math.max(8, Math.min(maxY, Number(pointer.y) - GROUP_BOX_DEFAULT_HEIGHT / 2))
+        : 120;
       const groupBox = {
         id: id,
         title: "Group " + nextGroupSeq,
-        x: 120,
-        y: 120,
-        width: 380,
-        height: 220,
+        x: nextX,
+        y: nextY,
+        width: GROUP_BOX_DEFAULT_WIDTH,
+        height: GROUP_BOX_DEFAULT_HEIGHT,
         color: "#2f6ea2",
       };
       setGroupBoxes(function (prev) {
@@ -3956,7 +4069,7 @@
               h(
                 "div",
                 { className: "context-title-wrap" },
-                h("span", { className: "context-icon", "aria-hidden": "true" }, ""),
+                h("span", { className: "context-icon", "aria-hidden": "true" }, h(PipelineContextIcon)),
                 h("span", { className: "context-label" }, "Pipeline"),
                 h("strong", { className: "context-value", title: pipelineTitle }, pipelineTitle)
               ),
@@ -3975,8 +4088,18 @@
             h(
               "div",
               { className: "context-meta-reveal" },
-              h("span", { className: "context-chip" }, "File: " + activeFileLabel),
-              h("span", { className: "context-chip" }, "Last generated: " + generatedLabel)
+              h(
+                "div",
+                { className: "context-meta-row" },
+                h("span", { className: "context-meta-label" }, "File"),
+                h("span", { className: "context-meta-value context-meta-value-file", title: activeFileLabel }, activeFileLabel)
+              ),
+              h(
+                "div",
+                { className: "context-meta-row" },
+                h("span", { className: "context-meta-label" }, "Last generated"),
+                h("span", { className: "context-meta-value" }, generatedLabel)
+              )
             )
           ),
           h(
@@ -4324,104 +4447,147 @@
       ),
       h(
         "section",
-        { className: "workspace" },
+        { className: "workspace" + (isSidebarOpen ? "" : " workspace--sidebar-collapsed") },
         h(
           "aside",
-          { className: "panel" },
-          h("h2", null, "Available Modules"),
+          { className: "panel panel-left" + (isSidebarOpen ? "" : " panel-left-collapsed") },
           h(
             "div",
-            { className: "sidebar-toolbar" },
-            h("input", {
-              type: "text",
-              className: "module-search",
-              placeholder: "Search modules...",
-              value: moduleSearch,
-              onChange: function (event) {
-                setModuleSearch(event.target.value);
-              },
-            }),
+            { className: "sidebar-panel-head" },
+            h("h2", null, "Available Modules"),
             h(
-              "small",
-              null,
-              canDragModules
-                ? "Drag modules to canvas. Use control-flow nodes for parallelism and branching."
-                : "Viewer mode: modules are visible, drag-and-drop is disabled."
+              "button",
+              {
+                type: "button",
+                className: "sidebar-toggle-btn",
+                title: "Collapse modules panel",
+                "aria-label": "Collapse modules panel",
+                onClick: function () {
+                  setIsSidebarOpen(false);
+                },
+              },
+              h(SidebarCollapseIcon)
             )
           ),
-          h(
-            "div",
-            { className: "sidebar-list" },
-            filteredPaletteItems.length === 0
-              ? h("div", { className: "module-empty" }, "No module matched your search.")
-              : filteredPaletteItems.map(function (item) {
-              return h(
-                "div",
-                {
-                  key: item.palette_id,
-                  className: "module-item" + (canDragModules ? "" : " module-item-readonly"),
-                  draggable: canDragModules,
-                  onDragStart: function (event) {
-                    if (!canDragModules) {
-                      event.preventDefault();
-                      return;
-                    }
-                    event.dataTransfer.setData("application/x-palette-item", JSON.stringify(item));
-                    event.dataTransfer.effectAllowed = "copy";
-                  },
-                },
+          isSidebarOpen
+            ? h(
+                React.Fragment,
+                null,
                 h(
                   "div",
-                  { className: "module-row" },
-                  item.logo
-                    ? h("img", {
-                        className: "module-logo",
-                        src: item.logo,
-                        alt: item.display_name + " logo",
-                        draggable: false,
-                      })
-                    : null,
-                  h("strong", null, item.display_name)
+                  { className: "sidebar-toolbar" },
+                  h("input", {
+                    type: "text",
+                    className: "module-search",
+                    placeholder: "Search modules...",
+                    value: moduleSearch,
+                    onChange: function (event) {
+                      setModuleSearch(event.target.value);
+                    },
+                  }),
+                  h(
+                    "small",
+                    null,
+                    canDragModules
+                      ? "Drag modules to canvas. Use control-flow nodes for parallelism and branching."
+                      : "Viewer mode: modules are visible, drag-and-drop is disabled."
+                  )
                 ),
-                h("small", null, item.description)
-              );
-            })
-          )
+                h(
+                  "div",
+                  { className: "sidebar-list" },
+                  filteredPaletteItems.length === 0
+                    ? h("div", { className: "module-empty" }, "No module matched your search.")
+                    : filteredPaletteItems.map(function (item) {
+                        return h(
+                          "div",
+                          {
+                            key: item.palette_id,
+                            className: "module-item" + (canDragModules ? "" : " module-item-readonly"),
+                            draggable: canDragModules,
+                            onDragStart: function (event) {
+                              if (!canDragModules) {
+                                event.preventDefault();
+                                return;
+                              }
+                              event.dataTransfer.setData("application/x-palette-item", JSON.stringify(item));
+                              event.dataTransfer.effectAllowed = "copy";
+                            },
+                          },
+                          h(
+                            "div",
+                            { className: "module-row" },
+                            item.logo
+                              ? h("img", {
+                                  className: "module-logo",
+                                  src: item.logo,
+                                  alt: item.display_name + " logo",
+                                  draggable: false,
+                                })
+                              : null,
+                            h("strong", null, item.display_name)
+                          ),
+                          h("small", null, item.description)
+                        );
+                      })
+                )
+              )
+            : null
         ),
-        h(window.PipelineCanvas, {
-          nodes: nodes,
-          edges: edges,
-          groupBoxes: groupBoxes,
-          selectedNodeId: selectedNodeId,
-          selectedNodeIds: selectedNodeIds,
-          selectedGroupBoxId: selectedGroupBoxId,
-          selectedEdge: selectedEdge,
-          connectingFromId: connectingFromId,
-          executionOrder: executionOrder,
-          activeRun: activeRun,
-          nodeRunStatusMap: nodeRunStatusMap,
-          nodeRetryingById: nodeRetryingById,
-          readOnly: !canEditPipeline,
-          canRetryNodeAction: canRetryNodeActions,
-          canViewLogs: canViewLogs,
-          onSelectNode: handleNodeClick,
-          onSelectGroupBox: handleSelectGroupBox,
-          onDuplicateNode: handleDuplicateNode,
-          onSelectEdge: handleSelectEdge,
-          onClearSelection: handleCanvasClearSelection,
-          onAddGroupBox: handleAddGroupBox,
-          onMoveGroupBox: handleGroupBoxMoved,
-          onResizeGroupBox: handleGroupBoxResized,
-          onChangeGroupBox: handleGroupBoxChange,
-          onDeleteGroupBox: handleDeleteGroupBox,
-          onDeleteNode: handleDeleteNode,
-          onConnectNodes: connectNodes,
-          onConnectorClick: handleConnectorClick,
-          onCanvasDrop: handleCanvasDrop,
-          onNodeMoved: handleNodeMoved,
-          onOpenNodeLogs: openNodeLogs,
-          onRetryNode: handleRetryNode,
-        }),
+        h(
+          "div",
+          { className: "canvas-area" },
+          !isSidebarOpen
+            ? h(
+                "button",
+                {
+                  type: "button",
+                  className: "sidebar-reopen-btn",
+                  title: "Expand modules panel",
+                  "aria-label": "Expand modules panel",
+                  onClick: function () {
+                    setIsSidebarOpen(true);
+                  },
+                },
+                h(SidebarExpandIcon)
+              )
+            : null,
+          h(window.PipelineCanvas, {
+            nodes: nodes,
+            edges: edges,
+            groupBoxes: groupBoxes,
+            selectedNodeId: selectedNodeId,
+            selectedNodeIds: selectedNodeIds,
+            selectedGroupBoxId: selectedGroupBoxId,
+            selectedEdge: selectedEdge,
+            connectingFromId: connectingFromId,
+            executionOrder: executionOrder,
+            activeRun: activeRun,
+            nodeRunStatusMap: nodeRunStatusMap,
+            nodeRetryingById: nodeRetryingById,
+            readOnly: !canEditPipeline,
+            canRetryNodeAction: canRetryNodeActions,
+            canViewLogs: canViewLogs,
+            onSelectNode: handleNodeClick,
+            onSelectGroupBox: handleSelectGroupBox,
+            onDuplicateNode: handleDuplicateNode,
+            onSelectEdge: handleSelectEdge,
+            onClearSelection: handleCanvasClearSelection,
+            onAddGroupBox: handleAddGroupBox,
+            onMoveGroupBox: handleGroupBoxMoved,
+            onResizeGroupBox: handleGroupBoxResized,
+            onChangeGroupBox: handleGroupBoxChange,
+            onDeleteGroupBox: handleDeleteGroupBox,
+            onDeleteNode: handleDeleteNode,
+            onConnectNodes: connectNodes,
+            onConnectorClick: handleConnectorClick,
+            onCanvasDrop: handleCanvasDrop,
+            onNodeMoved: handleNodeMoved,
+            onOpenNodeLogs: openNodeLogs,
+            onRetryNode: handleRetryNode,
+            onCanvasPointerWorldChange: handleCanvasPointerWorldChange,
+          })
+        ),
         h(
           "aside",
           { className: "panel panel-right" },
@@ -4537,11 +4703,32 @@
                         {
                           className: "btn btn-primary",
                           type: "button",
-                          onClick: handleCreatePullRequest,
+                          onClick: openCreatePrDialog,
                           disabled: !selectedVersionId || versionsLoading || !canPrPublish || prPublishUi.isSubmitting,
                           title: canPrPublish ? "Create pull request for selected DAG version" : "No permission to publish",
                         },
-                        prPublishUi.isSubmitting ? "Creating PR..." : "Create PR"
+                        prPublishUi.isSubmitting
+                          ? "Creating PR..."
+                          : h(
+                              React.Fragment,
+                              null,
+                              h(
+                                "svg",
+                                {
+                                  className: "create-pr-github-icon",
+                                  viewBox: "0 0 24 24",
+                                  width: "14",
+                                  height: "14",
+                                  "aria-hidden": "true",
+                                  focusable: "false",
+                                },
+                                h("path", {
+                                  fill: "currentColor",
+                                  d: "M12 2C6.48 2 2 6.59 2 12.24c0 4.52 2.87 8.35 6.84 9.7.5.1.68-.22.68-.49 0-.24-.01-1.04-.01-1.89-2.78.62-3.37-1.21-3.37-1.21-.45-1.19-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .08 1.53 1.06 1.53 1.06.9 1.56 2.35 1.11 2.92.85.09-.67.35-1.11.64-1.36-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.73 0 0 .84-.27 2.75 1.05A9.3 9.3 0 0 1 12 6.84c.85 0 1.7.12 2.5.36 1.9-1.32 2.74-1.05 2.74-1.05.56 1.42.21 2.47.11 2.73.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.8-4.57 5.05.36.32.68.93.68 1.88 0 1.36-.01 2.45-.01 2.78 0 .27.18.6.69.49A10.29 10.29 0 0 0 22 12.24C22 6.59 17.52 2 12 2z",
+                                })
+                              ),
+                              "Create PR"
+                            )
                       ),
                       h(
                         "button",
@@ -4686,6 +4873,123 @@
                         )
                       : null
                   )
+            )
+          )
+        : null,
+      prCreateDialog.isOpen
+        ? h(
+            "div",
+            {
+              className: "dag-versions-overlay",
+              role: "dialog",
+              "aria-modal": "true",
+              onClick: function (event) {
+                if (event.target === event.currentTarget) {
+                  closeCreatePrDialog();
+                }
+              },
+            },
+            h(
+              "div",
+              { className: "dag-versions-modal create-pr-modal" },
+              h(
+                "div",
+                { className: "dag-versions-head" },
+                h(
+                  "div",
+                  null,
+                  h("h2", null, "Create Pull Request"),
+                  h("small", null, "Provide the PR title and optional description for this DAG version.")
+                ),
+                h(
+                  "button",
+                  {
+                    className: "btn btn-secondary",
+                    type: "button",
+                    onClick: closeCreatePrDialog,
+                    disabled: prPublishUi.isSubmitting,
+                  },
+                  "Cancel"
+                )
+              ),
+              h(
+                "div",
+                { className: "field" },
+                h("label", null, "PR Title / Workflow Name *"),
+                h("input", {
+                  type: "text",
+                  value: String(prCreateDialog.title || ""),
+                  placeholder: "Enter PR title",
+                  onChange: function (event) {
+                    setPrCreateDialog(function (prev) {
+                      return Object.assign({}, prev, { title: event.target.value, error: "" });
+                    });
+                  },
+                  disabled: prPublishUi.isSubmitting,
+                })
+              ),
+              h(
+                "div",
+                { className: "field" },
+                h("label", null, "Description (optional)"),
+                h("textarea", {
+                  value: String(prCreateDialog.description || ""),
+                  placeholder: "Optional PR description",
+                  rows: 4,
+                  onChange: function (event) {
+                    setPrCreateDialog(function (prev) {
+                      return Object.assign({}, prev, { description: event.target.value });
+                    });
+                  },
+                  disabled: prPublishUi.isSubmitting,
+                })
+              ),
+              prCreateDialog.error ? h("p", { className: "field-error" }, prCreateDialog.error) : null,
+              h(
+                "div",
+                { className: "create-pr-modal-actions" },
+                h(
+                  "button",
+                  {
+                    className: "btn btn-secondary",
+                    type: "button",
+                    onClick: closeCreatePrDialog,
+                    disabled: prPublishUi.isSubmitting,
+                  },
+                  "Cancel"
+                ),
+                h(
+                  "button",
+                  {
+                    className: "btn btn-primary",
+                    type: "button",
+                    onClick: handleCreatePullRequest,
+                    disabled: prPublishUi.isSubmitting,
+                  },
+                  prPublishUi.isSubmitting
+                    ? "Creating PR..."
+                    : h(
+                        React.Fragment,
+                        null,
+                        h(
+                          "svg",
+                          {
+                            className: "create-pr-github-icon",
+                            viewBox: "0 0 24 24",
+                            width: "14",
+                            height: "14",
+                            "aria-hidden": "true",
+                            focusable: "false",
+                          },
+                          h("path", {
+                            fill: "currentColor",
+                            d: "M12 2C6.48 2 2 6.59 2 12.24c0 4.52 2.87 8.35 6.84 9.7.5.1.68-.22.68-.49 0-.24-.01-1.04-.01-1.89-2.78.62-3.37-1.21-3.37-1.21-.45-1.19-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .08 1.53 1.06 1.53 1.06.9 1.56 2.35 1.11 2.92.85.09-.67.35-1.11.64-1.36-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.73 0 0 .84-.27 2.75 1.05A9.3 9.3 0 0 1 12 6.84c.85 0 1.7.12 2.5.36 1.9-1.32 2.74-1.05 2.74-1.05.56 1.42.21 2.47.11 2.73.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.8-4.57 5.05.36.32.68.93.68 1.88 0 1.36-.01 2.45-.01 2.78 0 .27.18.6.69.49A10.29 10.29 0 0 0 22 12.24C22 6.59 17.52 2 12 2z",
+                          })
+                        ),
+                        "Create PR"
+                      )
+                )
+              )
             )
           )
         : null,

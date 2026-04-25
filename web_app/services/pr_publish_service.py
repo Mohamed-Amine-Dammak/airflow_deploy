@@ -84,6 +84,52 @@ def sanitize_repo_relative_path(repo_dir: str, filename: str) -> str:
     return str(normalized).replace("\\", "/")
 
 
+def _inject_git_marker_before_version(name: str) -> str:
+    base = str(name or "").strip()
+    if not base:
+        return "workflow_git"
+    if re.search(r"(^|[_-])git($|[_-])", base, flags=re.IGNORECASE):
+        return base
+
+    # Keep version suffix patterns intact, and insert `git` before them.
+    match = re.search(r"(__v\d+)$", base, flags=re.IGNORECASE)
+    if not match:
+        match = re.search(r"(_v\d+)$", base, flags=re.IGNORECASE)
+    if not match:
+        match = re.search(r"(-v\d+)$", base, flags=re.IGNORECASE)
+    if match:
+        start = match.start()
+        return f"{base[:start]}_git{base[start:]}"
+
+    return f"{base}_git"
+
+
+def build_git_publish_filename(local_output_filename: str) -> str:
+    safe_filename = str(local_output_filename or "").strip()
+    if not safe_filename or not safe_filename.endswith(".py"):
+        raise PublishValidationError("selected version output filename must end with .py.")
+    stem = Path(safe_filename).stem
+    git_stem = _inject_git_marker_before_version(stem)
+    return f"{git_stem}.py"
+
+
+def build_git_publish_dag_id(local_airflow_dag_id: str, fallback_output_filename: str) -> str:
+    dag_id = str(local_airflow_dag_id or "").strip()
+    if dag_id:
+        return _inject_git_marker_before_version(dag_id)
+    fallback = Path(str(fallback_output_filename or "").strip()).stem
+    return _inject_git_marker_before_version(fallback)
+
+
+def rewrite_content_with_git_dag_id(content: str, local_dag_id: str, git_dag_id: str) -> str:
+    text = str(content or "")
+    source_dag_id = str(local_dag_id or "").strip()
+    target_dag_id = str(git_dag_id or "").strip()
+    if not text or not source_dag_id or not target_dag_id or source_dag_id == target_dag_id:
+        return text
+    return text.replace(source_dag_id, target_dag_id)
+
+
 def select_version_identifier(payload: dict[str, Any]) -> str:
     version_id = str(payload.get("dag_version_id", "")).strip()
     if not version_id:
@@ -165,8 +211,12 @@ def create_pull_request_for_version(
         raise PublishNotFoundError("Selected DAG version does not exist.")
 
     output_filename = str(version.get("output_filename", "")).strip()
-    repo_file_path = sanitize_repo_relative_path(github_client.settings.dags_repo_dir, output_filename)
+    airflow_dag_id = str(version.get("airflow_dag_id", "")).strip()
+    git_output_filename = build_git_publish_filename(output_filename)
+    git_airflow_dag_id = build_git_publish_dag_id(airflow_dag_id, output_filename)
+    repo_file_path = sanitize_repo_relative_path(github_client.settings.dags_repo_dir, git_output_filename)
     content, source_path = _load_version_content(version)
+    content = rewrite_content_with_git_dag_id(content, airflow_dag_id, git_airflow_dag_id)
     source_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
     requested_at = _utc_now()
 
@@ -231,7 +281,7 @@ def create_pull_request_for_version(
         else:
             branch_reused = True
 
-    commit_msg = f"Publish DAG {output_filename} for workflow {workflow_slug} ({safe_version_id})"
+    commit_msg = f"Publish DAG {git_output_filename} for workflow {workflow_slug} ({safe_version_id})"
     _, commit_sha = github_client.upsert_text_file(
         repo_path=repo_file_path,
         branch=branch_name,
