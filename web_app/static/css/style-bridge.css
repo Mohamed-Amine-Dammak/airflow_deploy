@@ -469,12 +469,14 @@ button[title*="réduire" i]:hover {
   display: flex !important;
   gap: 6px !important;
   padding: 6px 8px !important;
-  flex-wrap: wrap !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
 }
 
 .node-action-btn {
   min-height: 32px !important;
-  min-width: 52px !important;
+  min-width: 0 !important;
+  flex: 1 1 0 !important;
   padding: 5px 10px !important;
   font-size: var(--text-xs) !important;
   font-family: var(--font-ui) !important;
@@ -486,8 +488,11 @@ button[title*="réduire" i]:hover {
   cursor: pointer !important;
   display: inline-flex !important;
   align-items: center !important;
+  justify-content: center !important;
   gap: 4px !important;
   transition: all var(--dur-fast) ease !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
 }
 .node-action-btn:hover:not(:disabled) {
   background: var(--bg-hover) !important;
@@ -498,6 +503,11 @@ button[title*="réduire" i]:hover {
 .node-action-btn:disabled {
   opacity: 0.4 !important;
   cursor: not-allowed !important;
+}
+.node-action-btn span {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 .node-action-delete:hover  { background: var(--danger-bg)  !important; border-color: var(--danger-border)  !important; color: var(--danger-text)  !important; }
 .node-action-retry:hover:not(:disabled)  { background: var(--warning-bg) !important; border-color: var(--warning-border) !important; color: var(--warning-text) !important; }
@@ -951,14 +961,21 @@ code, pre, kbd, .font-mono { font-family: var(--font-mono) !important; color: va
   margin-top: auto !important;
   padding: 8px 0 0 !important;
   gap: 8px !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
   border-top: 1px solid var(--border-subtle) !important;
 }
 .node-action-btn {
   min-height: 34px !important;
-  min-width: 64px !important;
+  min-width: 0 !important;
+  flex: 1 1 0 !important;
   padding: 6px 10px !important;
   font-size: 11px !important;
   font-weight: var(--fw-semibold) !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
 }
 
 /* Connector clarity: left input, right output */

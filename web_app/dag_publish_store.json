@@ -22,8 +22,6 @@
       "source_hash": "4dadd862f7833d1a2b54b26ef3d409c25f2b13fa362dbf214c00544d6fc2f7e4",
       "created_at": "2026-04-24T15:40:23.682846+00:00",
       "updated_at": "2026-04-24T15:40:28.140275+00:00"
-<<<<<<< Updated upstream
-=======
     },
     {
       "id": "my_pipeline:v2",
@@ -93,30 +91,6 @@
       "source_hash": "68121dcce5e5b157c026927f319b06d6ae486b9d536ca67d20211e36f524da97",
       "created_at": "2026-04-25T20:51:40.009115+00:00",
       "updated_at": "2026-04-25T20:51:46.744271+00:00"
-    },
-    {
-      "id": "my_pipeline:v5",
-      "pipeline_id": "my_pipeline",
-      "version_id": "v5",
-      "workflow_name": "my_pipeline v3",
-      "workflow_slug": "my-pipeline-v3",
-      "version_name": "v5",
-      "local_file_name": "my_pipeline__v5.py",
-      "local_file_path": "D:\\web_app_airflow\\application\\airflow\\dags\\my_pipeline__v5.py",
-      "repo_file_path": "airflow/dags/my_pipeline_git__v5.py",
-      "git_branch_name": "feature/workflow/my-pipeline-v3-3",
-      "pull_request_number": 13,
-      "pull_request_url": "https://github.com/Olive-Soft-Company/APACHE-AIRFLOW/pull/13",
-      "commit_sha": "79ca6c0c2227b6972a05040275bc1201dcfed0b3",
-      "status": "pr_open",
-      "requested_by_user_id": "admin",
-      "requested_by_email": "",
-      "requested_by_display_name": "admin",
-      "requested_by_username": "admin",
-      "source_hash": "ced10e2ace1531851709048c7bc3b5403fcfe7f38bd55496b1cbfb3c4be04454",
-      "created_at": "2026-04-26T13:13:13.653009+00:00",
-      "updated_at": "2026-04-26T13:13:20.413888+00:00"
->>>>>>> Stashed changes
     }
   ],
   "processed_webhook_deliveries": []

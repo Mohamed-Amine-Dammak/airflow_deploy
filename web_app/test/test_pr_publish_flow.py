@@ -23,8 +23,11 @@ from services.pipeline_versions import get_version, register_version
 from services.pr_publish_service import (
     RequesterIdentity,
     build_branch_name,
+    build_git_publish_dag_id,
+    build_git_publish_filename,
     create_pull_request_for_version,
     handle_pull_request_closed_event,
+    rewrite_content_with_git_dag_id,
     sanitize_repo_relative_path,
     sanitize_workflow_slug,
 )
@@ -86,8 +89,18 @@ class PrPublishServiceTests(unittest.TestCase):
         self.airflow_file = self.tmp_path / "airflow" / "test_v1.py"
         self.generated_file.parent.mkdir(parents=True, exist_ok=True)
         self.airflow_file.parent.mkdir(parents=True, exist_ok=True)
-        self.generated_file.write_text("print('hello')\n", encoding="utf-8")
-        self.airflow_file.write_text("print('hello')\n", encoding="utf-8")
+        self.generated_file.write_text(
+            "from airflow import DAG\n"
+            "with DAG(dag_id='test__v1') as dag:\n"
+            "    pass\n",
+            encoding="utf-8",
+        )
+        self.airflow_file.write_text(
+            "from airflow import DAG\n"
+            "with DAG(dag_id='test__v1') as dag:\n"
+            "    pass\n",
+            encoding="utf-8",
+        )
 
         register_version(
             self.pipeline_versions_path,
@@ -125,6 +138,16 @@ class PrPublishServiceTests(unittest.TestCase):
         with self.assertRaises(Exception):
             sanitize_repo_relative_path("airflow/dags", "../evil.py")
 
+    def test_git_publish_name_helpers(self):
+        self.assertEqual(build_git_publish_filename("test_v1.py"), "test_git_v1.py")
+        self.assertEqual(build_git_publish_dag_id("test__v1", "test_v1.py"), "test_git__v1")
+
+    def test_git_publish_rewrites_dag_id_in_content(self):
+        original = "with DAG(dag_id='test__v1') as dag:\n    pass\n"
+        rewritten = rewrite_content_with_git_dag_id(original, "test__v1", "test_git__v1")
+        self.assertIn("test_git__v1", rewritten)
+        self.assertNotIn("test__v1')", rewritten)
+
     def test_create_pr_from_explicit_selected_version(self):
         client = FakeGitHubClient()
         result = create_pull_request_for_version(
@@ -139,7 +162,9 @@ class PrPublishServiceTests(unittest.TestCase):
         )
         self.assertEqual(result["status"], "pr_open")
         self.assertTrue(result["pull_request_url"])
-        self.assertEqual(result["repo_file_path"], "airflow/dags/test_v1.py")
+        self.assertEqual(result["repo_file_path"], "airflow/dags/test_git_v1.py")
+        pushed = client._files.get(("airflow/dags/test_git_v1.py", result["branch_name"])) or {}
+        self.assertIn("test_git__v1", str(pushed.get("content") or ""))
 
         record = get_record_by_pipeline_version(self.publish_store_path, pipeline_id="test", version_id="v1")
         self.assertIsNotNone(record)
@@ -161,7 +186,7 @@ class PrPublishServiceTests(unittest.TestCase):
         )
         self.assertTrue(self.airflow_file.exists())
 
-        repo_path = "airflow/dags/test_v1.py"
+        repo_path = "airflow/dags/test_git_v1.py"
         client._files[(repo_path, "main")] = {"sha": "repo-sha"}
         payload = {
             "action": "closed",
@@ -196,7 +221,7 @@ class PrPublishServiceTests(unittest.TestCase):
             pr_description="",
             requester=self.requester,
         )
-        client._files[("airflow/dags/test_v1.py", "main")] = {"sha": "repo-sha"}
+        client._files[("airflow/dags/test_git_v1.py", "main")] = {"sha": "repo-sha"}
         payload = {
             "action": "closed",
             "pull_request": {"number": 101, "merged": True, "merge_commit_sha": "abc123"},

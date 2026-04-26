@@ -2092,11 +2092,7 @@
       ]
     },
     "my_pipeline": {
-<<<<<<< Updated upstream
-      "current_version_id": "v1",
-=======
-      "current_version_id": "v5",
->>>>>>> Stashed changes
+      "current_version_id": "v4",
       "versions": [
         {
           "pipeline_id": "my_pipeline",
@@ -2106,8 +2102,8 @@
           "output_filename": "my_pipeline__v1.py",
           "created_at": "2026-04-17T15:46:04.267401+00:00",
           "created_by": "admin",
-          "status": "active",
-          "is_current": true,
+          "status": "archived",
+          "is_current": false,
           "source_hash": "36a263fae30c6164fe3aa0684d50ac6ae27502d779aee2fc75ab51432d657f60",
           "source_definition": {
             "pipeline": {
@@ -2174,8 +2170,6 @@
           "node_primary_task_map": {
             "node_1": "azure_1_node_1"
           }
-<<<<<<< Updated upstream
-=======
         },
         {
           "pipeline_id": "my_pipeline",
@@ -2337,8 +2331,8 @@
           "output_filename": "my_pipeline__v4.py",
           "created_at": "2026-04-25T20:43:39.801095+00:00",
           "created_by": "admin",
-          "status": "archived",
-          "is_current": false,
+          "status": "active",
+          "is_current": true,
           "source_hash": "ffe0be3fb463572416bfacb42ff729a54c3acfd2aeaf1d65bc2801ae7e48436d",
           "source_definition": {
             "pipeline": {
@@ -2407,105 +2401,6 @@
           "requested_by_email": "",
           "requested_by_display_name": "admin",
           "updated_at": "2026-04-25T20:51:46.748277+00:00"
-        },
-        {
-          "pipeline_id": "my_pipeline",
-          "version_id": "v5",
-          "dag_version": 5,
-          "airflow_dag_id": "my_pipeline__v5",
-          "output_filename": "my_pipeline__v5.py",
-          "created_at": "2026-04-26T13:12:26.171034+00:00",
-          "created_by": "admin",
-          "status": "active",
-          "is_current": true,
-          "source_hash": "47eb053591081d46c54333f7e3893aca1462e661ca596eb1358d8091e22b338b",
-          "source_definition": {
-            "pipeline": {
-              "dag_id": "my_pipeline",
-              "description": "",
-              "start_date": "2026-01-01",
-              "schedule": null,
-              "schedule_mode": "manual",
-              "catchup": false,
-              "schedule_preset": "",
-              "schedule_cron": "",
-              "interval_value": "",
-              "interval_unit": "minutes",
-              "event_source": "",
-              "custom_schedule_text": "",
-              "retries": 3,
-              "retry_delay_minutes": 5,
-              "alert_emails": [],
-              "alert_mode": "both",
-              "tags": [
-                "demo",
-                "orchestration"
-              ],
-              "output_filename": "my_pipeline.py"
-            },
-            "nodes": [
-              {
-                "id": "node_4",
-                "type": "n8n",
-                "label": "n8n 4",
-                "x": 397,
-                "y": 211.88885498046875,
-                "config": {
-                  "http_method": "GET",
-                  "monitor_poll_interval_seconds": 5,
-                  "monitor_timeout_seconds": 300,
-                  "query_params": null,
-                  "request_body": null,
-                  "use_test_webhook": true,
-                  "workflow_name": "ok"
-                }
-              },
-              {
-                "id": "node_5",
-                "type": "talend",
-                "label": "Talend 5",
-                "x": 678.2221984863281,
-                "y": 197.33335494995117,
-                "config": {
-                  "job_name": "pl"
-                }
-              }
-            ],
-            "edges": [
-              {
-                "source": "node_4",
-                "target": "node_5"
-              }
-            ],
-            "group_boxes": []
-          },
-          "generated_local_path": "D:\\web_app_airflow\\application\\web_app\\generated_dags\\my_pipeline__v5.py",
-          "generated_airflow_path": "D:\\web_app_airflow\\application\\airflow\\dags\\my_pipeline__v5.py",
-          "node_task_map": {
-            "node_4": [
-              "n8n_1_node_4"
-            ],
-            "node_5": [
-              "talend_2_node_5"
-            ]
-          },
-          "node_primary_task_map": {
-            "node_4": "n8n_1_node_4",
-            "node_5": "talend_2_node_5"
-          },
-          "publish_status": "pr_open",
-          "workflow_name": "my_pipeline v3",
-          "workflow_slug": "my-pipeline-v3",
-          "repo_file_path": "airflow/dags/my_pipeline_git__v5.py",
-          "git_branch_name": "feature/workflow/my-pipeline-v3-3",
-          "pull_request_number": 13,
-          "pull_request_url": "https://github.com/Olive-Soft-Company/APACHE-AIRFLOW/pull/13",
-          "commit_sha": "79ca6c0c2227b6972a05040275bc1201dcfed0b3",
-          "requested_by_user_id": "admin",
-          "requested_by_email": "",
-          "requested_by_display_name": "admin",
-          "updated_at": "2026-04-26T13:13:20.415446+00:00"
->>>>>>> Stashed changes
         }
       ],
       "switch_events": [
@@ -2516,8 +2411,6 @@
           "to_version_id": "v1",
           "actor": "admin",
           "at": "2026-04-17T15:46:04.267401+00:00"
-<<<<<<< Updated upstream
-=======
         },
         {
           "event_id": "e890e709-6b03-4d27-9bf0-b56e66263cf4",
@@ -2542,15 +2435,6 @@
           "to_version_id": "v4",
           "actor": "admin",
           "at": "2026-04-25T20:43:39.801095+00:00"
-        },
-        {
-          "event_id": "058e3db3-3f1b-4957-b940-81bc084273d0",
-          "event_type": "create_and_set_current",
-          "from_version_id": "v4",
-          "to_version_id": "v5",
-          "actor": "admin",
-          "at": "2026-04-26T13:12:26.171034+00:00"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -2714,7 +2598,7 @@
       ]
     },
     "test": {
-      "current_version_id": "v2",
+      "current_version_id": "v1",
       "versions": [
         {
           "pipeline_id": "test",
@@ -2724,8 +2608,8 @@
           "output_filename": "test__v1.py",
           "created_at": "2026-04-24T09:44:40.797076+00:00",
           "created_by": "admin",
-          "status": "archived",
-          "is_current": false,
+          "status": "active",
+          "is_current": true,
           "source_hash": "7e015f442f6f463bcda9c4ca6870dcb2e8fbb4f1e0faa673999458ba754de245",
           "source_definition": {
             "pipeline": {
@@ -2788,92 +2672,6 @@
           "requested_by_email": "",
           "requested_by_display_name": "admin",
           "updated_at": "2026-04-24T15:40:28.142288+00:00"
-        },
-        {
-          "pipeline_id": "test",
-          "version_id": "v2",
-          "dag_version": 2,
-          "airflow_dag_id": "test__v2",
-          "output_filename": "test__v2.py",
-          "created_at": "2026-04-26T13:10:52.631437+00:00",
-          "created_by": "admin",
-          "status": "active",
-          "is_current": true,
-          "source_hash": "d9cd58b585b7836b28ad8f601c069eeae80faa8c8f47bde0477c803d95f49ae1",
-          "source_definition": {
-            "pipeline": {
-              "dag_id": "test",
-              "description": "",
-              "start_date": "2026-01-01",
-              "schedule": null,
-              "schedule_mode": "manual",
-              "catchup": false,
-              "schedule_preset": "",
-              "schedule_cron": "",
-              "interval_value": "",
-              "interval_unit": "minutes",
-              "event_source": "",
-              "custom_schedule_text": "",
-              "retries": 3,
-              "retry_delay_minutes": 5,
-              "alert_emails": [],
-              "alert_mode": "both",
-              "tags": [
-                "demo",
-                "orchestration"
-              ],
-              "output_filename": "test.py"
-            },
-            "nodes": [
-              {
-                "id": "node_1",
-                "type": "delay",
-                "label": "Delay 1",
-                "x": 686.2223510742188,
-                "y": 434.41663360595703,
-                "config": {
-                  "delay_minutes": 1
-                }
-              },
-              {
-                "id": "node_2",
-                "type": "n8n",
-                "label": "n8n 2",
-                "x": 1109.6666870117188,
-                "y": 444.6666564941406,
-                "config": {
-                  "workflow_name": "ok",
-                  "http_method": "GET",
-                  "use_test_webhook": true,
-                  "query_params": null,
-                  "request_body": null,
-                  "monitor_poll_interval_seconds": 5,
-                  "monitor_timeout_seconds": 300
-                }
-              }
-            ],
-            "edges": [
-              {
-                "source": "node_1",
-                "target": "node_2"
-              }
-            ],
-            "group_boxes": []
-          },
-          "generated_local_path": "D:\\web_app_airflow\\application\\web_app\\generated_dags\\test__v2.py",
-          "generated_airflow_path": "D:\\web_app_airflow\\application\\airflow\\dags\\test__v2.py",
-          "node_task_map": {
-            "node_1": [
-              "delay_1_node_1"
-            ],
-            "node_2": [
-              "n8n_2_node_2"
-            ]
-          },
-          "node_primary_task_map": {
-            "node_1": "delay_1_node_1",
-            "node_2": "n8n_2_node_2"
-          }
         }
       ],
       "switch_events": [
@@ -2884,14 +2682,6 @@
           "to_version_id": "v1",
           "actor": "admin",
           "at": "2026-04-24T09:44:40.797076+00:00"
-        },
-        {
-          "event_id": "c2f39afb-4bef-4bd0-a953-0913881f138d",
-          "event_type": "create_and_set_current",
-          "from_version_id": "v1",
-          "to_version_id": "v2",
-          "actor": "admin",
-          "at": "2026-04-26T13:10:52.631437+00:00"
         }
       ]
     }
