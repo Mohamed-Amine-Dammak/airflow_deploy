@@ -1,23 +1,30 @@
 logs:
   - type: file
-    path: /opt/airflow/logs/dag_processor/*/*/*.log
-    source: airflow
-    service: airflow
-    log_processing_rules:
-      - type: multi_line
-        name: new_log_start_with_date
-        pattern: \[\d{4}-\d{2}-\d{2}
-
-  - type: file
     path: /opt/airflow/logs/dag_id=*/run_id=*/task_id=*/attempt=*.log
     source: airflow
     service: airflow
+    start_position: beginning
+    tags:
+      - log_type:task
+    log_processing_rules:
+      - type: multi_line
+        name: new_log_entry
+        pattern: '^{'
+    processors:
+      - type: json_parser
+        name: parse_json
+
+  - type: file
+    path: /opt/airflow/logs/dag_processor/*/*/*.log
+    source: airflow
+    service: airflow
+    tags:
+      - log_type:dag_processor
 
   - type: file
     path: /opt/airflow/logs/scheduler/*.log
     source: airflow
     service: airflow
-    log_processing_rules:
-      - type: multi_line
-        name: new_log_start_with_date
-        pattern: \[\d{4}-\d{2}-\d{2}
+    tags:
+      - log_type:scheduler
+

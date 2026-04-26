@@ -375,6 +375,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./datadog/datadog.yaml:/etc/datadog-agent/datadog.yaml:ro
       - ./datadog/conf.d/airflow.d/conf.yaml:/etc/datadog-agent/conf.d/airflow.d/conf.yaml:ro
+      - ./datadog/conf.d/http_check.d/conf.yaml:/etc/datadog-agent/conf.d/http_check.d/conf.yaml:ro
       - ./logs:/opt/airflow/logs:ro
     # CRITICAL FIX: Run as root to read all log files
     user: "0:0"

@@ -1,0 +1,9 @@
+init_config:
+
+instances:
+  - name: airflow-health
+    url: http://airflow-apiserver:8080/api/v2/monitor/health
+    timeout: 5
+    tags:
+      - service:airflow
+      - component:apiserver

@@ -527,6 +527,12 @@
       error: "",
       result: null,
     });
+    const [prCreateDialog, setPrCreateDialog] = useState({
+      isOpen: false,
+      title: "",
+      description: "",
+      error: "",
+    });
     const [moduleSearch, setModuleSearch] = useState("");
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const lastCanvasPointerWorldRef = useRef(null);
@@ -1258,7 +1264,19 @@
       }
     }
 
-    async function handleCreatePullRequest() {
+    function closeCreatePrDialog() {
+      if (prPublishUi.isSubmitting) {
+        return;
+      }
+      setPrCreateDialog({
+        isOpen: false,
+        title: "",
+        description: "",
+        error: "",
+      });
+    }
+
+    function openCreatePrDialog() {
       if (!canPrPublish) {
         warnViewerReadOnly("publish DAG versions as pull requests");
         return;
@@ -1270,24 +1288,22 @@
         setStatusText("Select a pipeline DAG ID and version before creating a PR.");
         return;
       }
+      setPrCreateDialog({
+        isOpen: true,
+        title: String((pipeline && pipeline.dag_id) || "").trim(),
+        description: "",
+        error: "",
+      });
+    }
 
-      const workflowNameInput = window.prompt(
-        "Workflow name for pull request title:",
-        String((pipeline && pipeline.dag_id) || "").trim()
-      );
-      if (workflowNameInput == null) {
-        return;
-      }
-      const workflowName = String(workflowNameInput || "").trim();
-      if (!workflowName) {
+    async function submitCreatePullRequest(workflowName, description) {
+      const pipelineId = String((pipeline && pipeline.dag_id) || "").trim();
+      const versionId = String(selectedVersionId || "").trim();
+      if (!pipelineId || !versionId) {
         setStatusKind("status-warn");
-        setStatusText("Workflow name is required to create a pull request.");
-        return;
+        setStatusText("Select a pipeline DAG ID and version before creating a PR.");
+        return false;
       }
-
-      const descriptionInput = window.prompt("Optional PR description (leave empty if not needed):", "");
-      const description = descriptionInput == null ? "" : String(descriptionInput || "").trim();
-
       setPrPublishUi(function (prev) {
         return Object.assign({}, prev, { isSubmitting: true, error: "", result: null });
       });
@@ -1330,6 +1346,7 @@
             (data.pull_request_url ? " (" + data.pull_request_url + ")" : "")
         );
         await refreshPipelineVersions(pipelineId, versionId);
+        return true;
       } catch (error) {
         const message = error && error.message ? error.message : "Failed to create pull request.";
         setPrPublishUi({
@@ -1339,6 +1356,32 @@
         });
         setStatusKind("status-error");
         setStatusText(message);
+        return false;
+      }
+    }
+
+    async function handleCreatePullRequest() {
+      const workflowName = String((prCreateDialog && prCreateDialog.title) || "").trim();
+      const description = String((prCreateDialog && prCreateDialog.description) || "").trim();
+      if (!workflowName) {
+        setPrCreateDialog(function (prev) {
+          return Object.assign({}, prev, { error: "Workflow name is required to create a pull request." });
+        });
+        setStatusKind("status-warn");
+        setStatusText("Workflow name is required to create a pull request.");
+        return;
+      }
+      setPrCreateDialog(function (prev) {
+        return Object.assign({}, prev, { error: "" });
+      });
+      const success = await submitCreatePullRequest(workflowName, description);
+      if (success) {
+        setPrCreateDialog({
+          isOpen: false,
+          title: "",
+          description: "",
+          error: "",
+        });
       }
     }
 
@@ -4660,11 +4703,32 @@
                         {
                           className: "btn btn-primary",
                           type: "button",
-                          onClick: handleCreatePullRequest,
+                          onClick: openCreatePrDialog,
                           disabled: !selectedVersionId || versionsLoading || !canPrPublish || prPublishUi.isSubmitting,
                           title: canPrPublish ? "Create pull request for selected DAG version" : "No permission to publish",
                         },
-                        prPublishUi.isSubmitting ? "Creating PR..." : "Create PR"
+                        prPublishUi.isSubmitting
+                          ? "Creating PR..."
+                          : h(
+                              React.Fragment,
+                              null,
+                              h(
+                                "svg",
+                                {
+                                  className: "create-pr-github-icon",
+                                  viewBox: "0 0 24 24",
+                                  width: "14",
+                                  height: "14",
+                                  "aria-hidden": "true",
+                                  focusable: "false",
+                                },
+                                h("path", {
+                                  fill: "currentColor",
+                                  d: "M12 2C6.48 2 2 6.59 2 12.24c0 4.52 2.87 8.35 6.84 9.7.5.1.68-.22.68-.49 0-.24-.01-1.04-.01-1.89-2.78.62-3.37-1.21-3.37-1.21-.45-1.19-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .08 1.53 1.06 1.53 1.06.9 1.56 2.35 1.11 2.92.85.09-.67.35-1.11.64-1.36-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.73 0 0 .84-.27 2.75 1.05A9.3 9.3 0 0 1 12 6.84c.85 0 1.7.12 2.5.36 1.9-1.32 2.74-1.05 2.74-1.05.56 1.42.21 2.47.11 2.73.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.8-4.57 5.05.36.32.68.93.68 1.88 0 1.36-.01 2.45-.01 2.78 0 .27.18.6.69.49A10.29 10.29 0 0 0 22 12.24C22 6.59 17.52 2 12 2z",
+                                })
+                              ),
+                              "Create PR"
+                            )
                       ),
                       h(
                         "button",
@@ -4809,6 +4873,123 @@
                         )
                       : null
                   )
+            )
+          )
+        : null,
+      prCreateDialog.isOpen
+        ? h(
+            "div",
+            {
+              className: "dag-versions-overlay",
+              role: "dialog",
+              "aria-modal": "true",
+              onClick: function (event) {
+                if (event.target === event.currentTarget) {
+                  closeCreatePrDialog();
+                }
+              },
+            },
+            h(
+              "div",
+              { className: "dag-versions-modal create-pr-modal" },
+              h(
+                "div",
+                { className: "dag-versions-head" },
+                h(
+                  "div",
+                  null,
+                  h("h2", null, "Create Pull Request"),
+                  h("small", null, "Provide the PR title and optional description for this DAG version.")
+                ),
+                h(
+                  "button",
+                  {
+                    className: "btn btn-secondary",
+                    type: "button",
+                    onClick: closeCreatePrDialog,
+                    disabled: prPublishUi.isSubmitting,
+                  },
+                  "Cancel"
+                )
+              ),
+              h(
+                "div",
+                { className: "field" },
+                h("label", null, "PR Title / Workflow Name *"),
+                h("input", {
+                  type: "text",
+                  value: String(prCreateDialog.title || ""),
+                  placeholder: "Enter PR title",
+                  onChange: function (event) {
+                    setPrCreateDialog(function (prev) {
+                      return Object.assign({}, prev, { title: event.target.value, error: "" });
+                    });
+                  },
+                  disabled: prPublishUi.isSubmitting,
+                })
+              ),
+              h(
+                "div",
+                { className: "field" },
+                h("label", null, "Description (optional)"),
+                h("textarea", {
+                  value: String(prCreateDialog.description || ""),
+                  placeholder: "Optional PR description",
+                  rows: 4,
+                  onChange: function (event) {
+                    setPrCreateDialog(function (prev) {
+                      return Object.assign({}, prev, { description: event.target.value });
+                    });
+                  },
+                  disabled: prPublishUi.isSubmitting,
+                })
+              ),
+              prCreateDialog.error ? h("p", { className: "field-error" }, prCreateDialog.error) : null,
+              h(
+                "div",
+                { className: "create-pr-modal-actions" },
+                h(
+                  "button",
+                  {
+                    className: "btn btn-secondary",
+                    type: "button",
+                    onClick: closeCreatePrDialog,
+                    disabled: prPublishUi.isSubmitting,
+                  },
+                  "Cancel"
+                ),
+                h(
+                  "button",
+                  {
+                    className: "btn btn-primary",
+                    type: "button",
+                    onClick: handleCreatePullRequest,
+                    disabled: prPublishUi.isSubmitting,
+                  },
+                  prPublishUi.isSubmitting
+                    ? "Creating PR..."
+                    : h(
+                        React.Fragment,
+                        null,
+                        h(
+                          "svg",
+                          {
+                            className: "create-pr-github-icon",
+                            viewBox: "0 0 24 24",
+                            width: "14",
+                            height: "14",
+                            "aria-hidden": "true",
+                            focusable: "false",
+                          },
+                          h("path", {
+                            fill: "currentColor",
+                            d: "M12 2C6.48 2 2 6.59 2 12.24c0 4.52 2.87 8.35 6.84 9.7.5.1.68-.22.68-.49 0-.24-.01-1.04-.01-1.89-2.78.62-3.37-1.21-3.37-1.21-.45-1.19-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .08 1.53 1.06 1.53 1.06.9 1.56 2.35 1.11 2.92.85.09-.67.35-1.11.64-1.36-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.73 0 0 .84-.27 2.75 1.05A9.3 9.3 0 0 1 12 6.84c.85 0 1.7.12 2.5.36 1.9-1.32 2.74-1.05 2.74-1.05.56 1.42.21 2.47.11 2.73.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.8-4.57 5.05.36.32.68.93.68 1.88 0 1.36-.01 2.45-.01 2.78 0 .27.18.6.69.49A10.29 10.29 0 0 0 22 12.24C22 6.59 17.52 2 12 2z",
+                          })
+                        ),
+                        "Create PR"
+                      )
+                )
+              )
             )
           )
         : null,

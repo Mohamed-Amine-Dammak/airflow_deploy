@@ -176,6 +176,32 @@
   flex-wrap: wrap;
 }
 
+.create-pr-modal {
+  width: min(600px, 96vw);
+}
+
+.create-pr-modal textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.create-pr-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.create-pr-github-icon {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
 .dag-versions-modal .btn-secondary,
 .dag-versions-modal .btn-secondary:visited {
   background: #e8eff7;
