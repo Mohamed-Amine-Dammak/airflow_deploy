@@ -1135,6 +1135,16 @@ code, pre, kbd, .font-mono { font-family: var(--font-mono) !important; color: va
 [data-theme="dark"] .connections-table tbody tr:hover td {
   background: rgba(148, 163, 184, 0.09) !important;
 }
+[data-theme="dark"] .connections-table tbody tr:hover,
+[data-theme="dark"] .connections-table tbody tr:hover td {
+  background: #253246 !important;
+}
+[data-theme="dark"] .connections-table tbody tr:hover .btn-secondary,
+[data-theme="dark"] .connections-table tbody tr:hover .btn-secondary:visited {
+  background: #1a2434 !important;
+  border-color: #4b627f !important;
+  color: #e8f0fa !important;
+}
 .connections-actions-cell {
   gap: 8px !important;
 }
@@ -1540,6 +1550,19 @@ code, pre, kbd, .font-mono { font-family: var(--font-mono) !important; color: va
 [data-theme="dark"] .admin-page .connections-table td {
   color: #e3ecf6 !important;
   border-bottom: 1px solid #2a3b50 !important;
+}
+
+/* Keep table geometry intact on admin tables:
+   do not turn <td> into flex containers. */
+.admin-page .connections-table td.connections-actions-cell {
+  display: table-cell !important;
+  white-space: nowrap !important;
+}
+.admin-page .connections-table td.connections-actions-cell > * {
+  margin-right: 0.35rem !important;
+}
+.admin-page .connections-table td.connections-actions-cell > *:last-child {
+  margin-right: 0 !important;
 }
 
 [data-theme="light"] .admin-page .connections-table tbody tr:hover td {
