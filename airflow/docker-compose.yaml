@@ -357,6 +357,41 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+
+  web_app:
+    build:
+      context: ../web_app
+      dockerfile: Dockerfile
+    env_file:
+      - ../web_app/.env
+    environment:
+      # Ensure service-to-service networking inside Compose even if local .env has localhost.
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8000
+      AIRFLOW_API_BASE_URL: http://airflow-apiserver:8080
+      AIRFLOW_DAGS_DIR: /opt/airflow/dags
+      # Persist all mutable web app state on the host.
+      GENERATED_DAGS_DIR: /opt/web_app_data/generated_dags
+      SAVED_PIPELINES_DIR: /opt/web_app_data/saved_pipelines
+      LOCAL_UPLOAD_STAGING_DIR: /opt/web_app_data/tmp_uploads
+      USERS_STORE_FILE: /opt/web_app_data/users_store.json
+      REQUESTS_STORE_FILE: /opt/web_app_data/requests_store.json
+      PIPELINE_VERSIONS_STORE_FILE: /opt/web_app_data/pipeline_versions_store.json
+      GCP_CONNECTIONS_STORE_FILE: /opt/web_app_data/gcp_connections_store.json
+      DAG_PUBLISH_STORE_FILE: /opt/web_app_data/dag_publish_store.json
+      USERS_FILE: /opt/web_app_data/users.json
+      GCP_SERVICE_ACCOUNT_HOST_FILE: /opt/web_app_data/credgcp.json
+      GITHUB_APP_PRIVATE_KEY_PATH: /opt/web_app_data/github_app_private_key.pem
+    ports:
+      - "8000:8000"
+    volumes:
+      - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
+      - ${AIRFLOW_PROJ_DIR:-.}/web_app_data:/opt/web_app_data
+      - ../web_app/github_app_private_key.pem:/opt/web_app_data/github_app_private_key.pem:ro
+    restart: always
+    depends_on:
+      airflow-apiserver:
+        condition: service_healthy
     
   datadog-agent_github_dags:
     image: gcr.io/datadoghq/agent:7

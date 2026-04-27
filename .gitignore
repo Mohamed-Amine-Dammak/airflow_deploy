@@ -20,6 +20,7 @@ airflow/*.log
 airflow/pipelines/*/evaluation/history/*.tmp.json
 airflow/actions-runner/
 airflow/credgcp.json
+airflow/web_app_data/
 
 # -----------------------------
 # application root
@@ -33,5 +34,6 @@ flask_run.log
 # Python cache / bytecode (global)
 # -----------------------------
 __pycache__/
+pycache/
 *.py[cod]
 *.pyc.*
