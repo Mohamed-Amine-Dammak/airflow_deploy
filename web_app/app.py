@@ -9,7 +9,7 @@ import time
 import copy
 import base64
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
@@ -207,6 +207,7 @@ REQUEST_TYPES = {
 REQUEST_STATUS_PENDING = "pending"
 REQUEST_STATUS_FINISHED = "finished"
 REQUEST_STATUSES = {REQUEST_STATUS_PENDING, REQUEST_STATUS_FINISHED}
+PIPELINE_LOG_RETENTION_DAYS = 7
 
 
 def _airflow_api_config(timeout_seconds: int | None = None) -> AirflowApiConfig:
@@ -643,6 +644,477 @@ def _load_requests_store() -> dict[str, Any]:
 
 def _save_requests_store(store: dict[str, Any]) -> None:
     AppConfig.REQUESTS_STORE_FILE.write_text(json.dumps(store, indent=2), encoding="utf-8")
+
+
+def _normalize_pipeline_id(raw: Any) -> str:
+    value = str(raw or "").strip()
+    if value.endswith(".json"):
+        value = value[:-5]
+    return value.strip()
+
+
+def _normalize_execution_id(raw: Any) -> str:
+    return str(raw or "").strip()
+
+
+def _parse_iso_utc(raw: Any) -> datetime | None:
+    text = str(raw or "").strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = f"{text[:-1]}+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _pipeline_log_reference_time(item: dict[str, Any]) -> datetime | None:
+    for field_name in ("createdAt", "launchedAt", "startedAt", "finishedAt"):
+        parsed = _parse_iso_utc(item.get(field_name))
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def _pipeline_logs_cutoff() -> datetime:
+    return datetime.now(timezone.utc) - timedelta(days=PIPELINE_LOG_RETENTION_DAYS)
+
+
+def _sanitize_pipeline_log_item(raw_item: Any) -> dict[str, Any] | None:
+    if not isinstance(raw_item, dict):
+        return None
+    pipeline_id = _normalize_pipeline_id(raw_item.get("pipelineId"))
+    execution_id = _normalize_execution_id(raw_item.get("executionId"))
+    action_type = str(raw_item.get("actionType", "")).strip().lower()
+    if not pipeline_id or not execution_id or action_type not in {"run", "retry"}:
+        return None
+
+    retry_count_raw = raw_item.get("retryCount")
+    try:
+        retry_count = max(0, int(retry_count_raw if retry_count_raw is not None else 0))
+    except (TypeError, ValueError):
+        retry_count = 0
+
+    execution_time_raw = raw_item.get("executionTimeMs")
+    execution_time_ms: int | None
+    if execution_time_raw in (None, ""):
+        execution_time_ms = None
+    else:
+        try:
+            execution_time_ms = max(0, int(execution_time_raw))
+        except (TypeError, ValueError):
+            execution_time_ms = None
+
+    item = {
+        "id": str(raw_item.get("id", "")).strip() or uuid4().hex,
+        "pipelineId": pipeline_id,
+        "executionId": execution_id,
+        "actionType": action_type,
+        "username": str(raw_item.get("username", "")).strip() or "unknown",
+        "retryCount": retry_count,
+        "launchedAt": str(raw_item.get("launchedAt", "")).strip(),
+        "startedAt": str(raw_item.get("startedAt", "")).strip(),
+        "finishedAt": str(raw_item.get("finishedAt", "")).strip(),
+        "executionTimeMs": execution_time_ms,
+        "status": str(raw_item.get("status", "")).strip().lower(),
+        "message": str(raw_item.get("message", "")).strip(),
+        "createdAt": str(raw_item.get("createdAt", "")).strip() or _utc_now_iso(),
+    }
+    return item
+
+
+def _cleanup_pipeline_logs_store(store: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+    logs_raw = store.get("logs") if isinstance(store.get("logs"), list) else []
+    execution_meta_raw = store.get("execution_meta") if isinstance(store.get("execution_meta"), dict) else {}
+    cutoff = _pipeline_logs_cutoff()
+
+    cleaned_logs: list[dict[str, Any]] = []
+    changed = False
+    for item in logs_raw:
+        normalized = _sanitize_pipeline_log_item(item)
+        if normalized is None:
+            changed = True
+            continue
+        ref_time = _pipeline_log_reference_time(normalized)
+        if ref_time is not None and ref_time < cutoff:
+            changed = True
+            continue
+        cleaned_logs.append(normalized)
+        if normalized != item:
+            changed = True
+
+    valid_execution_keys = {
+        f"{item.get('pipelineId', '')}::{item.get('executionId', '')}"
+        for item in cleaned_logs
+        if item.get("pipelineId") and item.get("executionId")
+    }
+    cleaned_execution_meta: dict[str, Any] = {}
+    for key, value in execution_meta_raw.items():
+        if key in valid_execution_keys and isinstance(value, dict):
+            cleaned_execution_meta[key] = value
+        else:
+            changed = True
+
+    normalized_store = {"logs": cleaned_logs, "execution_meta": cleaned_execution_meta}
+    if normalized_store != store:
+        changed = True
+    return normalized_store, changed
+
+
+def _load_pipeline_logs_store() -> dict[str, Any]:
+    path = AppConfig.PIPELINE_LOGS_STORE_FILE
+    if not path.exists():
+        initial = {"logs": [], "execution_meta": {}}
+        path.write_text(json.dumps(initial, indent=2), encoding="utf-8")
+        return initial
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        payload = {"logs": [], "execution_meta": {}}
+    if not isinstance(payload, dict):
+        payload = {"logs": [], "execution_meta": {}}
+
+    cleaned, changed = _cleanup_pipeline_logs_store(payload)
+    if changed:
+        path.write_text(json.dumps(cleaned, indent=2), encoding="utf-8")
+    return cleaned
+
+
+def _save_pipeline_logs_store(store: dict[str, Any]) -> None:
+    cleaned, _changed = _cleanup_pipeline_logs_store(store if isinstance(store, dict) else {})
+    AppConfig.PIPELINE_LOGS_STORE_FILE.write_text(json.dumps(cleaned, indent=2), encoding="utf-8")
+
+
+def _normalize_log_status(raw_status: Any) -> str:
+    value = str(raw_status or "").strip().lower()
+    if value in {"success", "succeeded"}:
+        return "success"
+    if value in {"failed", "failure", "upstream_failed"}:
+        return "failed"
+    if value in {"cancelled", "canceled"}:
+        return "cancelled"
+    if value in {"running", "queued", "scheduled", "deferred"}:
+        return "running"
+    return value or "running"
+
+
+def _compute_execution_time_ms(started_at: Any, finished_at: Any) -> int | None:
+    start_dt = _parse_iso_utc(started_at)
+    finish_dt = _parse_iso_utc(finished_at)
+    if start_dt is None or finish_dt is None:
+        return None
+    duration_ms = int((finish_dt - start_dt).total_seconds() * 1000)
+    return max(0, duration_ms)
+
+
+def _execution_log_key(pipeline_id: str, execution_id: str) -> str:
+    return f"{pipeline_id}::{execution_id}"
+
+
+def _touch_execution_meta(
+    store: dict[str, Any],
+    *,
+    pipeline_id: str,
+    execution_id: str,
+    retry_count: int | None = None,
+    status: str | None = None,
+    launched_at: str | None = None,
+    started_at: str | None = None,
+    finished_at: str | None = None,
+    airflow_dag_id: str | None = None,
+) -> dict[str, Any]:
+    meta_root = store.setdefault("execution_meta", {})
+    key = _execution_log_key(pipeline_id, execution_id)
+    current = meta_root.get(key)
+    if not isinstance(current, dict):
+        current = {}
+    current["pipelineId"] = pipeline_id
+    current["executionId"] = execution_id
+    if retry_count is not None:
+        current["retryCount"] = max(0, int(retry_count))
+    if status:
+        current["status"] = _normalize_log_status(status)
+    if launched_at:
+        current["launchedAt"] = launched_at
+    if started_at:
+        current["startedAt"] = started_at
+    if finished_at:
+        current["finishedAt"] = finished_at
+    if airflow_dag_id:
+        current["airflowDagId"] = _normalize_pipeline_id(airflow_dag_id)
+    current["updatedAt"] = _utc_now_iso()
+    meta_root[key] = current
+    return current
+
+
+def _next_execution_retry_count(pipeline_id: str, execution_id: str) -> int:
+    store = _load_pipeline_logs_store()
+    key = _execution_log_key(pipeline_id, execution_id)
+    meta_root = store.setdefault("execution_meta", {})
+    current = meta_root.get(key)
+    base_count = 0
+    if isinstance(current, dict):
+        try:
+            base_count = max(0, int(current.get("retryCount", 0)))
+        except (TypeError, ValueError):
+            base_count = 0
+    next_count = base_count + 1
+    _touch_execution_meta(
+        store,
+        pipeline_id=pipeline_id,
+        execution_id=execution_id,
+        retry_count=next_count,
+    )
+    _save_pipeline_logs_store(store)
+    return next_count
+
+
+def _record_pipeline_execution_log(
+    *,
+    pipeline_id: str,
+    execution_id: str,
+    action_type: str,
+    username: str,
+    retry_count: int,
+    launched_at: str | None = None,
+    started_at: str | None = None,
+    finished_at: str | None = None,
+    status: str | None = None,
+    message: str | None = None,
+    airflow_dag_id: str | None = None,
+) -> dict[str, Any]:
+    safe_pipeline_id = _normalize_pipeline_id(pipeline_id)
+    safe_execution_id = _normalize_execution_id(execution_id)
+    safe_action = str(action_type or "").strip().lower()
+    if safe_action not in {"run", "retry"}:
+        raise ValueError("action_type must be 'run' or 'retry'.")
+    if not safe_pipeline_id or not safe_execution_id:
+        raise ValueError("pipeline_id and execution_id are required.")
+
+    launched_ts = str(launched_at or "").strip() or _utc_now_iso()
+    started_ts = str(started_at or "").strip()
+    finished_ts = str(finished_at or "").strip()
+    normalized_status = _normalize_log_status(status)
+    execution_time_ms = _compute_execution_time_ms(started_ts or launched_ts, finished_ts)
+
+    store = _load_pipeline_logs_store()
+    item = {
+        "id": uuid4().hex,
+        "pipelineId": safe_pipeline_id,
+        "executionId": safe_execution_id,
+        "actionType": safe_action,
+        "username": str(username or "").strip() or "unknown",
+        "retryCount": max(0, int(retry_count)),
+        "launchedAt": launched_ts,
+        "startedAt": started_ts,
+        "finishedAt": finished_ts,
+        "executionTimeMs": execution_time_ms,
+        "status": normalized_status,
+        "message": str(message or "").strip(),
+        "createdAt": _utc_now_iso(),
+    }
+    logs = store.setdefault("logs", [])
+    if not isinstance(logs, list):
+        logs = []
+        store["logs"] = logs
+    logs.append(item)
+    _touch_execution_meta(
+        store,
+        pipeline_id=safe_pipeline_id,
+        execution_id=safe_execution_id,
+        retry_count=item["retryCount"],
+        status=item["status"],
+        launched_at=item["launchedAt"],
+        started_at=item["startedAt"] or None,
+        finished_at=item["finishedAt"] or None,
+        airflow_dag_id=airflow_dag_id,
+    )
+    _save_pipeline_logs_store(store)
+    return item
+
+
+def _update_pipeline_execution_logs(
+    *,
+    pipeline_id: str,
+    execution_id: str,
+    status: str | None = None,
+    started_at: str | None = None,
+    finished_at: str | None = None,
+    message: str | None = None,
+    airflow_dag_id: str | None = None,
+) -> None:
+    safe_pipeline_id = _normalize_pipeline_id(pipeline_id)
+    safe_execution_id = _normalize_execution_id(execution_id)
+    if not safe_pipeline_id or not safe_execution_id:
+        return
+
+    store = _load_pipeline_logs_store()
+    logs = store.get("logs") if isinstance(store.get("logs"), list) else []
+    normalized_status = _normalize_log_status(status) if status is not None else ""
+    safe_started_at = str(started_at or "").strip()
+    safe_finished_at = str(finished_at or "").strip()
+    safe_message = str(message or "").strip()
+
+    changed = False
+    for item in logs:
+        if not isinstance(item, dict):
+            continue
+        if _normalize_pipeline_id(item.get("pipelineId")) != safe_pipeline_id:
+            continue
+        if _normalize_execution_id(item.get("executionId")) != safe_execution_id:
+            continue
+
+        if normalized_status and item.get("status") != normalized_status:
+            item["status"] = normalized_status
+            changed = True
+        if safe_started_at and item.get("startedAt") != safe_started_at:
+            item["startedAt"] = safe_started_at
+            changed = True
+        if safe_finished_at and item.get("finishedAt") != safe_finished_at:
+            item["finishedAt"] = safe_finished_at
+            changed = True
+        if safe_message:
+            current_message = str(item.get("message", "")).strip()
+            if current_message != safe_message:
+                item["message"] = safe_message
+                changed = True
+
+        execution_ms = _compute_execution_time_ms(
+            item.get("startedAt") or item.get("launchedAt"),
+            item.get("finishedAt"),
+        )
+        if execution_ms is not None and item.get("executionTimeMs") != execution_ms:
+            item["executionTimeMs"] = execution_ms
+            changed = True
+
+    if not changed:
+        return
+
+    retry_count = 0
+    for item in logs:
+        if not isinstance(item, dict):
+            continue
+        if _normalize_pipeline_id(item.get("pipelineId")) != safe_pipeline_id:
+            continue
+        if _normalize_execution_id(item.get("executionId")) != safe_execution_id:
+            continue
+        try:
+            retry_count = max(retry_count, int(item.get("retryCount", 0)))
+        except (TypeError, ValueError):
+            continue
+
+    _touch_execution_meta(
+        store,
+        pipeline_id=safe_pipeline_id,
+        execution_id=safe_execution_id,
+        retry_count=retry_count,
+        status=normalized_status or None,
+        started_at=safe_started_at or None,
+        finished_at=safe_finished_at or None,
+        airflow_dag_id=airflow_dag_id,
+    )
+    _save_pipeline_logs_store(store)
+
+
+def _resolve_pipeline_id_for_execution(execution_id: str, fallback_pipeline_id: str = "") -> str:
+    safe_execution_id = _normalize_execution_id(execution_id)
+    safe_fallback = _normalize_pipeline_id(fallback_pipeline_id)
+    if not safe_execution_id:
+        return safe_fallback
+
+    store = _load_pipeline_logs_store()
+    meta_root = store.get("execution_meta") if isinstance(store.get("execution_meta"), dict) else {}
+    for item in meta_root.values():
+        if not isinstance(item, dict):
+            continue
+        if _normalize_execution_id(item.get("executionId")) == safe_execution_id:
+            resolved = _normalize_pipeline_id(item.get("pipelineId"))
+            if resolved:
+                return resolved
+
+    logs = store.get("logs") if isinstance(store.get("logs"), list) else []
+    for item in reversed(logs):
+        if not isinstance(item, dict):
+            continue
+        if _normalize_execution_id(item.get("executionId")) == safe_execution_id:
+            resolved = _normalize_pipeline_id(item.get("pipelineId"))
+            if resolved:
+                return resolved
+
+    return safe_fallback
+
+
+def _resolve_airflow_dag_id_for_execution(execution_id: str, fallback_pipeline_id: str = "") -> str:
+    safe_execution_id = _normalize_execution_id(execution_id)
+    safe_fallback = _normalize_pipeline_id(fallback_pipeline_id)
+    if not safe_execution_id:
+        return safe_fallback
+
+    store = _load_pipeline_logs_store()
+    meta_root = store.get("execution_meta") if isinstance(store.get("execution_meta"), dict) else {}
+    for item in meta_root.values():
+        if not isinstance(item, dict):
+            continue
+        if _normalize_execution_id(item.get("executionId")) != safe_execution_id:
+            continue
+        if safe_fallback and _normalize_pipeline_id(item.get("pipelineId")).lower() != safe_fallback.lower():
+            continue
+        airflow_dag_id = _normalize_pipeline_id(item.get("airflowDagId"))
+        if airflow_dag_id:
+            return airflow_dag_id
+
+    return safe_fallback
+
+
+def _candidate_airflow_dag_ids_for_pipeline(pipeline_id: str, execution_id: str) -> list[str]:
+    safe_pipeline_id = _normalize_pipeline_id(pipeline_id)
+    safe_execution_id = _normalize_execution_id(execution_id)
+    candidates: list[str] = []
+
+    primary = _resolve_airflow_dag_id_for_execution(safe_execution_id, safe_pipeline_id)
+    if primary:
+        candidates.append(primary)
+
+    try:
+        listing = list_pipeline_versions(AppConfig.PIPELINE_VERSIONS_STORE_FILE, safe_pipeline_id)
+    except Exception:  # noqa: BLE001
+        listing = {}
+    versions = listing.get("versions") if isinstance(listing, dict) else []
+    if isinstance(versions, list):
+        for version in versions:
+            if not isinstance(version, dict):
+                continue
+            airflow_dag_id = _normalize_pipeline_id(version.get("airflow_dag_id"))
+            if airflow_dag_id and airflow_dag_id not in candidates:
+                candidates.append(airflow_dag_id)
+
+    if safe_pipeline_id and safe_pipeline_id not in candidates:
+        candidates.append(safe_pipeline_id)
+
+    return candidates
+
+
+def _list_pipeline_execution_logs(pipeline_id: str) -> list[dict[str, Any]]:
+    safe_pipeline_id = _normalize_pipeline_id(pipeline_id)
+    if not safe_pipeline_id:
+        return []
+
+    store = _load_pipeline_logs_store()
+    logs = [item for item in (store.get("logs") or []) if isinstance(item, dict)]
+    filtered = [
+        item
+        for item in logs
+        if _normalize_pipeline_id(item.get("pipelineId")).lower() == safe_pipeline_id.lower()
+    ]
+    filtered.sort(
+        key=lambda item: _pipeline_log_reference_time(item) or datetime.fromtimestamp(0, tz=timezone.utc),
+        reverse=True,
+    )
+    return filtered
 
 
 def _load_gcp_connections_store() -> dict[str, Any]:
@@ -1149,6 +1621,19 @@ def _normalize_connection_type(raw: str) -> str:
     return value
 
 
+def _saved_pipeline_id_from_file(path: Path) -> str:
+    fallback = _normalize_pipeline_id(path.stem)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return fallback
+    if not isinstance(payload, dict):
+        return fallback
+    pipeline = payload.get("pipeline") if isinstance(payload.get("pipeline"), dict) else {}
+    dag_id = _normalize_pipeline_id(pipeline.get("dag_id"))
+    return dag_id or fallback
+
+
 def _collect_admin_dashboard_metrics() -> dict[str, Any]:
     users_store = _load_users_store()
     env_admin_username = AppConfig.ADMIN_USERNAME
@@ -1180,6 +1665,7 @@ def _collect_admin_dashboard_metrics() -> dict[str, Any]:
         "saved_pipelines": [
             {
                 "name": path.name,
+                "pipeline_id": _saved_pipeline_id_from_file(path),
                 "updated_at": datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
             }
             for path in all_saved_pipelines
@@ -2328,6 +2814,127 @@ def api_admin_delete_generated_dag_file(filename: str):
     )
 
 
+@app.get("/api/admin/pipeline-logs/<pipeline_id>")
+def api_admin_pipeline_logs(pipeline_id: str):
+    forbidden = _require_admin_access()
+    if forbidden is not None:
+        return forbidden
+
+    safe_pipeline_id = _normalize_pipeline_id(pipeline_id)
+    if not safe_pipeline_id:
+        return _json_error("pipeline_id is required.", 400)
+
+    rows = _list_pipeline_execution_logs(safe_pipeline_id)
+    enriched_rows: list[dict[str, Any]] = []
+    for item in rows:
+        enriched = dict(item)
+        execution_id = _normalize_execution_id(item.get("executionId"))
+        enriched["airflowDagId"] = _resolve_airflow_dag_id_for_execution(execution_id, safe_pipeline_id)
+        enriched_rows.append(enriched)
+
+    return jsonify(
+        {
+            "success": True,
+            "pipeline_id": safe_pipeline_id,
+            "retention_days": PIPELINE_LOG_RETENTION_DAYS,
+            "logs": enriched_rows,
+        }
+    )
+
+
+@app.get("/api/admin/pipeline-logs/<pipeline_id>/<execution_id>/details")
+def api_admin_pipeline_log_details(pipeline_id: str, execution_id: str):
+    forbidden = _require_admin_access()
+    if forbidden is not None:
+        return forbidden
+
+    safe_pipeline_id = _normalize_pipeline_id(pipeline_id)
+    safe_execution_id = _normalize_execution_id(execution_id)
+    if not safe_pipeline_id or not safe_execution_id:
+        return _json_error("pipeline_id and execution_id are required.", 400)
+
+    candidate_dag_ids = _candidate_airflow_dag_ids_for_pipeline(safe_pipeline_id, safe_execution_id)
+    if not candidate_dag_ids:
+        return _json_error("No Airflow DAG mapping found for this execution.", 404)
+
+    task_instances: list[dict[str, Any]] = []
+    airflow_dag_id = ""
+    last_error = ""
+    for candidate in candidate_dag_ids:
+        try:
+            task_instances = list_dag_run_task_instances(
+                config=_airflow_api_config(),
+                dag_id=candidate,
+                dag_run_id=safe_execution_id,
+            )
+            airflow_dag_id = candidate
+            last_error = ""
+            break
+        except AirflowApiError as exc:
+            last_error = str(exc)
+            continue
+        except Exception as exc:  # noqa: BLE001
+            last_error = f"Unable to load execution task instances: {exc}"
+            continue
+
+    if not airflow_dag_id:
+        return _json_error(
+            last_error or "Unable to resolve execution task instances.",
+            502,
+            pipeline_id=safe_pipeline_id,
+            execution_id=safe_execution_id,
+        )
+
+    details: list[dict[str, Any]] = []
+    for item in task_instances:
+        task_id = str(item.get("task_id", "")).strip()
+        if not task_id:
+            continue
+        try:
+            try_number = max(1, int(item.get("try_number") or 1))
+        except (TypeError, ValueError):
+            try_number = 1
+
+        log_content = ""
+        log_error = ""
+        try:
+            log_payload = get_task_instance_log(
+                config=_airflow_api_config(),
+                dag_id=airflow_dag_id,
+                dag_run_id=safe_execution_id,
+                task_id=task_id,
+                try_number=try_number,
+            )
+            log_content = str(log_payload.get("content", "")).strip()
+        except AirflowApiError as exc:
+            log_error = str(exc)
+        except Exception as exc:  # noqa: BLE001
+            log_error = f"Unable to fetch logs for task '{task_id}': {exc}"
+
+        details.append(
+            {
+                "task_id": task_id,
+                "state": str(item.get("state", "")).strip().lower(),
+                "try_number": try_number,
+                "start_date": item.get("start_date"),
+                "end_date": item.get("end_date"),
+                "log_content": log_content,
+                "log_error": log_error,
+            }
+        )
+
+    details.sort(key=lambda row: str(row.get("task_id", "")))
+    return jsonify(
+        {
+            "success": True,
+            "pipeline_id": safe_pipeline_id,
+            "execution_id": safe_execution_id,
+            "airflow_dag_id": airflow_dag_id,
+            "tasks": details,
+        }
+    )
+
+
 @app.get("/release-notes/v0")
 def release_notes_v0():
     return render_template("release_notes_v0.html")
@@ -3005,6 +3612,28 @@ def api_run_dag():
         except Exception as exc:  # noqa: BLE001
             return _json_error(f"DAG run trigger failed: {exc}", 500, dag_id=dag_id)
 
+    logged_pipeline_id = _normalize_pipeline_id(payload.get("pipeline_id")) or _normalize_pipeline_id(
+        run_result.get("dag_id")
+    ) or _normalize_pipeline_id(dag_id)
+    logged_execution_id = _normalize_execution_id(run_result.get("dag_run_id")) or f"run-{uuid4().hex[:12]}"
+    launched_at = _utc_now_iso()
+    started_at = str(run_result.get("start_date", "")).strip() or launched_at
+    try:
+        _record_pipeline_execution_log(
+            pipeline_id=logged_pipeline_id,
+            execution_id=logged_execution_id,
+            action_type="run",
+            username=_current_actor_username(),
+            retry_count=0,
+            launched_at=launched_at,
+            started_at=started_at,
+            status=run_result.get("state"),
+            message="Pipeline run triggered.",
+            airflow_dag_id=run_result.get("dag_id") or dag_id,
+        )
+    except Exception:  # noqa: BLE001
+        pass
+
     return jsonify(
         {
             "success": True,
@@ -3031,6 +3660,19 @@ def api_run_status(dag_id: str, dag_run_id: str):
         return _json_error(str(exc), 502, dag_id=dag_id, dag_run_id=dag_run_id)
     except Exception as exc:  # noqa: BLE001
         return _json_error(f"DAG run status lookup failed: {exc}", 500, dag_id=dag_id, dag_run_id=dag_run_id)
+
+    resolved_pipeline_id = _resolve_pipeline_id_for_execution(dag_run_id, dag_id)
+    try:
+        _update_pipeline_execution_logs(
+            pipeline_id=resolved_pipeline_id,
+            execution_id=dag_run_id,
+            status=status.get("state"),
+            started_at=status.get("start_date"),
+            finished_at=status.get("end_date"),
+            airflow_dag_id=dag_id,
+        )
+    except Exception:  # noqa: BLE001
+        pass
 
     return jsonify({"success": True, **status})
 
@@ -3113,6 +3755,24 @@ def api_retry_task_instance(dag_id: str, dag_run_id: str, task_id: str):
             task_id=task_id,
         )
 
+    try:
+        safe_pipeline_id = _resolve_pipeline_id_for_execution(dag_run_id, dag_id)
+        safe_execution_id = _normalize_execution_id(dag_run_id)
+        retry_count = _next_execution_retry_count(safe_pipeline_id, safe_execution_id)
+        _record_pipeline_execution_log(
+            pipeline_id=safe_pipeline_id,
+            execution_id=safe_execution_id,
+            action_type="retry",
+            username=_current_actor_username(),
+            retry_count=retry_count,
+            launched_at=_utc_now_iso(),
+            status="running",
+            message=f"Task retry triggered for '{task_id}'.",
+            airflow_dag_id=dag_id,
+        )
+    except Exception:  # noqa: BLE001
+        pass
+
     return jsonify({"success": True, **retry_payload})
 
 
@@ -3143,6 +3803,20 @@ def api_stop_dag_run(dag_id: str, dag_run_id: str):
             dag_id=dag_id,
             dag_run_id=dag_run_id,
         )
+
+    resolved_pipeline_id = _resolve_pipeline_id_for_execution(dag_run_id, dag_id)
+    try:
+        actor = _current_actor_username() or "unknown"
+        _update_pipeline_execution_logs(
+            pipeline_id=resolved_pipeline_id,
+            execution_id=dag_run_id,
+            status="cancelled",
+            finished_at=_utc_now_iso(),
+            message=f"Run cancelled by {actor}.",
+            airflow_dag_id=dag_id,
+        )
+    except Exception:  # noqa: BLE001
+        pass
 
     return jsonify({"success": True, **payload})
 

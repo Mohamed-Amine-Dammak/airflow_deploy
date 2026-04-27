@@ -168,7 +168,10 @@
 
     .input-float__field {
       width: 100%;
-      padding: 18px 14px 8px;
+      height: 56px;
+      box-sizing: border-box;
+      padding: 24px 16px 8px;
+      line-height: 24px;
       font-size: 14px;
       font-family: var(--font-ui);
       border-radius: var(--r-input);
@@ -176,35 +179,42 @@
       background: var(--bg-surface);
       color: var(--text-primary);
       outline: none;
-      transition: all var(--dur-fast) ease;
+      transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+    }
+
+    .input-float__field::placeholder {
+      color: var(--text-muted);
+      opacity: 0.6;
     }
 
     .input-float__field:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
+      box-shadow: 0 0 0 2px var(--accent-glow);
     }
 
     .input-float__label {
       position: absolute;
-      left: 14px;
+      left: 16px;
       top: 50%;
       transform: translateY(-50%);
       font-size: 14px;
       color: var(--text-muted);
       pointer-events: none;
-      transition: all var(--dur-fast) var(--ease-out);
+      transition: top var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out), font-size var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
     }
 
-    .input-float__field:focus + .input-float__label,
-    .input-float__field:not(:placeholder-shown) + .input-float__label {
-      top: 10px;
+    .input-float.input-float--has-value .input-float__label {
+      top: 6px;
       transform: none;
       font-size: 10px;
       font-weight: 600;
       color: var(--accent);
       letter-spacing: 0.04em;
+      opacity: 0.95;
       text-transform: uppercase;
     }
+
+    .input-float__field:focus + .input-float__label { color: var(--accent); }
 
     .input-float__toggle {
       position: absolute;
@@ -512,6 +522,24 @@
   <button class="theme-toggle-float" id="themeToggle" title="Change theme"></button>
 
   <script>
+    // Float labels only when fields contain a value
+    var floatFields = document.querySelectorAll('.input-float__field');
+    function syncFloatState(field) {
+      var wrapper = field.closest('.input-float');
+      if (!wrapper) return;
+      wrapper.classList.toggle('input-float--has-value', field.value.length > 0);
+    }
+    floatFields.forEach(function(field) {
+      syncFloatState(field);
+      field.addEventListener('input', function() { syncFloatState(field); });
+      field.addEventListener('change', function() { syncFloatState(field); });
+      field.addEventListener('blur', function() { syncFloatState(field); });
+    });
+    // Handle browser autofill restoring values after initial paint
+    setTimeout(function() {
+      floatFields.forEach(syncFloatState);
+    }, 0);
+
     // Toggle password
     var passwordToggle = document.getElementById('togglePassword');
     var passwordField = document.getElementById('password');

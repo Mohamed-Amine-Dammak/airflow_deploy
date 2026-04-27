@@ -61,9 +61,214 @@
     { value: "http", label: "HTTP" },
     { value: "wasb", label: "Azure Blob Storage" },
   ];
-
   function normalizeDagRunStateClass(state) {
     return String(state || "not_generated").replace(/[^a-z0-9_-]+/gi, "_");
+  }
+
+  function normalizeFieldType(fieldType) {
+    return String(fieldType || "text").trim().toLowerCase();
+  }
+
+  function formatFieldTypeLabel(fieldType) {
+    const normalized = normalizeFieldType(fieldType);
+    const map = {
+      text: "Text",
+      textarea: "Long text",
+      number: "Number",
+      json: "JSON",
+      boolean: "Boolean",
+      radio_boolean: "Boolean",
+      select: "Selection",
+      list: "Comma-separated list",
+      file_single: "Single file",
+      file_multiple: "Multiple files",
+      link_list: "List of links",
+      dynamic_project_ids: "Dynamic project list",
+      branch_target_select: "Branch target",
+    };
+    return map[normalized] || normalized.replace(/_/g, " ");
+  }
+
+  function buildConditionText(field) {
+    const conditions = [];
+    if (field && field.show_if && typeof field.show_if === "object") {
+      Object.keys(field.show_if).forEach(function (name) {
+        conditions.push(name + " = " + String(field.show_if[name]));
+      });
+    }
+    if (field && Array.isArray(field.show_if_all)) {
+      field.show_if_all.forEach(function (entry) {
+        if (!entry || typeof entry !== "object") {
+          return;
+        }
+        Object.keys(entry).forEach(function (name) {
+          conditions.push(name + " = " + String(entry[name]));
+        });
+      });
+    }
+    if (!conditions.length) {
+      return "";
+    }
+    return "Visible when: " + conditions.join(" and ");
+  }
+
+  function buildFieldSummary(field) {
+    const parts = [];
+    if (field && field.description) {
+      parts.push(String(field.description));
+    }
+    const conditionText = buildConditionText(field);
+    if (conditionText) {
+      parts.push(conditionText);
+    }
+    if (field && Array.isArray(field.options) && field.options.length > 0) {
+      const labels = field.options
+        .map(function (option) {
+          return String(option && (option.label || option.value) || "").trim();
+        })
+        .filter(Boolean);
+      if (labels.length > 0) {
+        parts.push("Allowed values: " + labels.join(", "));
+      }
+    }
+    if (parts.length > 0) {
+      return parts.join(" ");
+    }
+    return "Configure this field for the selected module behavior.";
+  }
+
+  function buildFieldExample(field) {
+    if (field && field.placeholder != null && String(field.placeholder).trim()) {
+      return String(field.placeholder).trim();
+    }
+    if (field && field.default != null && String(field.default).trim()) {
+      return String(field.default).trim();
+    }
+    if (field && Array.isArray(field.options) && field.options.length > 0) {
+      const first = field.options[0];
+      if (first) {
+        return String(first.value || first.label || "").trim();
+      }
+    }
+    return "";
+  }
+
+  function NodeHelpModal(props) {
+    if (!props || !props.isOpen) {
+      return null;
+    }
+
+    const schema = props.schema || null;
+    const schemaFields = schema && Array.isArray(schema.fields) ? schema.fields : [];
+    const requiredFields = schemaFields.filter(function (field) {
+      return Boolean(field && field.required);
+    });
+    const optionalFields = schemaFields.filter(function (field) {
+      return !field || !field.required;
+    });
+    const moduleTitle =
+      String((schema && schema.display_name) || props.nodeLabel || props.nodeType || "Module").trim() || "Module";
+    const moduleSummary =
+      String((schema && schema.description) || "Field guidance for this module configuration.").trim();
+    const schemaMissing = !schema || !schemaFields.length;
+
+    function renderFieldRow(field, suffix) {
+      const fieldName = String((field && field.name) || "field").trim() || "field";
+      const fieldLabel = String((field && field.label) || fieldName).trim() || fieldName;
+      const typeLabel = formatFieldTypeLabel(field && field.type);
+      const example = buildFieldExample(field);
+      return h(
+        "li",
+        { key: fieldName + "_" + suffix },
+        h("strong", null, fieldLabel + " (" + fieldName + ")"),
+        h("p", null, buildFieldSummary(field)),
+        h(
+          "div",
+          { className: "node-help-meta" },
+          h("span", null, "Type: " + typeLabel),
+          h("span", null, field && field.required ? "Required" : "Optional")
+        ),
+        example
+          ? h(
+              "code",
+              { className: "node-help-example" },
+              "Example: " + example
+            )
+          : null
+      );
+    }
+
+    return h(
+      "div",
+      {
+        className: "node-help-overlay",
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-labelledby": "node-help-title",
+        onClick: function (event) {
+          if (event.target === event.currentTarget && props.onClose) {
+            props.onClose();
+          }
+        },
+      },
+      h(
+        "div",
+        { className: "node-help-modal" },
+        h(
+          "div",
+          { className: "node-help-head" },
+          h(
+            "div",
+            null,
+            h("h2", { id: "node-help-title" }, moduleTitle + " help"),
+            h("small", null, moduleSummary)
+          ),
+          h(
+            "button",
+            {
+              className: "btn btn-secondary",
+              type: "button",
+              onClick: props.onClose,
+            },
+            "Close"
+          )
+        ),
+        schemaMissing
+          ? h("p", { className: "node-help-loading" }, props.isLoading ? "Loading module configuration..." : "No configuration schema available for this module.")
+          : h(
+              "div",
+              { className: "node-help-grid" },
+              h(
+                "section",
+                { className: "node-help-section" },
+                h("h3", null, "Required"),
+                requiredFields.length
+                  ? h(
+                      "ul",
+                      null,
+                      requiredFields.map(function (field) {
+                        return renderFieldRow(field, "required");
+                      })
+                    )
+                  : h("p", { className: "node-help-empty" }, "No required fields.")
+              ),
+              h(
+                "section",
+                { className: "node-help-section" },
+                h("h3", null, "Optional"),
+                optionalFields.length
+                  ? h(
+                      "ul",
+                      null,
+                      optionalFields.map(function (field) {
+                        return renderFieldRow(field, "optional");
+                      })
+                    )
+                  : h("p", { className: "node-help-empty" }, "No optional fields.")
+              )
+            )
+      )
+    );
   }
 
   function normalizeTaskState(state) {
@@ -574,6 +779,13 @@
       isLoading: false,
       error: "",
       lastFetchedAt: null,
+    });
+    const [nodeHelpModal, setNodeHelpModal] = useState({
+      isOpen: false,
+      nodeId: null,
+      nodeType: "",
+      nodeLabel: "",
+      isLoading: false,
     });
     const [connectionsUi, setConnectionsUi] = useState({
       isOpen: false,
@@ -1531,6 +1743,30 @@
         };
       },
       [showDagVersions]
+    );
+
+    useEffect(
+      function () {
+        if (!nodeHelpModal.isOpen) {
+          return;
+        }
+        function onEscape(event) {
+          if (event.key === "Escape") {
+            setNodeHelpModal({
+              isOpen: false,
+              nodeId: null,
+              nodeType: "",
+              nodeLabel: "",
+              isLoading: false,
+            });
+          }
+        }
+        document.addEventListener("keydown", onEscape);
+        return function () {
+          document.removeEventListener("keydown", onEscape);
+        };
+      },
+      [nodeHelpModal.isOpen]
     );
 
     useEffect(function () {
@@ -2896,6 +3132,45 @@
       }
     }
 
+    function closeNodeHelpModal() {
+      setNodeHelpModal({
+        isOpen: false,
+        nodeId: null,
+        nodeType: "",
+        nodeLabel: "",
+        isLoading: false,
+      });
+    }
+
+    async function openNodeHelp(nodeId) {
+      const node = nodes.find(function (item) {
+        return item.id === nodeId;
+      });
+      if (!node) {
+        return;
+      }
+      setNodeHelpModal({
+        isOpen: true,
+        nodeId: node.id,
+        nodeType: String(node.type || ""),
+        nodeLabel: String(node.label || ""),
+        isLoading: true,
+      });
+      try {
+        await ensureSchema(String(node.type || ""));
+      } catch (error) {
+        setStatusKind("status-error");
+        setStatusText(error && error.message ? error.message : "Unable to load module help schema.");
+      } finally {
+        setNodeHelpModal(function (prev) {
+          if (!prev.isOpen || prev.nodeId !== node.id) {
+            return prev;
+          }
+          return Object.assign({}, prev, { isLoading: false });
+        });
+      }
+    }
+
     async function refreshCurrentLogs() {
       if (!logsPanel.isOpen || !activeRun || !activeRun.dag_id || !activeRun.dag_run_id || !logsPanel.taskId) {
         return;
@@ -3370,6 +3645,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             dag_id: safeDagId,
+            pipeline_id: String((pipeline && pipeline.dag_id) || "").trim() || safeDagId,
             conf: safeRunConf,
           }),
         });
@@ -4584,6 +4860,7 @@
             onCanvasDrop: handleCanvasDrop,
             onNodeMoved: handleNodeMoved,
             onOpenNodeLogs: openNodeLogs,
+            onOpenNodeHelp: openNodeHelp,
             onRetryNode: handleRetryNode,
             onCanvasPointerWorldChange: handleCanvasPointerWorldChange,
           })
@@ -4992,6 +5269,16 @@
               )
             )
           )
+        : null,
+      nodeHelpModal.isOpen
+        ? h(NodeHelpModal, {
+            isOpen: nodeHelpModal.isOpen,
+            nodeType: nodeHelpModal.nodeType,
+            nodeLabel: nodeHelpModal.nodeLabel,
+            schema: moduleSchemas[nodeHelpModal.nodeType] || null,
+            isLoading: nodeHelpModal.isLoading,
+            onClose: closeNodeHelpModal,
+          })
         : null,
       logsPanel.isOpen
         ? h(

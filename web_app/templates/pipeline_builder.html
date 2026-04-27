@@ -13,7 +13,7 @@
   <!-- style.css existant -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20260424f">
   <!-- Bridge : mappe les class names React vers les nouveaux tokens -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style-bridge.css') }}?v=20260424g">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style-bridge.css') }}?v=20260427c">
 </head>
 <body>
 
@@ -97,6 +97,7 @@
     };
   </script>
 
+  {% include 'partials/home_button.html' %}
 </body>
 </html>
 

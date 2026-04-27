@@ -818,6 +818,64 @@ tr:hover td { background: var(--bg-hover) !important; }
   color: var(--text-primary) !important;
 }
 
+.node-help-overlay {
+  background: rgba(2, 8, 23, 0.56) !important;
+}
+
+.node-help-modal {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+.node-help-head {
+  border-bottom-color: var(--border) !important;
+}
+
+.node-help-head small {
+  color: var(--text-muted) !important;
+}
+
+.node-help-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.node-help-section {
+  background: var(--bg-surface-2) !important;
+  border-color: var(--border) !important;
+}
+
+.node-help-section li p {
+  color: var(--text-secondary) !important;
+}
+
+.node-help-example {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+.node-help-meta {
+  color: var(--text-muted) !important;
+}
+
+.node-help-meta span {
+  border: 1px solid var(--border) !important;
+  background: var(--bg-surface) !important;
+  color: var(--text-secondary) !important;
+}
+
+.node-help-loading,
+.node-help-empty {
+  color: var(--text-muted) !important;
+}
+
+@media (max-width: 760px) {
+  .node-help-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* Version history items */
 .version-history-run {
   background: var(--bg-surface) !important;
@@ -919,15 +977,18 @@ code, pre, kbd, .font-mono { font-family: var(--font-mono) !important; color: va
   height: 136px !important;
   display: flex !important;
   flex-direction: column !important;
+  box-sizing: border-box !important;
 }
 .node-head {
   min-height: 50px !important;
   padding: 9px 11px !important;
+  box-sizing: border-box !important;
 }
 .node-head-left {
   width: 100% !important;
   min-width: 0 !important;
   gap: 8px !important;
+  flex: 1 !important;
 }
 .node-head b,
 .node-head strong {
@@ -936,12 +997,33 @@ code, pre, kbd, .font-mono { font-family: var(--font-mono) !important; color: va
   line-height: 1.2 !important;
   letter-spacing: 0 !important;
 }
+.node-help-btn {
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--border) !important;
+  background: var(--bg-surface) !important;
+  color: var(--text-muted) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  transition: all var(--dur-fast) ease !important;
+}
+.node-help-btn:hover {
+  border-color: var(--accent) !important;
+  background: var(--bg-hover) !important;
+  color: var(--text-primary) !important;
+  transform: translateY(-1px) !important;
+}
 .node-body {
   flex: 1 !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 5px !important;
   padding: 8px 11px !important;
+  box-sizing: border-box !important;
 }
 .node-body > div:not(.node-actions) {
   white-space: nowrap !important;
@@ -965,6 +1047,7 @@ code, pre, kbd, .font-mono { font-family: var(--font-mono) !important; color: va
   flex-wrap: nowrap !important;
   align-items: stretch !important;
   border-top: 1px solid var(--border-subtle) !important;
+  box-sizing: border-box !important;
 }
 .node-action-btn {
   min-height: 34px !important;
@@ -976,6 +1059,7 @@ code, pre, kbd, .font-mono { font-family: var(--font-mono) !important; color: va
   justify-content: center !important;
   white-space: nowrap !important;
   overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
 /* Connector clarity: left input, right output */
@@ -1316,6 +1400,11 @@ code, pre, kbd, .font-mono { font-family: var(--font-mono) !important; color: va
   border-color: #334b69 !important;
   color: #deebf8 !important;
   box-shadow: 0 8px 16px rgba(2, 8, 23, 0.32) !important;
+}
+
+[data-theme="dark"] .flow-step:hover {
+  border-color: #4f7198 !important;
+  box-shadow: 0 11px 24px rgba(2, 8, 23, 0.42), 0 0 0 2px rgba(59, 130, 246, 0.12) !important;
 }
 
 [data-theme="dark"] .landing-section {
@@ -1701,6 +1790,91 @@ code, pre, kbd, .font-mono { font-family: var(--font-mono) !important; color: va
   background: rgba(6, 78, 59, 0.38) !important;
   border-color: #0f766e !important;
   color: #6ee7b7 !important;
+}
+
+[data-theme="light"] .admin-status-badge.is-success {
+  background: #ecfdf3 !important;
+  border-color: #86efac !important;
+  color: #166534 !important;
+}
+
+[data-theme="light"] .admin-status-badge.is-failed {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #b91c1c !important;
+}
+
+[data-theme="light"] .admin-status-badge.is-running {
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #1d4ed8 !important;
+}
+
+[data-theme="light"] .admin-status-badge.is-cancelled {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+[data-theme="dark"] .admin-status-badge.is-success {
+  background: rgba(6, 78, 59, 0.38) !important;
+  border-color: #0f766e !important;
+  color: #6ee7b7 !important;
+}
+
+[data-theme="dark"] .admin-status-badge.is-failed {
+  background: rgba(127, 29, 29, 0.52) !important;
+  border-color: #b91c1c !important;
+  color: #fecaca !important;
+}
+
+[data-theme="dark"] .admin-status-badge.is-running {
+  background: rgba(30, 64, 175, 0.35) !important;
+  border-color: #1d4ed8 !important;
+  color: #bfdbfe !important;
+}
+
+[data-theme="dark"] .admin-status-badge.is-cancelled {
+  background: rgba(71, 85, 105, 0.4) !important;
+  border-color: #64748b !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .admin-logs-overlay {
+  background: rgba(17, 24, 39, 0.5) !important;
+}
+
+[data-theme="dark"] .admin-logs-overlay {
+  background: rgba(2, 8, 20, 0.72) !important;
+}
+
+[data-theme="light"] .admin-logs-modal {
+  background: #ffffff !important;
+  border: 1px solid #d7e3ef !important;
+}
+
+[data-theme="dark"] .admin-logs-modal {
+  background: #151d2a !important;
+  border: 1px solid #33475e !important;
+}
+
+[data-theme="light"] .admin-logs-head {
+  border-bottom: 1px solid #dce8f3 !important;
+}
+
+[data-theme="dark"] .admin-logs-head {
+  border-bottom: 1px solid #2b3d53 !important;
+}
+
+[data-theme="dark"] .admin-task-log-box {
+  background: #1a2230 !important;
+  border: 1px solid #33485f !important;
+}
+
+[data-theme="dark"] .admin-task-log-content {
+  background: #131b28 !important;
+  border: 1px solid #2f435a !important;
+  color: #e2ebf6 !important;
 }
 
 [data-theme="light"] .admin-snapshot-item {

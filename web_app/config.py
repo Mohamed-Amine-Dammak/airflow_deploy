@@ -70,6 +70,7 @@ class AppConfig:
     LOCAL_UPLOAD_STAGING_DIR = _env_path("LOCAL_UPLOAD_STAGING_DIR", BASE_DIR / "tmp_uploads")
     USERS_STORE_FILE = _env_path("USERS_STORE_FILE", BASE_DIR / "users_store.json")
     REQUESTS_STORE_FILE = _env_path("REQUESTS_STORE_FILE", BASE_DIR / "requests_store.json")
+    PIPELINE_LOGS_STORE_FILE = _env_path("PIPELINE_LOGS_STORE_FILE", BASE_DIR / "pipeline_logs_store.json")
     PIPELINE_VERSIONS_STORE_FILE = _env_path(
         "PIPELINE_VERSIONS_STORE_FILE",
         BASE_DIR / "pipeline_versions_store.json",
@@ -118,6 +119,7 @@ def ensure_app_directories() -> None:
     for parent in {
         AppConfig.USERS_STORE_FILE.parent,
         AppConfig.REQUESTS_STORE_FILE.parent,
+        AppConfig.PIPELINE_LOGS_STORE_FILE.parent,
         AppConfig.PIPELINE_VERSIONS_STORE_FILE.parent,
         AppConfig.GCP_CONNECTIONS_STORE_FILE.parent,
         AppConfig.DAG_PUBLISH_STORE_FILE.parent,
@@ -138,5 +140,10 @@ def ensure_app_directories() -> None:
     if not AppConfig.DAG_PUBLISH_STORE_FILE.exists():
         AppConfig.DAG_PUBLISH_STORE_FILE.write_text(
             json.dumps({"records": [], "processed_webhook_deliveries": []}, indent=2),
+            encoding="utf-8",
+        )
+    if not AppConfig.PIPELINE_LOGS_STORE_FILE.exists():
+        AppConfig.PIPELINE_LOGS_STORE_FILE.write_text(
+            json.dumps({"logs": [], "execution_meta": {}}, indent=2),
             encoding="utf-8",
         )
