@@ -175,6 +175,7 @@
     window.CAN_MANAGE_CONNECTIONS = {{ "true" if ('connections_manage' in current_permissions or is_admin) else "false" }};
   </script>
   <script src="{{ url_for('static', filename='js/connections_page.js') }}?v=20260403n"></script>
+  {% include 'partials/home_button.html' %}
 </body>
 </html>
 

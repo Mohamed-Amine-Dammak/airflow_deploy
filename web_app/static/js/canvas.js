@@ -165,6 +165,22 @@
     );
   }
 
+  function HelpIcon() {
+    return h(
+      "svg",
+      {
+        className: "trash-icon",
+        viewBox: "0 0 24 24",
+        ariaHidden: "true",
+        focusable: "false",
+      },
+      h("path", {
+        d: "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 17a1.2 1.2 0 1 1 1.2-1.2A1.2 1.2 0 0 1 12 19zm1.42-6.36-.55.36a1.47 1.47 0 0 0-.67 1.24v.26h-1.8v-.32a3.08 3.08 0 0 1 1.38-2.6l.74-.49a1.66 1.66 0 0 0 .75-1.39 1.82 1.82 0 0 0-3.64 0H7.84a3.62 3.62 0 0 1 7.24 0 3.42 3.42 0 0 1-1.66 2.94z",
+        fill: "currentColor",
+      })
+    );
+  }
+
   function GroupBoxItem(props) {
     const groupBox = props.groupBox;
     const boxColor = String(groupBox.color || "#2f6ea2");
@@ -1067,6 +1083,26 @@
                       statusBadgeLabel
                     )
                   : null
+              ),
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "node-help-btn",
+                  "aria-label": "Open module help",
+                  title: "Open module help",
+                  onPointerDown: function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  },
+                  onClick: function (event) {
+                    event.stopPropagation();
+                    if (props.onOpenNodeHelp) {
+                      props.onOpenNodeHelp(node.id);
+                    }
+                  },
+                },
+                h(HelpIcon)
               )
             ),
             h(

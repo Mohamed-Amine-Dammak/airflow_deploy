@@ -9,8 +9,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/design-tokens.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20260409a">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style-bridge.css') }}?v=20260424h">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20260427b">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style-bridge.css') }}?v=20260427b">
 </head>
 <body class="admin-page">
   <div class="admin-shell">
@@ -64,6 +64,15 @@
                   <span>{{ item.name }}</span>
                   <span class="admin-file-meta">
                     <small>{{ item.updated_at }}</small>
+                    <button
+                      type="button"
+                      class="btn btn-secondary admin-file-logs"
+                      data-file-kind="saved"
+                      data-filename="{{ item.name }}"
+                      data-pipeline-id="{{ item.pipeline_id }}"
+                    >
+                      Logs
+                    </button>
                     <button
                       type="button"
                       class="btn btn-secondary btn-danger-soft admin-file-delete"
@@ -233,7 +242,54 @@
       </section>
     </main>
   </div>
-  <script src="{{ url_for('static', filename='js/admin_dashboard.js') }}?v=20260424h"></script>
+  <div id="admin-pipeline-logs-overlay" class="admin-logs-overlay" hidden>
+    <div class="admin-logs-modal" role="dialog" aria-modal="true" aria-labelledby="admin-pipeline-logs-title">
+      <div class="admin-logs-head">
+        <div>
+          <h3 id="admin-pipeline-logs-title">Pipeline Logs</h3>
+          <p id="admin-pipeline-logs-subtitle" class="admin-empty">Last 7 days</p>
+        </div>
+        <button type="button" class="btn btn-secondary" id="admin-pipeline-logs-close">Close</button>
+      </div>
+      <div id="admin-pipeline-logs-status" class="admin-inline-status" style="display:none;" aria-live="polite"></div>
+      <div class="connections-table-wrap admin-logs-table-wrap">
+        <table class="connections-table">
+          <thead>
+            <tr>
+              <th>Launched</th>
+              <th>User</th>
+              <th>Action</th>
+              <th>Retry</th>
+              <th>Duration</th>
+              <th>Status</th>
+              <th>Message</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="admin-pipeline-logs-body">
+            <tr><td colspan="8" class="admin-empty">Select a pipeline to view logs.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div id="admin-log-details-overlay" class="admin-logs-overlay" hidden>
+    <div class="admin-logs-modal admin-log-details-modal" role="dialog" aria-modal="true" aria-labelledby="admin-log-details-title">
+      <div class="admin-logs-head">
+        <div>
+          <h3 id="admin-log-details-title">Execution Details</h3>
+          <p id="admin-log-details-subtitle" class="admin-empty">Task/module logs for this execution</p>
+        </div>
+        <button type="button" class="btn btn-secondary" id="admin-log-details-close">Close</button>
+      </div>
+      <div id="admin-log-details-status" class="admin-inline-status" style="display:none;" aria-live="polite"></div>
+      <div id="admin-log-details-body" class="admin-log-details-body">
+        <p class="admin-empty">Select a log entry to view details.</p>
+      </div>
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='js/admin_dashboard.js') }}?v=20260427b"></script>
+  {% include 'partials/home_button.html' %}
 </body>
 </html>
 

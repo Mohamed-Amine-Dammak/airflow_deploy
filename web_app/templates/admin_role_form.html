@@ -156,6 +156,7 @@
     window.ADMIN_ROLE_FORM = {{ {"mode": mode, "role": role, "role_catalog": role_catalog, "permission_catalog": permission_catalog, "role_name_readonly": role_name_readonly}|tojson }};
   </script>
   <script src="{{ url_for('static', filename='js/admin_role_form.js') }}?v=20260403v"></script>
+  {% include 'partials/home_button.html' %}
 </body>
 </html>
 

@@ -709,9 +709,11 @@ def list_dag_runs_for_dag(config: AirflowApiConfig, dag_id: str, limit: int = 10
 
 def list_dag_run_task_instances(config: AirflowApiConfig, dag_id: str, dag_run_id: str) -> list[dict[str, Any]]:
     auth_candidates = _auth_header_candidates(config)
+    encoded_dag_id = quote(str(dag_id or ""), safe="")
+    encoded_dag_run_id = quote(str(dag_run_id or ""), safe="")
     urls = (
-        f"{config.base_url}/api/v2/dags/{dag_id}/dagRuns/{dag_run_id}/taskInstances",
-        f"{config.base_url}/api/v1/dags/{dag_id}/dagRuns/{dag_run_id}/taskInstances",
+        f"{config.base_url}/api/v2/dags/{encoded_dag_id}/dagRuns/{encoded_dag_run_id}/taskInstances",
+        f"{config.base_url}/api/v1/dags/{encoded_dag_id}/dagRuns/{encoded_dag_run_id}/taskInstances",
     )
     resp: requests.Response | None = None
     last_error: AirflowApiError | None = None
@@ -789,9 +791,12 @@ def get_task_instance_log(
     try_number: int,
 ) -> dict[str, Any]:
     headers = _build_auth_header(config)
+    encoded_dag_id = quote(str(dag_id or ""), safe="")
+    encoded_dag_run_id = quote(str(dag_run_id or ""), safe="")
+    encoded_task_id = quote(str(task_id or ""), safe="")
     try:
         resp = requests.get(
-            f"{config.base_url}/api/v2/dags/{dag_id}/dagRuns/{dag_run_id}/taskInstances/{task_id}/logs/{try_number}",
+            f"{config.base_url}/api/v2/dags/{encoded_dag_id}/dagRuns/{encoded_dag_run_id}/taskInstances/{encoded_task_id}/logs/{try_number}",
             headers=headers,
             timeout=max(config.timeout_seconds, 20),
             verify=config.verify_tls,

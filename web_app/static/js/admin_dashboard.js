@@ -11,6 +11,11 @@
       saved: { page: 1, pageSize: 5 },
       generated: { page: 1, pageSize: 5 },
     },
+    logsModal: {
+      pipelineId: "",
+      pipelineName: "",
+      logs: [],
+    },
   };
 
   const usersBody = byId("admin-users-body");
@@ -26,6 +31,16 @@
   const generatedPaginationBox = byId("admin-generated-pagination");
   const requestsBody = byId("admin-requests-body");
   const requestsStatusBox = byId("admin-requests-status");
+  const pipelineLogsOverlay = byId("admin-pipeline-logs-overlay");
+  const pipelineLogsCloseBtn = byId("admin-pipeline-logs-close");
+  const pipelineLogsBody = byId("admin-pipeline-logs-body");
+  const pipelineLogsSubtitle = byId("admin-pipeline-logs-subtitle");
+  const pipelineLogsStatus = byId("admin-pipeline-logs-status");
+  const logDetailsOverlay = byId("admin-log-details-overlay");
+  const logDetailsCloseBtn = byId("admin-log-details-close");
+  const logDetailsBody = byId("admin-log-details-body");
+  const logDetailsSubtitle = byId("admin-log-details-subtitle");
+  const logDetailsStatus = byId("admin-log-details-status");
 
   function parseFileRows(listEl, kind) {
     const rows = [];
@@ -37,10 +52,13 @@
       const nameEl = li.querySelector("span");
       const dateEl = li.querySelector("small");
       const deleteBtn = li.querySelector(".admin-file-delete");
+      const logsBtn = li.querySelector(".admin-file-logs");
       const filename = deleteBtn ? String(deleteBtn.getAttribute("data-filename") || "").trim() : "";
+      const pipelineId = logsBtn ? String(logsBtn.getAttribute("data-pipeline-id") || "").trim() : "";
       rows.push({
         filename: filename || (nameEl ? String(nameEl.textContent || "").trim() : ""),
         updated_at: dateEl ? String(dateEl.textContent || "").trim() : "",
+        pipeline_id: pipelineId,
         kind: kind,
       });
     });
@@ -66,10 +84,18 @@
     listEl.innerHTML = "";
     pageItems.forEach(function (item) {
       const li = document.createElement("li");
+      const logsButtonHtml = kind === "saved"
+        ? '<button type="button" class="btn btn-secondary admin-file-logs" data-file-kind="saved" data-filename="' +
+          (item.filename || "") +
+          '" data-pipeline-id="' +
+          (item.pipeline_id || (item.filename || "").replace(/\.json$/i, "")) +
+          '">Logs</button>'
+        : "";
       li.innerHTML =
         "<span>" + (item.filename || "-") + "</span>" +
         '<span class="admin-file-meta">' +
         "<small>" + (item.updated_at || "-") + "</small>" +
+        logsButtonHtml +
         '<button type="button" class="btn btn-secondary btn-danger-soft admin-file-delete" data-file-kind="' +
         kind +
         '" data-filename="' +
@@ -166,6 +192,247 @@
     requestsStatusBox.style.display = "";
     requestsStatusBox.className = "admin-inline-status " + (kind || "info");
     requestsStatusBox.textContent = text;
+  }
+
+  function setPipelineLogsStatus(message, kind) {
+    if (!pipelineLogsStatus) {
+      return;
+    }
+    const text = String(message || "").trim();
+    if (!text) {
+      pipelineLogsStatus.textContent = "";
+      pipelineLogsStatus.style.display = "none";
+      return;
+    }
+    pipelineLogsStatus.style.display = "";
+    pipelineLogsStatus.className = "admin-inline-status " + (kind || "info");
+    pipelineLogsStatus.textContent = text;
+  }
+
+  function setLogDetailsStatus(message, kind) {
+    if (!logDetailsStatus) {
+      return;
+    }
+    const text = String(message || "").trim();
+    if (!text) {
+      logDetailsStatus.textContent = "";
+      logDetailsStatus.style.display = "none";
+      return;
+    }
+    logDetailsStatus.style.display = "";
+    logDetailsStatus.className = "admin-inline-status " + (kind || "info");
+    logDetailsStatus.textContent = text;
+  }
+
+  function formatReadableDate(value) {
+    const text = String(value || "").trim();
+    if (!text) {
+      return "-";
+    }
+    const dt = new Date(text);
+    if (Number.isNaN(dt.getTime())) {
+      return text;
+    }
+    return dt.toLocaleString();
+  }
+
+  function formatDuration(ms) {
+    const value = Number(ms);
+    if (!Number.isFinite(value) || value <= 0) {
+      return "-";
+    }
+    if (value < 1000) {
+      return Math.round(value) + " ms";
+    }
+    const totalSeconds = Math.round(value / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return hours + "h " + minutes + "m " + seconds + "s";
+    }
+    if (minutes > 0) {
+      return minutes + "m " + seconds + "s";
+    }
+    return seconds + "s";
+  }
+
+  function statusBadgeClass(status) {
+    const value = String(status || "").trim().toLowerCase();
+    if (value === "success") {
+      return "admin-status-badge is-success";
+    }
+    if (value === "failed") {
+      return "admin-status-badge is-failed";
+    }
+    if (value === "cancelled" || value === "canceled") {
+      return "admin-status-badge is-cancelled";
+    }
+    if (value === "running") {
+      return "admin-status-badge is-running";
+    }
+    return "admin-status-badge is-pending";
+  }
+
+  function closePipelineLogsModal() {
+    if (!pipelineLogsOverlay) {
+      return;
+    }
+    pipelineLogsOverlay.hidden = true;
+    setPipelineLogsStatus("", "info");
+  }
+
+  function closeLogDetailsModal() {
+    if (!logDetailsOverlay) {
+      return;
+    }
+    logDetailsOverlay.hidden = true;
+    setLogDetailsStatus("", "info");
+  }
+
+  function renderPipelineLogsRows(logs) {
+    if (!pipelineLogsBody) {
+      return;
+    }
+    pipelineLogsBody.innerHTML = "";
+    if (!Array.isArray(logs) || !logs.length) {
+      const row = document.createElement("tr");
+      row.innerHTML = '<td colspan="8" class="admin-empty">No logs found for the last 7 days.</td>';
+      pipelineLogsBody.appendChild(row);
+      return;
+    }
+
+    logs.forEach(function (log) {
+      const status = String(log.status || "").trim().toLowerCase();
+      const row = document.createElement("tr");
+      const executionId = String(log.executionId || "").trim();
+      const detailsBtn = executionId
+        ? '<button type="button" class="btn btn-secondary admin-log-details-btn" data-execution-id="' + executionId + '">Show details</button>'
+        : '<span class="admin-empty">-</span>';
+      row.innerHTML =
+        "<td>" + formatReadableDate(log.launchedAt || log.createdAt) + "</td>" +
+        "<td>" + (log.username || "-") + "</td>" +
+        "<td>" + (log.actionType || "-") + "</td>" +
+        "<td>" + String(log.retryCount != null ? log.retryCount : "-") + "</td>" +
+        "<td>" + formatDuration(log.executionTimeMs) + "</td>" +
+        '<td><span class="' + statusBadgeClass(status) + '">' + (status || "unknown") + "</span></td>" +
+        "<td>" + (log.message || "-") + "</td>" +
+        "<td>" + detailsBtn + "</td>";
+      pipelineLogsBody.appendChild(row);
+    });
+  }
+
+  function renderPipelineLogsLoading() {
+    if (!pipelineLogsBody) {
+      return;
+    }
+    pipelineLogsBody.innerHTML = '<tr><td colspan="8" class="admin-empty">Loading logs...</td></tr>';
+  }
+
+  function renderLogDetailsLoading() {
+    if (!logDetailsBody) {
+      return;
+    }
+    logDetailsBody.innerHTML = '<p class="admin-empty">Loading execution details...</p>';
+  }
+
+  function renderLogDetailsTasks(payload) {
+    if (!logDetailsBody) {
+      return;
+    }
+    const tasks = payload && Array.isArray(payload.tasks) ? payload.tasks : [];
+    if (!tasks.length) {
+      logDetailsBody.innerHTML = '<p class="admin-empty">No task/module logs found for this execution.</p>';
+      return;
+    }
+
+    logDetailsBody.innerHTML = "";
+    tasks.forEach(function (task) {
+      const box = document.createElement("article");
+      box.className = "admin-task-log-box";
+
+      const head = document.createElement("div");
+      head.className = "admin-task-log-head";
+      head.innerHTML =
+        "<strong>" + String(task.task_id || "task") + "</strong>" +
+        '<span class="' + statusBadgeClass(task.state) + '">' + String(task.state || "unknown") + "</span>";
+
+      const meta = document.createElement("div");
+      meta.className = "admin-task-log-meta admin-empty";
+      meta.textContent =
+        "Try #" + String(task.try_number || 1) +
+        " • Started: " + formatReadableDate(task.start_date) +
+        " • Finished: " + formatReadableDate(task.end_date);
+
+      const content = document.createElement("pre");
+      content.className = "admin-task-log-content";
+      content.textContent = String(task.log_content || task.log_error || "[No log content]").trim();
+
+      box.appendChild(head);
+      box.appendChild(meta);
+      box.appendChild(content);
+      logDetailsBody.appendChild(box);
+    });
+  }
+
+  async function openLogDetailsModal(executionId) {
+    const safeExecutionId = String(executionId || "").trim();
+    const safePipelineId = String((state.logsModal && state.logsModal.pipelineId) || "").trim();
+    if (!safeExecutionId || !safePipelineId || !logDetailsOverlay) {
+      return;
+    }
+    logDetailsOverlay.hidden = false;
+    if (logDetailsSubtitle) {
+      logDetailsSubtitle.textContent = safeExecutionId;
+    }
+    setLogDetailsStatus("Loading execution details...", "info");
+    renderLogDetailsLoading();
+
+    try {
+      const data = await fetchJson(
+        "/api/admin/pipeline-logs/" +
+          encodeURIComponent(safePipelineId) +
+          "/" +
+          encodeURIComponent(safeExecutionId) +
+          "/details"
+      );
+      if (logDetailsSubtitle) {
+        const airflowDagId = String(data.airflow_dag_id || "").trim();
+        logDetailsSubtitle.textContent = safeExecutionId + (airflowDagId ? " • " + airflowDagId : "");
+      }
+      renderLogDetailsTasks(data);
+      setLogDetailsStatus("", "info");
+    } catch (error) {
+      renderLogDetailsTasks({ tasks: [] });
+      setLogDetailsStatus(error && error.message ? error.message : "Unable to load execution details.", "error");
+    }
+  }
+
+  async function openPipelineLogsModal(pipelineId, pipelineName) {
+    const safePipelineId = String(pipelineId || "").trim();
+    if (!safePipelineId || !pipelineLogsOverlay) {
+      return;
+    }
+    state.logsModal.pipelineId = safePipelineId;
+    state.logsModal.pipelineName = String(pipelineName || safePipelineId).trim() || safePipelineId;
+    state.logsModal.logs = [];
+
+    if (pipelineLogsSubtitle) {
+      pipelineLogsSubtitle.textContent = state.logsModal.pipelineName + " • Last 7 days";
+    }
+    pipelineLogsOverlay.hidden = false;
+    setPipelineLogsStatus("Loading logs...", "info");
+    renderPipelineLogsLoading();
+
+    try {
+      const data = await fetchJson("/api/admin/pipeline-logs/" + encodeURIComponent(safePipelineId));
+      state.logsModal.logs = Array.isArray(data.logs) ? data.logs : [];
+      renderPipelineLogsRows(state.logsModal.logs);
+      setPipelineLogsStatus("", "info");
+    } catch (error) {
+      renderPipelineLogsRows([]);
+      setPipelineLogsStatus(error && error.message ? error.message : "Unable to load logs.", "error");
+    }
   }
 
   function updateMetrics(metrics) {
@@ -496,6 +763,23 @@
   }
 
   document.addEventListener("click", function (event) {
+    const logsBtn = event.target.closest(".admin-file-logs");
+    if (logsBtn) {
+      event.preventDefault();
+      const pipelineId = logsBtn.getAttribute("data-pipeline-id") || "";
+      const filename = logsBtn.getAttribute("data-filename") || pipelineId;
+      openPipelineLogsModal(pipelineId, filename);
+      return;
+    }
+
+    const detailBtn = event.target.closest(".admin-log-details-btn");
+    if (detailBtn) {
+      event.preventDefault();
+      const executionId = detailBtn.getAttribute("data-execution-id") || "";
+      openLogDetailsModal(executionId);
+      return;
+    }
+
     const btn = event.target.closest(".admin-file-delete");
     if (!btn) {
       return;
@@ -504,6 +788,40 @@
     const kind = btn.getAttribute("data-file-kind");
     const filename = btn.getAttribute("data-filename");
     deleteAdminFile(kind, filename, btn);
+  });
+
+  if (pipelineLogsCloseBtn) {
+    pipelineLogsCloseBtn.addEventListener("click", function () {
+      closePipelineLogsModal();
+    });
+  }
+  if (pipelineLogsOverlay) {
+    pipelineLogsOverlay.addEventListener("click", function (event) {
+      if (event.target === pipelineLogsOverlay) {
+        closePipelineLogsModal();
+      }
+    });
+  }
+  if (logDetailsCloseBtn) {
+    logDetailsCloseBtn.addEventListener("click", function () {
+      closeLogDetailsModal();
+    });
+  }
+  if (logDetailsOverlay) {
+    logDetailsOverlay.addEventListener("click", function (event) {
+      if (event.target === logDetailsOverlay) {
+        closeLogDetailsModal();
+      }
+    });
+  }
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && pipelineLogsOverlay && !pipelineLogsOverlay.hidden) {
+      closePipelineLogsModal();
+      return;
+    }
+    if (event.key === "Escape" && logDetailsOverlay && !logDetailsOverlay.hidden) {
+      closeLogDetailsModal();
+    }
   });
 
   loadUsers();
