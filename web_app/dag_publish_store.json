@@ -91,6 +91,29 @@
       "source_hash": "68121dcce5e5b157c026927f319b06d6ae486b9d536ca67d20211e36f524da97",
       "created_at": "2026-04-25T20:51:40.009115+00:00",
       "updated_at": "2026-04-25T20:51:46.744271+00:00"
+    },
+    {
+      "id": "sftp_test:v3",
+      "pipeline_id": "sftp_test",
+      "version_id": "v3",
+      "workflow_name": "sftp_test",
+      "workflow_slug": "sftp-test",
+      "version_name": "v3",
+      "local_file_name": "sftp_test__v3.py",
+      "local_file_path": "D:\\web_app_airflow\\application\\airflow\\dags\\sftp_test__v3.py",
+      "repo_file_path": "airflow/dags/sftp_test_git__v3.py",
+      "git_branch_name": "feature/workflow/sftp-test",
+      "pull_request_number": 22,
+      "pull_request_url": "https://github.com/Olive-Soft-Company/APACHE-AIRFLOW/pull/22",
+      "commit_sha": "f87e1ea9e6dd2d616f9aa179b92d1aa3f0e80fd8",
+      "status": "pr_open",
+      "requested_by_user_id": "admin",
+      "requested_by_email": "",
+      "requested_by_display_name": "admin",
+      "requested_by_username": "admin",
+      "source_hash": "9a2c6fdbab61a4e1de54015f98a82421fa624b7809e572641fc27582c2bc0fdd",
+      "created_at": "2026-04-28T15:15:38.955898+00:00",
+      "updated_at": "2026-04-28T15:15:43.814426+00:00"
     }
   ],
   "processed_webhook_deliveries": []

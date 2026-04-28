@@ -1,5 +1,6 @@
 @task(task_id={{ task_id | pyrepr }})
 def {{ function_name }}():
+    wasb_conn_id = {{ config.get("wasb_conn_id", "wasb_default") | pyrepr }}
     container_name = {{ config.get("container_name") | pyrepr }}
     delete_mode = {{ config.get("delete_mode", "single") | pyrepr }}
     delete_blob_name = {{ config.get("delete_blob_name") | pyrepr }}
@@ -10,7 +11,7 @@ def {{ function_name }}():
     if delete_prefix:
         delete_prefix = str(delete_prefix).lstrip("/")
 
-    hook = WasbHook(wasb_conn_id="wasb_default")
+    hook = WasbHook(wasb_conn_id=wasb_conn_id)
 
     deleted_blobs = []
     if delete_mode == "single":

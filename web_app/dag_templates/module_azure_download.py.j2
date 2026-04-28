@@ -1,21 +1,27 @@
 @task(task_id={{ task_id | pyrepr }})
 def {{ function_name }}():
+    wasb_conn_id = {{ config.get("wasb_conn_id", "wasb_default") | pyrepr }}
     container_name = {{ config.get("container_name") | pyrepr }}
     download_mode = {{ config.get("download_mode", "single") | pyrepr }}
     file_name = {{ config.get("file_name") | pyrepr }}
     file_prefix = {{ config.get("file_prefix") | pyrepr }} or ""
-    file_extension = {{ config.get("file_extension", ".csv") | pyrepr }}
     local_dir_download = {{ config.get("local_dir_download") | pyrepr }}
     default_download_dir = "/opt/airflow/local_downloads/azure"
 
-    if file_extension and not str(file_extension).startswith("."):
-        file_extension = f".{file_extension}"
     if file_name:
-        file_name = str(file_name).lstrip("/")
+        file_name = str(file_name).strip().lstrip("/")
     if file_prefix:
-        file_prefix = str(file_prefix).lstrip("/")
+        file_prefix = str(file_prefix).strip().lstrip("/")
 
-    hook = WasbHook(wasb_conn_id="wasb_default")
+    hook = WasbHook(wasb_conn_id=wasb_conn_id)
+
+    def _blob_name(item):
+        # WasbHook may return either blob-name strings or blob objects.
+        if hasattr(item, "name"):
+            return str(getattr(item, "name") or "").strip()
+        if isinstance(item, dict) and item.get("name"):
+            return str(item.get("name") or "").strip()
+        return str(item or "").strip()
 
     def _is_writable_directory(path_value):
         try:
@@ -44,40 +50,65 @@ def {{ function_name }}():
     if download_mode == "single":
         if not file_name:
             raise AirflowException("Azure download mode 'single' requires file_name.")
-        expected_blob = file_name if str(file_name).lower().endswith(str(file_extension).lower()) else f"{file_name}{file_extension}"
-        expected_blob = str(expected_blob).lstrip("/")
-
-        # Fast path: match exact path by prefix first.
-        blobs = hook.get_blobs_list(container_name=container_name, prefix=expected_blob) or []
-        matching_blobs = [blob_name for blob_name in blobs if str(blob_name).lower() == expected_blob.lower()]
-
-        # Fallback: user enters only filename (without folder), match by basename.
-        if not matching_blobs:
-            all_blobs = hook.get_blobs_list(container_name=container_name, prefix="") or []
+        query = str(file_name).lstrip("/")
+        query_lower = query.lower()
+        is_prefix_mode = query.endswith("_")
+        all_blobs_raw = hook.get_blobs_list(container_name=container_name, prefix="") or []
+        all_blobs = [_blob_name(item) for item in all_blobs_raw if _blob_name(item)]
+        if is_prefix_mode:
             matching_blobs = [
                 blob_name
                 for blob_name in all_blobs
-                if os.path.basename(str(blob_name).rstrip("/")).lower() == expected_blob.lower()
+                if os.path.basename(str(blob_name).rstrip("/")).lower().startswith(query_lower)
+                or str(blob_name).lower().startswith(query_lower)
+            ]
+        else:
+            matching_blobs = [
+                blob_name
+                for blob_name in all_blobs
+                if os.path.basename(str(blob_name).rstrip("/")).lower() == query_lower
+                or str(blob_name).rstrip("/").lower() == query_lower
             ]
 
-        if len(matching_blobs) > 1:
+        if not is_prefix_mode and len(matching_blobs) > 1:
             raise AirflowException(
-                f"Multiple blobs matched '{expected_blob}'. Use a folder path in file_name to disambiguate. Matches={matching_blobs}"
+                f"Multiple blobs matched exact name '{query}'. Use folder path to disambiguate. Matches={matching_blobs}"
             )
     else:
         if not file_prefix:
             raise AirflowException("Azure download mode 'multiple' requires file_prefix.")
-        blobs = hook.get_blobs_list(container_name=container_name, prefix=file_prefix) or []
-        matching_blobs = [blob_name for blob_name in blobs if blob_name.lower().endswith(file_extension.lower())]
+        query_prefix = str(file_prefix).strip().lstrip("/")
+        query_prefix_lower = query_prefix.lower()
+        # First strategy: ask Azure directly with the provided prefix.
+        direct_prefixed_raw = hook.get_blobs_list(container_name=container_name, prefix=query_prefix) or []
+        direct_prefixed = [_blob_name(item) for item in direct_prefixed_raw if _blob_name(item)]
+
+        # Fallback strategy: list all and match by full path or basename.
+        all_blobs_raw = hook.get_blobs_list(container_name=container_name, prefix="") or []
+        all_blobs = [_blob_name(item) for item in all_blobs_raw if _blob_name(item)]
+        basename_prefix = os.path.basename(query_prefix).lower()
+        fallback_matches = [
+            blob_name
+            for blob_name in all_blobs
+            if str(blob_name).lower().startswith(query_prefix_lower)
+            or os.path.basename(str(blob_name).rstrip("/")).lower().startswith(basename_prefix)
+        ]
+
+        # Keep unique order: direct matches first, then fallback extras.
+        matching_blobs = []
+        for candidate in direct_prefixed + fallback_matches:
+            if candidate and candidate not in matching_blobs:
+                matching_blobs.append(candidate)
 
     if not matching_blobs:
         if download_mode == "single":
             raise AirflowException(
-                f"No Azure blob matched single file '{expected_blob}' in container '{container_name}'. "
-                "If the file is in a folder, use folder path in file_name (without extension), e.g. uploads/CUSTOMER_CUS_TEST."
+                f"No Azure blob matched file_name '{query}' in container '{container_name}'. "
+                "Use trailing '_' for prefix match or full path for exact match."
             )
         raise AirflowException(
-            f"No Azure blobs matched download criteria mode={download_mode}, prefix='{file_prefix}', extension='{file_extension}'."
+            f"No Azure blobs matched download criteria mode={download_mode}, prefix='{file_prefix}'. "
+            f"Sample available blobs={all_blobs[:10]}"
         )
 
     downloaded = []

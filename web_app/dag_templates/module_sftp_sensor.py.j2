@@ -1,11 +1,12 @@
 @task(task_id={{ task_id | pyrepr }})
 def {{ function_name }}():
+    conn_name = {{ config.get("conn_name", "sftp") | pyrepr }}
     remote_dir = {{ config.get("remote_dir") | pyrepr }}
     prefix = {{ config.get("sftp_prefix_sensor") | pyrepr }}
     normalized_prefix = str(prefix or "")
     sensor = SFTPSensor(
         task_id={{ (task_id ~ "_sensor_inner") | pyrepr }},
-        sftp_conn_id="sftp",
+        sftp_conn_id=conn_name,
         path=remote_dir,
         file_pattern=f"{normalized_prefix}*",
         poke_interval=30,
@@ -14,7 +15,7 @@ def {{ function_name }}():
     )
     sensor.execute(context={})
 
-    hook = SFTPHook(ssh_conn_id="sftp")
+    hook = SFTPHook(ssh_conn_id=conn_name)
     entries = hook.list_directory(remote_dir) or []
     matched = sorted([name for name in entries if str(name).startswith(normalized_prefix)])
     if not matched:

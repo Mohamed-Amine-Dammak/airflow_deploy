@@ -19,9 +19,9 @@
         <h1>Airflow Connections</h1>
         <p>
           {% if 'connections_manage' not in current_permissions and not is_admin %}
-            Read-only connections view (HTTP, Azure Blob Storage, and Google Service Account).
+            Read-only connections view (HTTP, SFTP, Git, Email, Azure Blob Storage, and Google Service Account).
           {% else %}
-            Manage HTTP, Azure Blob Storage, and Google Service Account connections directly from the orchestration app.
+            Manage HTTP, SFTP, Git, Email, Azure Blob Storage, and Google Service Account connections directly from the orchestration app.
           {% endif %}
         </p>
       </div>
@@ -86,6 +86,9 @@
             <select id="conn-type">
               <option value="">Select a connection type</option>
               <option value="http">HTTP</option>
+              <option value="sftp">SFTP</option>
+              <option value="git">Git</option>
+              <option value="email">Email</option>
               <option value="wasb">Azure Blob Storage</option>
               <option value="gcp_service_account">Google Service Account</option>
             </select>
@@ -99,27 +102,27 @@
 
           <div id="http-fields" hidden>
             <div class="field">
-              <label for="conn-host">Host *</label>
+              <label id="conn-host-label" for="conn-host">Host *</label>
               <input id="conn-host" type="text" placeholder="https://your-host.example.com">
               <div id="err-host" class="field-error" hidden></div>
             </div>
             <div class="field-inline-combo">
               <div class="field">
-                <label for="conn-login">Login</label>
+                <label id="conn-login-label" for="conn-login">Login</label>
                 <input id="conn-login" type="text" placeholder="Optional">
               </div>
               <div class="field">
-                <label for="conn-password">Password</label>
+                <label id="conn-password-label" for="conn-password">Password</label>
                 <input id="conn-password" type="password" placeholder="Optional">
               </div>
             </div>
             <div class="field-inline-combo">
-              <div class="field">
+              <div id="conn-port-field" class="field">
                 <label for="conn-port">Port</label>
                 <input id="conn-port" type="number" min="1" placeholder="443">
                 <div id="err-port" class="field-error" hidden></div>
               </div>
-              <div class="field">
+              <div id="conn-schema-field" class="field">
                 <label for="conn-schema">Schema</label>
                 <input id="conn-schema" type="text" placeholder="https">
               </div>

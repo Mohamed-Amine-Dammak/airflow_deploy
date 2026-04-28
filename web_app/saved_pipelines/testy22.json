@@ -1,0 +1,274 @@
+{
+  "pipeline": {
+    "dag_id": "y2test",
+    "description": "",
+    "start_date": "2026-01-01",
+    "schedule": null,
+    "schedule_mode": "manual",
+    "catchup": false,
+    "schedule_preset": "",
+    "schedule_cron": "",
+    "interval_value": "",
+    "interval_unit": "minutes",
+    "event_source": "",
+    "custom_schedule_text": "",
+    "retries": 3,
+    "retry_delay_minutes": 5,
+    "alert_emails": [],
+    "alert_mode": "both",
+    "tags": [
+      "demo",
+      "orchestration"
+    ],
+    "output_filename": "y2test.py"
+  },
+  "nodes": [
+    {
+      "id": "node_1",
+      "type": "sftp_upload",
+      "label": "SFTP Upload 1",
+      "x": 1827.382804022895,
+      "y": 113.56944105360245,
+      "config": {
+        "conn_name": "sftp",
+        "file_prefix": "Roll",
+        "local_file_browser": "/opt/airflow/local_uploads/y2test/node_1/Rollback_Azure_Image_Version.pdf",
+        "local_file_path": "/opt/airflow/local_downloads/azure",
+        "local_file_paths": [],
+        "remote_dir": "/uploads",
+        "upload_mode": "single"
+      }
+    },
+    {
+      "id": "node_2",
+      "type": "sftp_sensor",
+      "label": "SFTP Sensor 2",
+      "x": 1827.9384070502388,
+      "y": 469.4954121907552,
+      "config": {
+        "conn_name": "sftp",
+        "remote_dir": "/uploads",
+        "sftp_prefix_sensor": "Roll"
+      }
+    },
+    {
+      "id": "node_3",
+      "type": "parallel_fork",
+      "label": "Parallel Fork 3",
+      "x": 1571.7530975341795,
+      "y": 314.58175659179693,
+      "config": {}
+    },
+    {
+      "id": "node_4",
+      "type": "parallel_join",
+      "label": "Parallel Join 4",
+      "x": 2150.0741085476343,
+      "y": 316.56951226128473,
+      "config": {
+        "trigger_rule": "all_success"
+      }
+    },
+    {
+      "id": "node_5",
+      "type": "azure",
+      "label": "Azure Blob Storage 5",
+      "x": 884.5433756510419,
+      "y": 88.68396992153596,
+      "config": {
+        "action": "upload",
+        "blob_name": "Rollback",
+        "blob_prefix": "",
+        "container_name": "my-container",
+        "create_container": false,
+        "delete_blob_name": "",
+        "delete_mode": "single",
+        "delete_prefix": "",
+        "download_mode": "single",
+        "file_extension": ".csv",
+        "file_name": "",
+        "file_prefix": "",
+        "local_dir_download": "/opt/airflow/local_downloads/azure",
+        "local_file_browser": "Rollback_Azure_Image_Version.pdf",
+        "local_file_path": "Rollback_Azure_Image_Version.pdf",
+        "local_file_path_container": "/opt/airflow/local_uploads/y2test/node_5/Rollback_Azure_Image_Version.pdf",
+        "local_file_paths": [],
+        "upload_mode": "single",
+        "wasb_conn_id": "wasb_default"
+      }
+    },
+    {
+      "id": "node_6",
+      "type": "azure_blob_sensor",
+      "label": "Azure Blob Sensor 6",
+      "x": 872.1975233289933,
+      "y": 565.4741276635064,
+      "config": {
+        "container_name": "my-container",
+        "poke_interval": 30,
+        "prefix": "Roll",
+        "timeout": 600,
+        "wasb_conn_id": "wasb_default"
+      }
+    },
+    {
+      "id": "node_7",
+      "type": "parallel_fork",
+      "label": "Parallel Fork 3",
+      "x": 550.9629024929468,
+      "y": 333.29782104492193,
+      "config": {}
+    },
+    {
+      "id": "node_8",
+      "type": "parallel_join",
+      "label": "Parallel Join 4",
+      "x": 1137.92608473036,
+      "y": 316.14978366427954,
+      "config": {
+        "trigger_rule": "all_success"
+      }
+    },
+    {
+      "id": "node_9",
+      "type": "y2",
+      "label": "Y2 Scheduled Task 9",
+      "x": 185.7777099609375,
+      "y": 333.81032731797967,
+      "config": {
+        "folder_id_value": "90039148_003_TEST",
+        "task_ids_value": [
+          "436"
+        ]
+      }
+    },
+    {
+      "id": "node_10",
+      "type": "conditional_router",
+      "label": "Conditional Router 10",
+      "x": 2461.234551323785,
+      "y": 314.79801177978516,
+      "config": {
+        "input_source": "xcom_node:node_2.detected_file_name",
+        "rules": [
+          {
+            "match_type": "starts_with",
+            "target_branch_node_id": "node_11",
+            "value": "Rol"
+          },
+          {
+            "match_type": "equals",
+            "target_branch_node_id": "node_12",
+            "value": "COS"
+          }
+        ]
+      }
+    },
+    {
+      "id": "node_11",
+      "type": "delay",
+      "label": "Delay 11",
+      "x": 2779.259182400174,
+      "y": 318.5016250610352,
+      "config": {
+        "delay_minutes": 1
+      }
+    },
+    {
+      "id": "node_12",
+      "type": "delay",
+      "label": "Delay 12",
+      "x": 2862.716078016493,
+      "y": 593.0696317884657,
+      "config": {
+        "delay_minutes": 2
+      }
+    },
+    {
+      "id": "node_13",
+      "type": "azure",
+      "label": "Azure Blob Storage 13",
+      "x": 1370.0793115525018,
+      "y": 619.0543107532319,
+      "config": {
+        "action": "download",
+        "blob_name": "",
+        "blob_prefix": "",
+        "container_name": "my-container",
+        "create_container": true,
+        "delete_blob_name": "",
+        "delete_mode": "single",
+        "delete_prefix": "",
+        "download_mode": "single",
+        "file_extension": "",
+        "file_name": "Rollback",
+        "file_prefix": "Roll_",
+        "local_dir_download": "/opt/airflow/local_downloads/azure",
+        "local_file_path": "",
+        "local_file_path_container": "",
+        "local_file_paths": [],
+        "upload_mode": "single",
+        "wasb_conn_id": "wasb_default"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "node_3",
+      "target": "node_1"
+    },
+    {
+      "source": "node_3",
+      "target": "node_2"
+    },
+    {
+      "source": "node_2",
+      "target": "node_4"
+    },
+    {
+      "source": "node_1",
+      "target": "node_4"
+    },
+    {
+      "source": "node_7",
+      "target": "node_5"
+    },
+    {
+      "source": "node_7",
+      "target": "node_6"
+    },
+    {
+      "source": "node_6",
+      "target": "node_8"
+    },
+    {
+      "source": "node_5",
+      "target": "node_8"
+    },
+    {
+      "source": "node_9",
+      "target": "node_7"
+    },
+    {
+      "source": "node_4",
+      "target": "node_10"
+    },
+    {
+      "source": "node_10",
+      "target": "node_11"
+    },
+    {
+      "source": "node_10",
+      "target": "node_12"
+    },
+    {
+      "source": "node_8",
+      "target": "node_13"
+    },
+    {
+      "source": "node_13",
+      "target": "node_3"
+    }
+  ],
+  "group_boxes": []
+}

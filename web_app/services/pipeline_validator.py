@@ -125,8 +125,8 @@ def _validate_flow_graph(
         outdeg = out_degree.get(node_id, 0)
 
         if node_type == CONTROL_FORK:
-            if indeg != 1:
-                errors.append(f"Node '{node_id}' (parallel_fork) must have exactly 1 incoming edge.")
+            if indeg not in {0, 1}:
+                errors.append(f"Node '{node_id}' (parallel_fork) must have 0 or 1 incoming edge.")
             if outdeg < 2:
                 errors.append(f"Node '{node_id}' (parallel_fork) must have at least 2 outgoing edges.")
             continue
@@ -147,8 +147,8 @@ def _validate_flow_graph(
         if node_type == CONTROL_JOIN:
             if indeg < 2:
                 errors.append(f"Node '{node_id}' (parallel_join) must have at least 2 incoming edges.")
-            if outdeg != 1:
-                errors.append(f"Node '{node_id}' (parallel_join) must have exactly 1 outgoing edge.")
+            if outdeg not in {0, 1}:
+                errors.append(f"Node '{node_id}' (parallel_join) must have 0 or 1 outgoing edge.")
             continue
 
         if node_type == CONTROL_QUORUM_JOIN:

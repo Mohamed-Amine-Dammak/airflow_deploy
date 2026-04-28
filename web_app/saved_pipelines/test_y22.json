@@ -1,0 +1,88 @@
+{
+  "pipeline": {
+    "dag_id": "",
+    "description": "",
+    "start_date": "2026-01-01",
+    "schedule": null,
+    "schedule_mode": "manual",
+    "catchup": false,
+    "schedule_preset": "",
+    "schedule_cron": "",
+    "interval_value": "",
+    "interval_unit": "minutes",
+    "event_source": "",
+    "custom_schedule_text": "",
+    "retries": 3,
+    "retry_delay_minutes": 5,
+    "alert_emails": [],
+    "alert_mode": "both",
+    "tags": [
+      "demo",
+      "orchestration"
+    ],
+    "output_filename": ""
+  },
+  "nodes": [
+    {
+      "id": "node_1",
+      "type": "sftp_upload",
+      "label": "SFTP Upload 1",
+      "x": 622.4443817138672,
+      "y": 158.01388549804688,
+      "config": {
+        "local_file_path": "",
+        "remote_dir": "/uploads",
+        "upload_mode": "single",
+        "file_prefix": ""
+      }
+    },
+    {
+      "id": "node_2",
+      "type": "sftp_sensor",
+      "label": "SFTP Sensor 2",
+      "x": 622.9999847412109,
+      "y": 388.0138854980469,
+      "config": {
+        "remote_dir": "/uploads",
+        "sftp_prefix_sensor": ""
+      }
+    },
+    {
+      "id": "node_3",
+      "type": "parallel_fork",
+      "label": "Parallel Fork 3",
+      "x": 151.99998474121094,
+      "y": 280.0138854980469,
+      "config": {}
+    },
+    {
+      "id": "node_4",
+      "type": "parallel_join",
+      "label": "Parallel Join 4",
+      "x": 985.9999847412109,
+      "y": 301.0138854980469,
+      "config": {
+        "trigger_rule": "all_success"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "node_3",
+      "target": "node_1"
+    },
+    {
+      "source": "node_3",
+      "target": "node_2"
+    },
+    {
+      "source": "node_2",
+      "target": "node_4"
+    },
+    {
+      "source": "node_1",
+      "target": "node_4"
+    }
+  ],
+  "group_boxes": []
+}

@@ -1205,9 +1205,10 @@
           {
             type: "button",
             onClick: function () {
-              setViewport({ x: 120, y: 70, scale: 1 });
+              const vp = viewportRef.current || { x: 0, y: 0 };
+              setViewport({ x: vp.x, y: vp.y, scale: 1 });
             },
-            title: "Reset view",
+            title: "Reset zoom to 100%",
           },
           "Reset"
         ),

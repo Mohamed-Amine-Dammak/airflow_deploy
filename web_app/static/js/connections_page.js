@@ -55,6 +55,10 @@
   const httpFieldsEl = document.getElementById("http-fields");
   const wasbFieldsEl = document.getElementById("wasb-fields");
   const gcpFieldsEl = document.getElementById("gcp-fields");
+  const hostLabelEl = document.getElementById("conn-host-label");
+  const loginLabelEl = document.getElementById("conn-login-label");
+  const passwordLabelEl = document.getElementById("conn-password-label");
+  const schemaFieldEl = document.getElementById("conn-schema-field");
 
   function emptyForm() {
     return {
@@ -85,6 +89,15 @@
     const value = String(rawType || "").trim().toLowerCase();
     if (value === "http") {
       return "http";
+    }
+    if (value === "sftp" || value === "ssh" || value === "ssh_conn") {
+      return "sftp";
+    }
+    if (value === "git") {
+      return "git";
+    }
+    if (value === "email" || value === "smtp") {
+      return "email";
     }
     if (value === "wasb" || value === "azure_blob_storage" || value === "azure_blob") {
       return "wasb";
@@ -219,6 +232,20 @@
       state.form.port = fieldEls.port.value.trim();
       state.form.schema = fieldEls.schema.value.trim();
       state.form.account_url = "";
+    } else if (state.form.connection_type === "sftp" || state.form.connection_type === "git") {
+      state.form.host = fieldEls.host.value.trim();
+      state.form.login = fieldEls.login.value.trim();
+      state.form.password = fieldEls.password.value;
+      state.form.port = fieldEls.port.value.trim();
+      state.form.schema = "";
+      state.form.account_url = "";
+    } else if (state.form.connection_type === "email") {
+      state.form.host = fieldEls.host.value.trim();
+      state.form.login = fieldEls.login.value.trim();
+      state.form.password = fieldEls.password.value;
+      state.form.port = fieldEls.port.value.trim();
+      state.form.schema = fieldEls.schema.value.trim();
+      state.form.account_url = "";
     } else if (state.form.connection_type === "wasb") {
       state.form.account_url = fieldEls.account_url.value.trim();
       state.form.login = fieldEls.blob_login.value.trim();
@@ -270,9 +297,24 @@
 
   function updateTypeSections() {
     const type = normalizeConnectionType(fieldEls.connection_type.value);
-    httpFieldsEl.hidden = type !== "http";
+    httpFieldsEl.hidden = type !== "http" && type !== "sftp" && type !== "git" && type !== "email";
     wasbFieldsEl.hidden = type !== "wasb";
     gcpFieldsEl.hidden = type !== "gcp_service_account";
+    if (hostLabelEl) {
+      hostLabelEl.textContent = type === "git" ? "Repository URL *" : "Host *";
+    }
+    if (loginLabelEl) {
+      loginLabelEl.textContent = type === "git" ? "Username or Access Token name" : "Login";
+    }
+    if (passwordLabelEl) {
+      passwordLabelEl.textContent = type === "git" ? "Access Token (optional)" : "Password";
+    }
+    if (fieldEls.host) {
+      fieldEls.host.placeholder = type === "git" ? "https://github.com/owner/repo.git" : "https://your-host.example.com";
+    }
+    if (schemaFieldEl) {
+      schemaFieldEl.hidden = type === "git" || type === "sftp";
+    }
   }
 
   function setEditorMode(mode, item) {
@@ -306,7 +348,13 @@
         connection_id: String(item.connection_id || ""),
         connection_type: normalizedType,
         description: String(item.description || ""),
-        host: normalizedType === "http" ? String(item.host || "") : "",
+        host:
+          normalizedType === "http" ||
+          normalizedType === "sftp" ||
+          normalizedType === "git" ||
+          normalizedType === "email"
+            ? String(item.host || "")
+            : "",
         login: String(item.login || ""),
         password: "",
         port: item.port == null ? "" : String(item.port),
@@ -334,7 +382,13 @@
     updateTypeSections();
     window.requestAnimationFrame(function () {
       if (state.mode === "edit") {
-        if (state.form.connection_type === "http" && fieldEls.host) {
+        if (
+          (state.form.connection_type === "http" ||
+            state.form.connection_type === "sftp" ||
+            state.form.connection_type === "git" ||
+            state.form.connection_type === "email") &&
+          fieldEls.host
+        ) {
           fieldEls.host.focus();
           return;
         }
@@ -364,8 +418,21 @@
       errors.connection_type = "Connection type is required.";
     }
 
-    if (state.form.connection_type === "http" && !state.form.host) {
-      errors.host = "Host is required for HTTP connections.";
+    if (
+      (state.form.connection_type === "http" ||
+        state.form.connection_type === "sftp" ||
+        state.form.connection_type === "git" ||
+        state.form.connection_type === "email") &&
+      !state.form.host
+    ) {
+      errors.host =
+        state.form.connection_type === "sftp"
+          ? "Host is required for SFTP connections."
+          : state.form.connection_type === "git"
+          ? "Host is required for Git connections."
+          : state.form.connection_type === "email"
+          ? "Host is required for Email connections."
+          : "Host is required for HTTP connections.";
     }
 
     if (state.form.connection_type === "wasb" && !state.form.account_url) {
@@ -427,6 +494,12 @@
         const normalizedType = normalizeConnectionType(item.conn_type);
         const safeType = normalizedType === "http"
           ? "HTTP"
+          : normalizedType === "sftp"
+          ? "SFTP"
+          : normalizedType === "git"
+          ? "Git"
+          : normalizedType === "email"
+          ? "Email"
           : normalizedType === "wasb"
           ? "Azure Blob Storage"
           : normalizedType === "gcp_service_account"
@@ -504,10 +577,17 @@
       payload.connection_id = state.form.connection_id;
     }
 
-    if (state.form.connection_type === "http") {
+    if (
+      state.form.connection_type === "http" ||
+      state.form.connection_type === "sftp" ||
+      state.form.connection_type === "git" ||
+      state.form.connection_type === "email"
+    ) {
       payload.host = state.form.host;
       payload.port = state.form.port;
-      payload.schema = state.form.schema;
+      if (state.form.connection_type === "http" || state.form.connection_type === "email") {
+        payload.schema = state.form.schema;
+      }
     } else if (state.form.connection_type === "wasb") {
       payload.account_url = state.form.account_url;
       payload.host = state.form.account_url;

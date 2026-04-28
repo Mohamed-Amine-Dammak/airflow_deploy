@@ -2439,7 +2439,7 @@
       ]
     },
     "test_azure": {
-      "current_version_id": "v1",
+      "current_version_id": "v2",
       "versions": [
         {
           "pipeline_id": "test_azure",
@@ -2449,8 +2449,8 @@
           "output_filename": "test_azure__v1.py",
           "created_at": "2026-04-17T15:47:34.340472+00:00",
           "created_by": "admin",
-          "status": "active",
-          "is_current": true,
+          "status": "archived",
+          "is_current": false,
           "source_hash": "bcabe7c928495349318f9f186d5037d938f338516887d57b64fc455ea09b3315",
           "source_definition": {
             "pipeline": {
@@ -2519,6 +2519,184 @@
             "node_3": "azure_1_node_3"
           },
           "updated_at": "2026-04-17T16:16:44.322300+00:00",
+          "updated_by": "admin"
+        },
+        {
+          "pipeline_id": "test_azure",
+          "version_id": "v2",
+          "dag_version": 2,
+          "airflow_dag_id": "test_azure__v2",
+          "output_filename": "test_azure__v2.py",
+          "created_at": "2026-04-28T13:46:26.693246+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "e40fa00e3d8c3ce3be6601c34b79491313a389a36bc659618a22ed2d91d1a128",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "test_azure",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "test_azure.py"
+            },
+            "nodes": [
+              {
+                "id": "node_4",
+                "type": "azure",
+                "label": "Azure Blob Storage 4",
+                "x": 1463.2804209391272,
+                "y": 376.0385109129406,
+                "config": {
+                  "action": "upload",
+                  "blob_name": "",
+                  "blob_prefix": "uploads",
+                  "container_name": "my-container",
+                  "create_container": false,
+                  "delete_blob_name": "",
+                  "delete_mode": "single",
+                  "delete_prefix": "",
+                  "download_mode": "single",
+                  "file_name": "",
+                  "file_prefix": "",
+                  "local_dir_download": "/opt/airflow/local_downloads/azure",
+                  "local_directory_path": "/opt/airflow/local_uploads/test_azure/node_4",
+                  "local_file_path": "ChatGPT_Image_27_avr._2026_22_46_38.png",
+                  "local_file_path_container": "/opt/airflow/local_uploads/test_azure/node_4/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/test_azure/node_4/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                    "/opt/airflow/local_uploads/test_azure/node_4/ChatGPT_Image_27_avr._2026_22_37_45.png"
+                  ],
+                  "upload_mode": "multiple",
+                  "wasb_conn_id": "wasb_default"
+                }
+              },
+              {
+                "id": "node_5",
+                "type": "azure_blob_sensor",
+                "label": "Azure Blob Sensor 5",
+                "x": 1469.2064259847004,
+                "y": 800.2977984292165,
+                "config": {
+                  "container_name": "my-container",
+                  "poke_interval": 30,
+                  "prefix": "uploads/Chat",
+                  "timeout": 600,
+                  "wasb_conn_id": "wasb_default"
+                }
+              },
+              {
+                "id": "node_6",
+                "type": "parallel_join",
+                "label": "Parallel Join 6",
+                "x": 1813.2804209391272,
+                "y": 602.149706795102,
+                "config": {
+                  "trigger_rule": "all_success"
+                }
+              },
+              {
+                "id": "node_7",
+                "type": "parallel_fork",
+                "label": "Parallel Fork 7",
+                "x": 1112.7248992919922,
+                "y": 606.5940834227061,
+                "config": {}
+              },
+              {
+                "id": "node_8",
+                "type": "azure",
+                "label": "Azure Blob Storage 8",
+                "x": 2132.7768516214287,
+                "y": 601.1779232531118,
+                "config": {
+                  "action": "download",
+                  "blob_name": "",
+                  "blob_prefix": "",
+                  "container_name": "my-container",
+                  "create_container": true,
+                  "delete_blob_name": "",
+                  "delete_mode": "single",
+                  "delete_prefix": "",
+                  "download_mode": "multiple",
+                  "file_name": "",
+                  "file_prefix": "uploads/ChatGPT_",
+                  "local_dir_download": "/opt/airflow/local_downloads/azure",
+                  "local_file_path": "",
+                  "local_file_path_container": "",
+                  "local_file_paths": [],
+                  "upload_mode": "single",
+                  "wasb_conn_id": "wasb_default"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_7",
+                "target": "node_4"
+              },
+              {
+                "source": "node_7",
+                "target": "node_5"
+              },
+              {
+                "source": "node_5",
+                "target": "node_6"
+              },
+              {
+                "source": "node_4",
+                "target": "node_6"
+              },
+              {
+                "source": "node_6",
+                "target": "node_8"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\application\\web_app\\generated_dags\\test_azure__v2.py",
+          "generated_airflow_path": "D:\\web_app_airflow\\application\\airflow\\dags\\test_azure__v2.py",
+          "node_task_map": {
+            "node_7": [
+              "parallel_fork_1_node_7"
+            ],
+            "node_4": [
+              "azure_2_node_4"
+            ],
+            "node_5": [
+              "azure_blob_sensor_3_node_5"
+            ],
+            "node_6": [
+              "parallel_join_4_node_6"
+            ],
+            "node_8": [
+              "azure_5_node_8"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_7": "parallel_fork_1_node_7",
+            "node_4": "azure_2_node_4",
+            "node_5": "azure_blob_sensor_3_node_5",
+            "node_6": "parallel_join_4_node_6",
+            "node_8": "azure_5_node_8"
+          },
+          "updated_at": "2026-04-28T14:10:35.872145+00:00",
           "updated_by": "admin"
         }
       ],
@@ -2594,6 +2772,70 @@
           "to_version_id": "v1",
           "actor": "admin",
           "at": "2026-04-17T16:16:44.322300+00:00"
+        },
+        {
+          "event_id": "01b52c11-f693-4e25-ab84-84e06ba6aa4c",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v1",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T13:46:26.693246+00:00"
+        },
+        {
+          "event_id": "ca4f87b3-1594-4da8-8ce6-dd359e4458b1",
+          "event_type": "update_version_definition",
+          "from_version_id": "v2",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T13:50:10.828778+00:00"
+        },
+        {
+          "event_id": "fd0c48e9-5c5f-4f64-8b33-d10b2699f94b",
+          "event_type": "update_version_definition",
+          "from_version_id": "v2",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T13:56:46.023320+00:00"
+        },
+        {
+          "event_id": "68c3a7ca-23bc-48f6-b34d-f2e570099984",
+          "event_type": "update_version_definition",
+          "from_version_id": "v2",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T13:58:12.217756+00:00"
+        },
+        {
+          "event_id": "490ca4b8-7348-4e90-b2e0-ee15fc02d741",
+          "event_type": "update_version_definition",
+          "from_version_id": "v2",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T14:00:07.845543+00:00"
+        },
+        {
+          "event_id": "ea310720-2900-4305-bad7-5c8760df626d",
+          "event_type": "update_version_definition",
+          "from_version_id": "v2",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T14:05:31.301329+00:00"
+        },
+        {
+          "event_id": "c801c139-0b1e-4af9-886f-72c1112f9ca8",
+          "event_type": "update_version_definition",
+          "from_version_id": "v2",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T14:07:02.593210+00:00"
+        },
+        {
+          "event_id": "dd36f9a8-678d-4808-8580-72e048da8ba1",
+          "event_type": "update_version_definition",
+          "from_version_id": "v2",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T14:10:35.872145+00:00"
         }
       ]
     },
@@ -2682,6 +2924,1829 @@
           "to_version_id": "v1",
           "actor": "admin",
           "at": "2026-04-24T09:44:40.797076+00:00"
+        }
+      ]
+    },
+    "y2test": {
+      "current_version_id": "v3",
+      "versions": [
+        {
+          "pipeline_id": "y2test",
+          "version_id": "v1",
+          "dag_version": 1,
+          "airflow_dag_id": "y2test__v1",
+          "output_filename": "y2test__v1.py",
+          "created_at": "2026-04-28T12:03:50.877778+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "d16a1ed3238cfc1aafa55fc004586d5ee075d1d59de19ca5ab74f0e93bee0ccb",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "y2test",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "y2test.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "sftp_upload",
+                "label": "SFTP Upload 1",
+                "x": 622.4443817138672,
+                "y": 158.01388549804688,
+                "config": {
+                  "conn_name": "sftp",
+                  "file_prefix": "",
+                  "local_file_browser": "/opt/airflow/local_uploads/y2test/node_1/CUSTOMER_test.csv",
+                  "local_file_path": "/opt/airflow/local_uploads/y2test/node_1/CUSTOMER_test.csv",
+                  "local_file_paths": [],
+                  "remote_dir": "/uploads",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_2",
+                "type": "sftp_sensor",
+                "label": "SFTP Sensor 2",
+                "x": 622.9999847412109,
+                "y": 388.0138854980469,
+                "config": {
+                  "conn_name": "sftp",
+                  "remote_dir": "/uploads",
+                  "sftp_prefix_sensor": "CUS"
+                }
+              },
+              {
+                "id": "node_3",
+                "type": "parallel_fork",
+                "label": "Parallel Fork 3",
+                "x": 151.99998474121094,
+                "y": 280.0138854980469,
+                "config": {}
+              },
+              {
+                "id": "node_4",
+                "type": "parallel_join",
+                "label": "Parallel Join 4",
+                "x": 987.1111907958984,
+                "y": 272.125,
+                "config": {
+                  "trigger_rule": "all_success"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_3",
+                "target": "node_1"
+              },
+              {
+                "source": "node_3",
+                "target": "node_2"
+              },
+              {
+                "source": "node_2",
+                "target": "node_4"
+              },
+              {
+                "source": "node_1",
+                "target": "node_4"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\application\\web_app\\generated_dags\\y2test__v1.py",
+          "generated_airflow_path": "D:\\web_app_airflow\\application\\airflow\\dags\\y2test__v1.py",
+          "node_task_map": {
+            "node_3": [
+              "parallel_fork_1_node_3"
+            ],
+            "node_1": [
+              "sftp_upload_2_node_1"
+            ],
+            "node_2": [
+              "sftp_sensor_3_node_2"
+            ],
+            "node_4": [
+              "parallel_join_4_node_4"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_3": "parallel_fork_1_node_3",
+            "node_1": "sftp_upload_2_node_1",
+            "node_2": "sftp_sensor_3_node_2",
+            "node_4": "parallel_join_4_node_4"
+          },
+          "updated_at": "2026-04-28T12:24:50.941405+00:00",
+          "updated_by": "admin"
+        },
+        {
+          "pipeline_id": "y2test",
+          "version_id": "v2",
+          "dag_version": 2,
+          "airflow_dag_id": "y2test__v2",
+          "output_filename": "y2test__v2.py",
+          "created_at": "2026-04-28T12:45:52.130317+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "b29df083e9d75e22307578dc1978b86b67763d2f1e2357b9839c9da5859830a4",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "y2test",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "y2test.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "sftp_upload",
+                "label": "SFTP Upload 1",
+                "x": 1827.382804022895,
+                "y": 113.56944105360245,
+                "config": {
+                  "conn_name": "sftp",
+                  "file_prefix": "Roll",
+                  "local_file_browser": "/opt/airflow/local_uploads/y2test/node_1/Rollback_Azure_Image_Version.pdf",
+                  "local_file_path": "/opt/airflow/local_uploads/y2test/node_1/Rollback_Azure_Image_Version.pdf",
+                  "local_file_paths": [],
+                  "remote_dir": "/uploads",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_2",
+                "type": "sftp_sensor",
+                "label": "SFTP Sensor 2",
+                "x": 1827.9384070502388,
+                "y": 469.4954121907552,
+                "config": {
+                  "conn_name": "sftp",
+                  "remote_dir": "/uploads",
+                  "sftp_prefix_sensor": "Roll"
+                }
+              },
+              {
+                "id": "node_3",
+                "type": "parallel_fork",
+                "label": "Parallel Fork 3",
+                "x": 1482.8642425537107,
+                "y": 314.58175659179693,
+                "config": {}
+              },
+              {
+                "id": "node_4",
+                "type": "parallel_join",
+                "label": "Parallel Join 4",
+                "x": 2150.0741085476343,
+                "y": 316.56951226128473,
+                "config": {
+                  "trigger_rule": "all_success"
+                }
+              },
+              {
+                "id": "node_5",
+                "type": "azure",
+                "label": "Azure Blob Storage 5",
+                "x": 884.5433756510419,
+                "y": 88.68396992153596,
+                "config": {
+                  "action": "upload",
+                  "blob_name": "Rollback",
+                  "blob_prefix": "",
+                  "container_name": "my-container",
+                  "create_container": false,
+                  "delete_blob_name": "",
+                  "delete_mode": "single",
+                  "delete_prefix": "",
+                  "download_mode": "single",
+                  "file_extension": ".csv",
+                  "file_name": "",
+                  "file_prefix": "",
+                  "local_dir_download": "/opt/airflow/local_downloads/azure",
+                  "local_file_browser": "Rollback_Azure_Image_Version.pdf",
+                  "local_file_path": "Rollback_Azure_Image_Version.pdf",
+                  "local_file_path_container": "/opt/airflow/local_uploads/y2test/node_5/Rollback_Azure_Image_Version.pdf",
+                  "local_file_paths": [],
+                  "upload_mode": "single",
+                  "wasb_conn_id": "wasb_default"
+                }
+              },
+              {
+                "id": "node_6",
+                "type": "azure_blob_sensor",
+                "label": "Azure Blob Sensor 6",
+                "x": 872.1975233289933,
+                "y": 565.4741276635064,
+                "config": {
+                  "container_name": "my-container",
+                  "poke_interval": 30,
+                  "prefix": "Roll",
+                  "timeout": 600,
+                  "wasb_conn_id": "wasb_default"
+                }
+              },
+              {
+                "id": "node_7",
+                "type": "parallel_fork",
+                "label": "Parallel Fork 3",
+                "x": 550.9629024929468,
+                "y": 333.29782104492193,
+                "config": {}
+              },
+              {
+                "id": "node_8",
+                "type": "parallel_join",
+                "label": "Parallel Join 4",
+                "x": 1193.4816063774954,
+                "y": 310.5942111545139,
+                "config": {
+                  "trigger_rule": "all_success"
+                }
+              },
+              {
+                "id": "node_9",
+                "type": "y2",
+                "label": "Y2 Scheduled Task 9",
+                "x": 185.7777099609375,
+                "y": 333.81032731797967,
+                "config": {
+                  "folder_id_value": "90039148_003_TEST",
+                  "task_ids_value": [
+                    "436"
+                  ]
+                }
+              },
+              {
+                "id": "node_10",
+                "type": "conditional_router",
+                "label": "Conditional Router 10",
+                "x": 2461.234551323785,
+                "y": 314.79801177978516,
+                "config": {
+                  "input_source": "xcom_node:node_2.detected_file_name",
+                  "rules": [
+                    {
+                      "match_type": "starts_with",
+                      "value": "Rol",
+                      "target_branch_node_id": "node_11"
+                    },
+                    {
+                      "match_type": "equals",
+                      "value": "COS",
+                      "target_branch_node_id": "node_12"
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "node_11",
+                "type": "delay",
+                "label": "Delay 11",
+                "x": 2779.259182400174,
+                "y": 318.5016250610352,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_12",
+                "type": "delay",
+                "label": "Delay 12",
+                "x": 2862.716078016493,
+                "y": 593.0696317884657,
+                "config": {
+                  "delay_minutes": 2
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_3",
+                "target": "node_1"
+              },
+              {
+                "source": "node_3",
+                "target": "node_2"
+              },
+              {
+                "source": "node_2",
+                "target": "node_4"
+              },
+              {
+                "source": "node_1",
+                "target": "node_4"
+              },
+              {
+                "source": "node_7",
+                "target": "node_5"
+              },
+              {
+                "source": "node_7",
+                "target": "node_6"
+              },
+              {
+                "source": "node_6",
+                "target": "node_8"
+              },
+              {
+                "source": "node_5",
+                "target": "node_8"
+              },
+              {
+                "source": "node_8",
+                "target": "node_3"
+              },
+              {
+                "source": "node_9",
+                "target": "node_7"
+              },
+              {
+                "source": "node_4",
+                "target": "node_10"
+              },
+              {
+                "source": "node_10",
+                "target": "node_11"
+              },
+              {
+                "source": "node_10",
+                "target": "node_12"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\application\\web_app\\generated_dags\\y2test__v2.py",
+          "generated_airflow_path": "D:\\web_app_airflow\\application\\airflow\\dags\\y2test__v2.py",
+          "node_task_map": {
+            "node_9": [
+              "y2_1_node_9"
+            ],
+            "node_7": [
+              "parallel_fork_2_node_7"
+            ],
+            "node_5": [
+              "azure_3_node_5"
+            ],
+            "node_6": [
+              "azure_blob_sensor_4_node_6"
+            ],
+            "node_8": [
+              "parallel_join_5_node_8"
+            ],
+            "node_3": [
+              "parallel_fork_6_node_3"
+            ],
+            "node_1": [
+              "sftp_upload_7_node_1"
+            ],
+            "node_2": [
+              "sftp_sensor_8_node_2"
+            ],
+            "node_4": [
+              "parallel_join_9_node_4"
+            ],
+            "node_10": [
+              "conditional_router_10_node_10"
+            ],
+            "node_11": [
+              "delay_11_node_11"
+            ],
+            "node_12": [
+              "delay_12_node_12"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_9": "y2_1_node_9",
+            "node_7": "parallel_fork_2_node_7",
+            "node_5": "azure_3_node_5",
+            "node_6": "azure_blob_sensor_4_node_6",
+            "node_8": "parallel_join_5_node_8",
+            "node_3": "parallel_fork_6_node_3",
+            "node_1": "sftp_upload_7_node_1",
+            "node_2": "sftp_sensor_8_node_2",
+            "node_4": "parallel_join_9_node_4",
+            "node_10": "conditional_router_10_node_10",
+            "node_11": "delay_11_node_11",
+            "node_12": "delay_12_node_12"
+          },
+          "updated_at": "2026-04-28T12:58:08.015010+00:00",
+          "updated_by": "admin"
+        },
+        {
+          "pipeline_id": "y2test",
+          "version_id": "v3",
+          "dag_version": 3,
+          "airflow_dag_id": "y2test__v3",
+          "output_filename": "y2test__v3.py",
+          "created_at": "2026-04-28T13:08:28.886748+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "1ea481ffa398b9fabe4704a1e1fa8ad026d3a45cd834a11a01066f60be65cdb5",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "y2test",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "y2test.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "sftp_upload",
+                "label": "SFTP Upload 1",
+                "x": 1827.382804022895,
+                "y": 113.56944105360245,
+                "config": {
+                  "conn_name": "sftp",
+                  "file_prefix": "Roll",
+                  "local_file_browser": "/opt/airflow/local_uploads/y2test/node_1/Rollback_Azure_Image_Version.pdf",
+                  "local_file_path": "/opt/airflow/local_downloads/azure/Rollback",
+                  "local_file_paths": [],
+                  "remote_dir": "/uploads",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_2",
+                "type": "sftp_sensor",
+                "label": "SFTP Sensor 2",
+                "x": 1827.9384070502388,
+                "y": 469.4954121907552,
+                "config": {
+                  "conn_name": "sftp",
+                  "remote_dir": "/uploads",
+                  "sftp_prefix_sensor": "Roll"
+                }
+              },
+              {
+                "id": "node_3",
+                "type": "parallel_fork",
+                "label": "Parallel Fork 3",
+                "x": 1571.7530975341795,
+                "y": 314.58175659179693,
+                "config": {}
+              },
+              {
+                "id": "node_4",
+                "type": "parallel_join",
+                "label": "Parallel Join 4",
+                "x": 2150.0741085476343,
+                "y": 316.56951226128473,
+                "config": {
+                  "trigger_rule": "all_success"
+                }
+              },
+              {
+                "id": "node_5",
+                "type": "azure",
+                "label": "Azure Blob Storage 5",
+                "x": 884.5433756510419,
+                "y": 88.68396992153596,
+                "config": {
+                  "action": "upload",
+                  "blob_name": "Rollback",
+                  "blob_prefix": "",
+                  "container_name": "my-container",
+                  "create_container": false,
+                  "delete_blob_name": "",
+                  "delete_mode": "single",
+                  "delete_prefix": "",
+                  "download_mode": "single",
+                  "file_extension": ".csv",
+                  "file_name": "",
+                  "file_prefix": "",
+                  "local_dir_download": "/opt/airflow/local_downloads/azure",
+                  "local_file_browser": "Rollback_Azure_Image_Version.pdf",
+                  "local_file_path": "Rollback_Azure_Image_Version.pdf",
+                  "local_file_path_container": "/opt/airflow/local_uploads/y2test/node_5/Rollback_Azure_Image_Version.pdf",
+                  "local_file_paths": [],
+                  "upload_mode": "single",
+                  "wasb_conn_id": "wasb_default"
+                }
+              },
+              {
+                "id": "node_6",
+                "type": "azure_blob_sensor",
+                "label": "Azure Blob Sensor 6",
+                "x": 872.1975233289933,
+                "y": 565.4741276635064,
+                "config": {
+                  "container_name": "my-container",
+                  "poke_interval": 30,
+                  "prefix": "Roll",
+                  "timeout": 600,
+                  "wasb_conn_id": "wasb_default"
+                }
+              },
+              {
+                "id": "node_7",
+                "type": "parallel_fork",
+                "label": "Parallel Fork 3",
+                "x": 550.9629024929468,
+                "y": 333.29782104492193,
+                "config": {}
+              },
+              {
+                "id": "node_8",
+                "type": "parallel_join",
+                "label": "Parallel Join 4",
+                "x": 1137.92608473036,
+                "y": 316.14978366427954,
+                "config": {
+                  "trigger_rule": "all_success"
+                }
+              },
+              {
+                "id": "node_9",
+                "type": "y2",
+                "label": "Y2 Scheduled Task 9",
+                "x": 185.7777099609375,
+                "y": 333.81032731797967,
+                "config": {
+                  "folder_id_value": "90039148_003_TEST",
+                  "task_ids_value": [
+                    "436"
+                  ]
+                }
+              },
+              {
+                "id": "node_10",
+                "type": "conditional_router",
+                "label": "Conditional Router 10",
+                "x": 2461.234551323785,
+                "y": 314.79801177978516,
+                "config": {
+                  "input_source": "xcom_node:node_2.detected_file_name",
+                  "rules": [
+                    {
+                      "match_type": "starts_with",
+                      "value": "Rol",
+                      "target_branch_node_id": "node_11"
+                    },
+                    {
+                      "match_type": "equals",
+                      "value": "COS",
+                      "target_branch_node_id": "node_12"
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "node_11",
+                "type": "delay",
+                "label": "Delay 11",
+                "x": 2779.259182400174,
+                "y": 318.5016250610352,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_12",
+                "type": "delay",
+                "label": "Delay 12",
+                "x": 2862.716078016493,
+                "y": 593.0696317884657,
+                "config": {
+                  "delay_minutes": 2
+                }
+              },
+              {
+                "id": "node_13",
+                "type": "azure",
+                "label": "Azure Blob Storage 13",
+                "x": 1371.9311181931268,
+                "y": 620.9062191191173,
+                "config": {
+                  "action": "download",
+                  "blob_name": "",
+                  "blob_prefix": "",
+                  "container_name": "my-container",
+                  "create_container": true,
+                  "delete_blob_name": "",
+                  "delete_mode": "single",
+                  "delete_prefix": "",
+                  "download_mode": "multiple",
+                  "file_extension": ".csv",
+                  "file_name": "Rollback",
+                  "file_prefix": "Roll",
+                  "local_dir_download": "/opt/airflow/local_downloads/azure",
+                  "local_file_path": "",
+                  "local_file_path_container": "",
+                  "local_file_paths": [],
+                  "upload_mode": "single",
+                  "wasb_conn_id": "wasb_default"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_3",
+                "target": "node_1"
+              },
+              {
+                "source": "node_3",
+                "target": "node_2"
+              },
+              {
+                "source": "node_2",
+                "target": "node_4"
+              },
+              {
+                "source": "node_1",
+                "target": "node_4"
+              },
+              {
+                "source": "node_7",
+                "target": "node_5"
+              },
+              {
+                "source": "node_7",
+                "target": "node_6"
+              },
+              {
+                "source": "node_6",
+                "target": "node_8"
+              },
+              {
+                "source": "node_5",
+                "target": "node_8"
+              },
+              {
+                "source": "node_9",
+                "target": "node_7"
+              },
+              {
+                "source": "node_4",
+                "target": "node_10"
+              },
+              {
+                "source": "node_10",
+                "target": "node_11"
+              },
+              {
+                "source": "node_10",
+                "target": "node_12"
+              },
+              {
+                "source": "node_8",
+                "target": "node_13"
+              },
+              {
+                "source": "node_13",
+                "target": "node_3"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\application\\web_app\\generated_dags\\y2test__v3.py",
+          "generated_airflow_path": "D:\\web_app_airflow\\application\\airflow\\dags\\y2test__v3.py",
+          "node_task_map": {
+            "node_9": [
+              "y2_1_node_9"
+            ],
+            "node_7": [
+              "parallel_fork_2_node_7"
+            ],
+            "node_5": [
+              "azure_3_node_5"
+            ],
+            "node_6": [
+              "azure_blob_sensor_4_node_6"
+            ],
+            "node_8": [
+              "parallel_join_5_node_8"
+            ],
+            "node_13": [
+              "azure_6_node_13"
+            ],
+            "node_3": [
+              "parallel_fork_7_node_3"
+            ],
+            "node_1": [
+              "sftp_upload_8_node_1"
+            ],
+            "node_2": [
+              "sftp_sensor_9_node_2"
+            ],
+            "node_4": [
+              "parallel_join_10_node_4"
+            ],
+            "node_10": [
+              "conditional_router_11_node_10"
+            ],
+            "node_11": [
+              "delay_12_node_11"
+            ],
+            "node_12": [
+              "delay_13_node_12"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_9": "y2_1_node_9",
+            "node_7": "parallel_fork_2_node_7",
+            "node_5": "azure_3_node_5",
+            "node_6": "azure_blob_sensor_4_node_6",
+            "node_8": "parallel_join_5_node_8",
+            "node_13": "azure_6_node_13",
+            "node_3": "parallel_fork_7_node_3",
+            "node_1": "sftp_upload_8_node_1",
+            "node_2": "sftp_sensor_9_node_2",
+            "node_4": "parallel_join_10_node_4",
+            "node_10": "conditional_router_11_node_10",
+            "node_11": "delay_12_node_11",
+            "node_12": "delay_13_node_12"
+          },
+          "updated_at": "2026-04-28T13:32:29.523822+00:00",
+          "updated_by": "admin"
+        }
+      ],
+      "switch_events": [
+        {
+          "event_id": "7c8b5805-53f9-468b-aabe-d5644fbdbd62",
+          "event_type": "create_and_set_current",
+          "from_version_id": null,
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-28T12:03:50.877778+00:00"
+        },
+        {
+          "event_id": "d38bc6e2-bda7-4bfe-9cf7-b28a8157516f",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-28T12:10:43.039632+00:00"
+        },
+        {
+          "event_id": "e007f703-48d1-422c-bd32-68a717dc0d5c",
+          "event_type": "update_version_definition",
+          "from_version_id": "v1",
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-28T12:24:50.941405+00:00"
+        },
+        {
+          "event_id": "9a975ed1-138c-4162-ab41-61628028e709",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v1",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T12:45:52.130317+00:00"
+        },
+        {
+          "event_id": "230bc951-cde3-45da-8387-396d56cd242c",
+          "event_type": "update_version_definition",
+          "from_version_id": "v2",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T12:54:42.427969+00:00"
+        },
+        {
+          "event_id": "bda0694e-8475-4a1f-8981-9180056b75dc",
+          "event_type": "update_version_definition",
+          "from_version_id": "v2",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T12:56:04.904772+00:00"
+        },
+        {
+          "event_id": "f7871797-7789-47ea-a198-ebde35ad4f65",
+          "event_type": "update_version_definition",
+          "from_version_id": "v2",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T12:58:08.015010+00:00"
+        },
+        {
+          "event_id": "af4be293-3ea9-4912-8b64-210c582734b7",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v2",
+          "to_version_id": "v3",
+          "actor": "admin",
+          "at": "2026-04-28T13:08:28.886748+00:00"
+        },
+        {
+          "event_id": "284096ca-505c-4e3d-bef8-afd5a84f46c8",
+          "event_type": "update_version_definition",
+          "from_version_id": "v3",
+          "to_version_id": "v3",
+          "actor": "admin",
+          "at": "2026-04-28T13:11:13.027866+00:00"
+        },
+        {
+          "event_id": "ab4876d5-e33d-4b08-8bfe-a92e6804ac73",
+          "event_type": "update_version_definition",
+          "from_version_id": "v3",
+          "to_version_id": "v3",
+          "actor": "admin",
+          "at": "2026-04-28T13:21:16.961862+00:00"
+        },
+        {
+          "event_id": "8ce6f851-6c0a-45b8-939f-75871189bbd6",
+          "event_type": "update_version_definition",
+          "from_version_id": "v3",
+          "to_version_id": "v3",
+          "actor": "admin",
+          "at": "2026-04-28T13:25:39.496471+00:00"
+        },
+        {
+          "event_id": "cf198e3a-da80-4082-bd3c-27ae2f194a07",
+          "event_type": "update_version_definition",
+          "from_version_id": "v3",
+          "to_version_id": "v3",
+          "actor": "admin",
+          "at": "2026-04-28T13:28:45.193777+00:00"
+        },
+        {
+          "event_id": "61337218-4e35-420b-b85e-7b833cd14801",
+          "event_type": "update_version_definition",
+          "from_version_id": "v3",
+          "to_version_id": "v3",
+          "actor": "admin",
+          "at": "2026-04-28T13:30:09.346609+00:00"
+        },
+        {
+          "event_id": "7f1d4abb-2bba-4b2d-93c7-1752c09584c9",
+          "event_type": "update_version_definition",
+          "from_version_id": "v3",
+          "to_version_id": "v3",
+          "actor": "admin",
+          "at": "2026-04-28T13:32:29.523822+00:00"
+        }
+      ]
+    },
+    "sftp_test": {
+      "current_version_id": "v3",
+      "versions": [
+        {
+          "pipeline_id": "sftp_test",
+          "version_id": "v1",
+          "dag_version": 1,
+          "airflow_dag_id": "sftp_test__v1",
+          "output_filename": "sftp_test__v1.py",
+          "created_at": "2026-04-28T14:45:26.920410+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "3deda449e35f03037d869e2dbf3f8d0e7e3a94d25f249c173833f23a91fdc77e",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "sftp_test",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "sftp_test.py"
+            },
+            "nodes": [
+              {
+                "id": "node_3",
+                "type": "quorum_join",
+                "label": "Quorum Join 3",
+                "x": 2323.4760851178853,
+                "y": 214.04575674874445,
+                "config": {
+                  "min_success_count": 1
+                }
+              },
+              {
+                "id": "node_4",
+                "type": "parallel_fork",
+                "label": "Parallel Fork 4",
+                "x": 1304.7460610525948,
+                "y": 223.68066188267298,
+                "config": {}
+              },
+              {
+                "id": "node_5",
+                "type": "sftp_upload",
+                "label": "SFTP 5",
+                "x": 1622.0633675711495,
+                "y": 20.666927337646534,
+                "config": {
+                  "conn_name": "sftp",
+                  "action": "upload",
+                  "remote_dir": "/uploads",
+                  "upload_mode": "multiple",
+                  "local_file_path": "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_37_45.png"
+                  ],
+                  "local_directory_path": "/opt/airflow/local_uploads/sftp_test/node_5",
+                  "file_prefix": "/uploads",
+                  "download_mode": "single",
+                  "remote_file_name": "",
+                  "remote_file_prefix": "",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "delete_mode": "single",
+                  "delete_file_name": "",
+                  "delete_prefix": ""
+                }
+              },
+              {
+                "id": "node_7",
+                "type": "sftp_sensor",
+                "label": "SFTP Sensor 7",
+                "x": 1752.6983075823105,
+                "y": 406.0636994498117,
+                "config": {
+                  "conn_name": "sftp",
+                  "remote_dir": "/uploads",
+                  "sftp_prefix_sensor": "Cha_"
+                }
+              },
+              {
+                "id": "node_8",
+                "type": "sftp_upload",
+                "label": "SFTP 5",
+                "x": 1972.3490818568634,
+                "y": 20.158966609409923,
+                "config": {
+                  "conn_name": "sftp",
+                  "action": "download",
+                  "remote_dir": "/uploads",
+                  "upload_mode": "multiple",
+                  "local_file_path": "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_37_45.png"
+                  ],
+                  "local_directory_path": "/opt/airflow/local_uploads/sftp_test/node_5",
+                  "file_prefix": "/uploads",
+                  "download_mode": "multiple",
+                  "remote_file_name": "",
+                  "remote_file_prefix": "Chat_",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "delete_mode": "single",
+                  "delete_file_name": "",
+                  "delete_prefix": ""
+                }
+              },
+              {
+                "id": "node_9",
+                "type": "sftp_upload",
+                "label": "SFTP 5",
+                "x": 2635.3332475934703,
+                "y": 214.88917378016882,
+                "config": {
+                  "conn_name": "sftp",
+                  "action": "delete",
+                  "remote_dir": "/uploads",
+                  "upload_mode": "multiple",
+                  "local_file_path": "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_37_45.png"
+                  ],
+                  "local_directory_path": "/opt/airflow/local_uploads/sftp_test/node_5",
+                  "file_prefix": "/uploads",
+                  "download_mode": "multiple",
+                  "remote_file_name": "",
+                  "remote_file_prefix": "Chat_",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "delete_mode": "multiple",
+                  "delete_file_name": "",
+                  "delete_prefix": "Cha_"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_4",
+                "target": "node_7"
+              },
+              {
+                "source": "node_7",
+                "target": "node_3"
+              },
+              {
+                "source": "node_4",
+                "target": "node_5"
+              },
+              {
+                "source": "node_5",
+                "target": "node_8"
+              },
+              {
+                "source": "node_8",
+                "target": "node_3"
+              },
+              {
+                "source": "node_3",
+                "target": "node_9"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\application\\web_app\\generated_dags\\sftp_test__v1.py",
+          "generated_airflow_path": "D:\\web_app_airflow\\application\\airflow\\dags\\sftp_test__v1.py",
+          "node_task_map": {
+            "node_4": [
+              "parallel_fork_1_node_4"
+            ],
+            "node_7": [
+              "sftp_sensor_2_node_7"
+            ],
+            "node_5": [
+              "sftp_upload_3_node_5"
+            ],
+            "node_8": [
+              "sftp_upload_4_node_8"
+            ],
+            "node_3": [
+              "quorum_join_5_node_3"
+            ],
+            "node_9": [
+              "sftp_upload_6_node_9"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_4": "parallel_fork_1_node_4",
+            "node_7": "sftp_sensor_2_node_7",
+            "node_5": "sftp_upload_3_node_5",
+            "node_8": "sftp_upload_4_node_8",
+            "node_3": "quorum_join_5_node_3",
+            "node_9": "sftp_upload_6_node_9"
+          }
+        },
+        {
+          "pipeline_id": "sftp_test",
+          "version_id": "v2",
+          "dag_version": 2,
+          "airflow_dag_id": "sftp_test__v2",
+          "output_filename": "sftp_test__v2.py",
+          "created_at": "2026-04-28T14:56:30.211401+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "8c651254cde24b05f6e680afd250819aa5120ea7b1bb37e27f35f33a0dfb647e",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "sftp_test",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "sftp_test.py"
+            },
+            "nodes": [
+              {
+                "id": "node_3",
+                "type": "quorum_join",
+                "label": "Quorum Join 3",
+                "x": 2323.4760851178853,
+                "y": 214.04575674874445,
+                "config": {
+                  "min_success_count": 1
+                }
+              },
+              {
+                "id": "node_4",
+                "type": "parallel_fork",
+                "label": "Parallel Fork 4",
+                "x": 1304.7460610525948,
+                "y": 223.68066188267298,
+                "config": {}
+              },
+              {
+                "id": "node_5",
+                "type": "sftp_upload",
+                "label": "SFTP 5",
+                "x": 1622.0633675711495,
+                "y": 20.666927337646534,
+                "config": {
+                  "action": "upload",
+                  "conn_name": "sftp",
+                  "delete_file_name": "",
+                  "delete_mode": "single",
+                  "delete_prefix": "",
+                  "download_mode": "single",
+                  "file_prefix": "/uploads",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "local_directory_path": "/opt/airflow/local_uploads/sftp_test/node_5",
+                  "local_file_path": "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_37_45.png"
+                  ],
+                  "remote_dir": "/uploads",
+                  "remote_file_name": "",
+                  "remote_file_prefix": "",
+                  "upload_mode": "multiple"
+                }
+              },
+              {
+                "id": "node_7",
+                "type": "sftp_sensor",
+                "label": "SFTP Sensor 7",
+                "x": 1752.6983075823105,
+                "y": 407.17484446934293,
+                "config": {
+                  "conn_name": "sftp",
+                  "remote_dir": "/uploads",
+                  "sftp_prefix_sensor": "Chat"
+                }
+              },
+              {
+                "id": "node_9",
+                "type": "sftp_upload",
+                "label": "SFTP 5",
+                "x": 2635.3332475934703,
+                "y": 214.88917378016882,
+                "config": {
+                  "action": "delete",
+                  "conn_name": "sftp",
+                  "delete_file_name": "",
+                  "delete_mode": "multiple",
+                  "delete_prefix": "Cha_",
+                  "download_mode": "multiple",
+                  "file_prefix": "/uploads",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "local_directory_path": "/opt/airflow/local_uploads/sftp_test/node_5",
+                  "local_file_path": "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_37_45.png"
+                  ],
+                  "remote_dir": "/uploads",
+                  "remote_file_name": "",
+                  "remote_file_prefix": "Chat_",
+                  "upload_mode": "multiple"
+                }
+              },
+              {
+                "id": "node_10",
+                "type": "sftp_upload",
+                "label": "SFTP 5",
+                "x": 1948.063489641462,
+                "y": 17.778011322021534,
+                "config": {
+                  "action": "download",
+                  "conn_name": "sftp",
+                  "delete_file_name": "",
+                  "delete_mode": "single",
+                  "delete_prefix": "",
+                  "download_mode": "multiple",
+                  "file_prefix": "/uploads",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "local_directory_path": "/opt/airflow/local_uploads/sftp_test/node_5",
+                  "local_file_path": "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_37_45.png"
+                  ],
+                  "remote_dir": "/uploads",
+                  "remote_file_name": "",
+                  "remote_file_prefix": "ChatGPT_",
+                  "upload_mode": "multiple"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_4",
+                "target": "node_7"
+              },
+              {
+                "source": "node_7",
+                "target": "node_3"
+              },
+              {
+                "source": "node_4",
+                "target": "node_5"
+              },
+              {
+                "source": "node_3",
+                "target": "node_9"
+              },
+              {
+                "source": "node_5",
+                "target": "node_10"
+              },
+              {
+                "source": "node_10",
+                "target": "node_3"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\application\\web_app\\generated_dags\\sftp_test__v2.py",
+          "generated_airflow_path": "D:\\web_app_airflow\\application\\airflow\\dags\\sftp_test__v2.py",
+          "node_task_map": {
+            "node_4": [
+              "parallel_fork_1_node_4"
+            ],
+            "node_7": [
+              "sftp_sensor_2_node_7"
+            ],
+            "node_5": [
+              "sftp_upload_3_node_5"
+            ],
+            "node_10": [
+              "sftp_upload_4_node_10"
+            ],
+            "node_3": [
+              "quorum_join_5_node_3"
+            ],
+            "node_9": [
+              "sftp_upload_6_node_9"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_4": "parallel_fork_1_node_4",
+            "node_7": "sftp_sensor_2_node_7",
+            "node_5": "sftp_upload_3_node_5",
+            "node_10": "sftp_upload_4_node_10",
+            "node_3": "quorum_join_5_node_3",
+            "node_9": "sftp_upload_6_node_9"
+          },
+          "updated_at": "2026-04-28T15:02:11.943627+00:00",
+          "updated_by": "admin"
+        },
+        {
+          "pipeline_id": "sftp_test",
+          "version_id": "v3",
+          "dag_version": 3,
+          "airflow_dag_id": "sftp_test__v3",
+          "output_filename": "sftp_test__v3.py",
+          "created_at": "2026-04-28T15:04:02.685425+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "9854654e01b5031d7e1ef7f4fbf78c3b66cc11ea0fd82867ec45446d1477d5b3",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "sftp_test",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "sftp_test.py"
+            },
+            "nodes": [
+              {
+                "id": "node_4",
+                "type": "parallel_fork",
+                "label": "Parallel Fork 4",
+                "x": 1304.7460610525948,
+                "y": 223.68066188267298,
+                "config": {}
+              },
+              {
+                "id": "node_5",
+                "type": "sftp_upload",
+                "label": "SFTP 5",
+                "x": 1622.0633675711495,
+                "y": 20.666927337646534,
+                "config": {
+                  "action": "upload",
+                  "conn_name": "sftp",
+                  "delete_file_name": "",
+                  "delete_mode": "single",
+                  "delete_prefix": "",
+                  "download_mode": "single",
+                  "file_prefix": "/uploads",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "local_directory_path": "/opt/airflow/local_uploads/sftp_test/node_5",
+                  "local_file_path": "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_37_45.png"
+                  ],
+                  "remote_dir": "/uploads",
+                  "remote_file_name": "",
+                  "remote_file_prefix": "",
+                  "upload_mode": "multiple"
+                }
+              },
+              {
+                "id": "node_7",
+                "type": "sftp_sensor",
+                "label": "SFTP Sensor 7",
+                "x": 1752.6983075823105,
+                "y": 407.17484446934293,
+                "config": {
+                  "conn_name": "sftp",
+                  "remote_dir": "/uploads",
+                  "sftp_prefix_sensor": "Chat"
+                }
+              },
+              {
+                "id": "node_9",
+                "type": "sftp_upload",
+                "label": "SFTP 5",
+                "x": 2604.222041538783,
+                "y": 201.55583027430944,
+                "config": {
+                  "action": "delete",
+                  "conn_name": "sftp",
+                  "delete_file_name": "",
+                  "delete_mode": "multiple",
+                  "delete_prefix": "Chat",
+                  "download_mode": "multiple",
+                  "file_prefix": "/uploads",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "local_directory_path": "/opt/airflow/local_uploads/sftp_test/node_5",
+                  "local_file_path": "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_37_45.png"
+                  ],
+                  "remote_dir": "/uploads",
+                  "remote_file_name": "",
+                  "remote_file_prefix": "Chat_",
+                  "upload_mode": "multiple"
+                }
+              },
+              {
+                "id": "node_10",
+                "type": "sftp_upload",
+                "label": "SFTP 5",
+                "x": 1948.063489641462,
+                "y": 17.778011322021534,
+                "config": {
+                  "action": "download",
+                  "conn_name": "sftp",
+                  "delete_file_name": "",
+                  "delete_mode": "single",
+                  "delete_prefix": "",
+                  "download_mode": "multiple",
+                  "file_prefix": "/uploads",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "local_directory_path": "/opt/airflow/local_uploads/sftp_test/node_5",
+                  "local_file_path": "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                    "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_37_45.png"
+                  ],
+                  "remote_dir": "/uploads",
+                  "remote_file_name": "",
+                  "remote_file_prefix": "ChatGPT_",
+                  "upload_mode": "multiple"
+                }
+              },
+              {
+                "id": "node_11",
+                "type": "parallel_join",
+                "label": "Parallel Join 11",
+                "x": 2301.1111907958984,
+                "y": 202.1249713897705,
+                "config": {
+                  "trigger_rule": "all_success"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_4",
+                "target": "node_7"
+              },
+              {
+                "source": "node_4",
+                "target": "node_5"
+              },
+              {
+                "source": "node_5",
+                "target": "node_10"
+              },
+              {
+                "source": "node_10",
+                "target": "node_11"
+              },
+              {
+                "source": "node_7",
+                "target": "node_11"
+              },
+              {
+                "source": "node_11",
+                "target": "node_9"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\application\\web_app\\generated_dags\\sftp_test__v3.py",
+          "generated_airflow_path": "D:\\web_app_airflow\\application\\airflow\\dags\\sftp_test__v3.py",
+          "node_task_map": {
+            "node_4": [
+              "parallel_fork_1_node_4"
+            ],
+            "node_7": [
+              "sftp_sensor_2_node_7"
+            ],
+            "node_5": [
+              "sftp_upload_3_node_5"
+            ],
+            "node_10": [
+              "sftp_upload_4_node_10"
+            ],
+            "node_11": [
+              "parallel_join_5_node_11"
+            ],
+            "node_9": [
+              "sftp_upload_6_node_9"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_4": "parallel_fork_1_node_4",
+            "node_7": "sftp_sensor_2_node_7",
+            "node_5": "sftp_upload_3_node_5",
+            "node_10": "sftp_upload_4_node_10",
+            "node_11": "parallel_join_5_node_11",
+            "node_9": "sftp_upload_6_node_9"
+          },
+          "updated_at": "2026-04-28T15:15:43.817052+00:00",
+          "updated_by": "admin",
+          "publish_status": "pr_open",
+          "workflow_name": "sftp_test",
+          "workflow_slug": "sftp-test",
+          "repo_file_path": "airflow/dags/sftp_test_git__v3.py",
+          "git_branch_name": "feature/workflow/sftp-test",
+          "pull_request_number": 22,
+          "pull_request_url": "https://github.com/Olive-Soft-Company/APACHE-AIRFLOW/pull/22",
+          "commit_sha": "f87e1ea9e6dd2d616f9aa179b92d1aa3f0e80fd8",
+          "requested_by_user_id": "admin",
+          "requested_by_email": "",
+          "requested_by_display_name": "admin"
+        }
+      ],
+      "switch_events": [
+        {
+          "event_id": "485d111b-0e0e-4cdc-8111-6a1b5fa4e286",
+          "event_type": "create_and_set_current",
+          "from_version_id": null,
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-28T14:45:26.920410+00:00"
+        },
+        {
+          "event_id": "9e5937dc-669d-4ba6-ae38-006001321d88",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v1",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T14:56:30.211401+00:00"
+        },
+        {
+          "event_id": "2d61b785-d31e-4255-9ee7-acc560d47b42",
+          "event_type": "update_version_definition",
+          "from_version_id": "v2",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T15:02:11.943627+00:00"
+        },
+        {
+          "event_id": "9aea1083-a9f5-4ec4-a863-4f7827a71679",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v2",
+          "to_version_id": "v3",
+          "actor": "admin",
+          "at": "2026-04-28T15:04:02.685425+00:00"
+        },
+        {
+          "event_id": "209c77b9-b3ff-42c1-8355-0b867f91bbf2",
+          "event_type": "update_version_definition",
+          "from_version_id": "v3",
+          "to_version_id": "v3",
+          "actor": "admin",
+          "at": "2026-04-28T15:05:03.626375+00:00"
+        }
+      ]
+    },
+    "gcp_test": {
+      "current_version_id": "v2",
+      "versions": [
+        {
+          "pipeline_id": "gcp_test",
+          "version_id": "v1",
+          "dag_version": 1,
+          "airflow_dag_id": "gcp_test__v1",
+          "output_filename": "gcp_test__v1.py",
+          "created_at": "2026-04-28T15:21:01.803389+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "3e0a91b5e1d125993d80ca863dd492fd947d3e31e12da749991220a06bca8b68",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "gcp_test",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "gcp_test.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 624.9999847412109,
+                "y": 374.0138854980469,
+                "config": {
+                  "action": "upload",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "gcp_connection_id": "gcp_conn",
+                  "destination_path": "CUSTOMER_CUS_TEST.csv/",
+                  "upload_mode": "multiple",
+                  "source_type": "local",
+                  "multiple_source_type": "local",
+                  "local_file_path": "/opt/airflow/local_uploads/gcp_test/node_1/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                  "local_directory_path": "/opt/airflow/local_uploads/gcp_test/node_1",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/gcp_test/node_1/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                    "/opt/airflow/local_uploads/gcp_test/node_1/ChatGPT_Image_27_avr._2026_22_37_45.png"
+                  ],
+                  "drive_file_link": "",
+                  "drive_input_mode": "directory",
+                  "drive_directory_link": "",
+                  "drive_file_links": [],
+                  "source_object": "",
+                  "destination_bucket_name": "",
+                  "destination_object": "",
+                  "delete_mode": "single",
+                  "object_name": "",
+                  "object_names": [],
+                  "delete_object_prefix": "",
+                  "service_account_file": "/opt/airflow/credgcp.json"
+                }
+              },
+              {
+                "id": "node_2",
+                "type": "gcs",
+                "label": "Google Cloud Storage 1",
+                "x": 982.1110687255859,
+                "y": 360.0138854980469,
+                "config": {
+                  "action": "delete",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "gcp_connection_id": "gcp_conn",
+                  "destination_path": "CUSTOMER_CUS_TEST.csv/",
+                  "upload_mode": "multiple",
+                  "source_type": "local",
+                  "multiple_source_type": "local",
+                  "local_file_path": "/opt/airflow/local_uploads/gcp_test/node_1/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                  "local_directory_path": "/opt/airflow/local_uploads/gcp_test/node_1",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/gcp_test/node_1/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                    "/opt/airflow/local_uploads/gcp_test/node_1/ChatGPT_Image_27_avr._2026_22_37_45.png"
+                  ],
+                  "drive_file_link": "",
+                  "drive_input_mode": "directory",
+                  "drive_directory_link": "",
+                  "drive_file_links": [],
+                  "source_object": "",
+                  "destination_bucket_name": "",
+                  "destination_object": "",
+                  "delete_mode": "multiple",
+                  "object_name": "",
+                  "object_names": [],
+                  "delete_object_prefix": "Chat",
+                  "service_account_file": "/opt/airflow/credgcp.json"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_1",
+                "target": "node_2"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\application\\web_app\\generated_dags\\gcp_test__v1.py",
+          "generated_airflow_path": "D:\\web_app_airflow\\application\\airflow\\dags\\gcp_test__v1.py",
+          "node_task_map": {
+            "node_1": [
+              "gcs_1_node_1"
+            ],
+            "node_2": [
+              "gcs_2_node_2"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_1": "gcs_1_node_1",
+            "node_2": "gcs_2_node_2"
+          }
+        },
+        {
+          "pipeline_id": "gcp_test",
+          "version_id": "v2",
+          "dag_version": 2,
+          "airflow_dag_id": "gcp_test__v2",
+          "output_filename": "gcp_test__v2.py",
+          "created_at": "2026-04-28T15:46:25.323560+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "a525bf0184b9bf488d59fd2bc0ee2538cf0502f714ee2480c4d5d657202c94ff",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "gcp_test",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "gcp_test.py"
+            },
+            "nodes": [
+              {
+                "id": "node_2",
+                "type": "gcs",
+                "label": "Google Cloud Storage 2",
+                "x": 798.4444427490234,
+                "y": 356.4583282470703,
+                "config": {
+                  "action": "upload",
+                  "bucket_name": "os-dpf-ariflow-prj-dev",
+                  "gcp_connection_id": "gcp_conn",
+                  "destination_path": "CUSTOMER_CUS_TEST.csv/",
+                  "upload_mode": "multiple",
+                  "source_type": "local",
+                  "multiple_source_type": "local",
+                  "local_file_path": "/opt/airflow/local_uploads/gcp_test/node_2/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                  "local_directory_path": "/opt/airflow/local_uploads/gcp_test/node_2",
+                  "local_file_paths": [
+                    "/opt/airflow/local_uploads/gcp_test/node_2/ChatGPT_Image_27_avr._2026_22_46_38.png",
+                    "/opt/airflow/local_uploads/gcp_test/node_2/ChatGPT_Image_27_avr._2026_22_37_45.png"
+                  ],
+                  "drive_file_link": "",
+                  "drive_input_mode": "directory",
+                  "drive_directory_link": "",
+                  "drive_file_links": [],
+                  "source_object": "",
+                  "destination_bucket_name": "",
+                  "destination_object": "",
+                  "delete_mode": "single",
+                  "object_name": "",
+                  "object_names": [],
+                  "delete_object_prefix": "",
+                  "service_account_file": "/opt/airflow/credgcp.json"
+                }
+              }
+            ],
+            "edges": [],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\web_app_airflow\\application\\web_app\\generated_dags\\gcp_test__v2.py",
+          "generated_airflow_path": "D:\\web_app_airflow\\application\\airflow\\dags\\gcp_test__v2.py",
+          "node_task_map": {
+            "node_2": [
+              "gcs_1_node_2"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_2": "gcs_1_node_2"
+          }
+        }
+      ],
+      "switch_events": [
+        {
+          "event_id": "75816ea1-b537-450e-b5a7-e940baeed2d5",
+          "event_type": "create_and_set_current",
+          "from_version_id": null,
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-04-28T15:21:01.803389+00:00"
+        },
+        {
+          "event_id": "dafe7b92-8ac0-42dc-9e2f-ea6c7768ec71",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v1",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-04-28T15:46:25.323560+00:00"
         }
       ]
     }
