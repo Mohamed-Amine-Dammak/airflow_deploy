@@ -1178,10 +1178,16 @@ def _find_gcp_connection(connection_id: str) -> dict[str, Any] | None:
 
 
 def _copy_gcp_service_account_to_airflow_containers(host_file: Path) -> str:
+    configured = [str(item).strip() for item in AppConfig.GCP_SERVICE_ACCOUNT_DOCKER_CONTAINERS if str(item).strip()]
+    discovered = _resolved_airflow_sync_containers()
+    merged: list[str] = []
+    for name in configured + discovered:
+        if name and name not in merged:
+            merged.append(name)
     return sync_host_file_to_containers_at_path(
         host_file=host_file,
         enabled=AppConfig.AIRFLOW_DOCKER_SYNC_ENABLED,
-        containers=AppConfig.GCP_SERVICE_ACCOUNT_DOCKER_CONTAINERS,
+        containers=merged,
         container_file_path=AppConfig.GCP_SERVICE_ACCOUNT_CONTAINER_FILE,
     )
 

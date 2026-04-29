@@ -1109,7 +1109,7 @@
               "div",
               { className: "node-body" },
               h("div", null, "Node id: " + node.id),
-              orderIndex ? h("div", null, "Execution order: " + orderIndex) : null,
+              !props.activeRun && orderIndex ? h("div", null, "Execution order: " + orderIndex) : null,
               h(
                 "div",
                 { className: "node-actions" },
