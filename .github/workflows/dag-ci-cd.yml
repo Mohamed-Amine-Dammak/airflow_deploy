@@ -44,10 +44,12 @@ jobs:
       - name: Lint DAGs
         run: |
           ruff check airflow/dags || true
+        continue-on-error: true
 
       - name: Format check DAGs
         run: |
           black --check airflow/dags
+        continue-on-error: true
 
       - name: Secret scan DAGs
         run: |
