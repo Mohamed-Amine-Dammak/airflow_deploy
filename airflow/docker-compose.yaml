@@ -103,7 +103,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-    - C:/ProgramData/Cegid:/mnt/cegid
+
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -386,6 +386,7 @@ services:
       - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
       - ${AIRFLOW_PROJ_DIR:-.}/web_app_data:/opt/web_app_data
       - ../web_app/github_app_private_key.pem:/opt/web_app_data/github_app_private_key.pem:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: always
     depends_on:
       airflow-apiserver:
@@ -402,8 +403,6 @@ services:
       DD_LOGS_CONFIG_USE_HTTP: "true"
       DD_LOGS_CONFIG_PROCESSING_RULES_ENABLED: "true"
       DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION: "true"
-    ports:
-      - "8125:8125/udp"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./datadog/datadog.yaml:/etc/datadog-agent/datadog.yaml:ro
