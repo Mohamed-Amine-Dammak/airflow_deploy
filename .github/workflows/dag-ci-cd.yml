@@ -1,12 +1,17 @@
 name: DAG CI/CD
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "airflow/dags/**"
+
   push:
     branches:
       - main
     paths:
-      - "dags/**"
-      - ".github/workflows/dag-ci-cd.yml"
+      - "airflow/dags/**"
 
 permissions:
   contents: read
