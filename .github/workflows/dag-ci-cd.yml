@@ -43,7 +43,7 @@ jobs:
 
       - name: Lint DAGs
         run: |
-          ruff check airflow/dags --output-format=github || true
+          ruff check airflow/dags --fix
 
 
       - name: Format check DAGs
