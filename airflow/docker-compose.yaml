@@ -359,9 +359,7 @@ services:
         condition: service_completed_successfully
 
   web_app:
-    build:
-      context: ../web_app
-      dockerfile: Dockerfile
+    image: oliveairflow.azurecr.io/web_app:${WEB_APP_IMAGE_TAG}
     env_file:
       - ../web_app/.env
     environment:
