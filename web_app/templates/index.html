@@ -3,9 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Airflow Pipeline Builder</title>
-  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='libs/airflow-favicon.svg') }}">
-  <script>(function(){var t=localStorage.getItem('airflow-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+  <title>OLIFLOW</title>
+  
+
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='libs/favicon-16x16.png') }}?v=4">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='libs/favicon-32x32.png') }}?v=4">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='libs/favicon.ico') }}?v=4">
+<script>(function(){var t=localStorage.getItem('airflow-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/design-tokens.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
@@ -17,11 +21,8 @@
 
   <header class="landing-topbar" role="banner">
     <div class="landing-brand">
-      <img src="{{ url_for('static', filename='libs/airflow-favicon.svg') }}" alt="" aria-hidden="true">
-      <div>
-        <strong>Airflow Orchestration Web App</strong>
-        <small>Secure role-based orchestration builder</small>
-      </div>
+      <img src="{{ url_for('static', filename='libs/oliflow-transparent.png') }}" alt="" aria-hidden="true">
+      <span class="landing-brand-text">OLIFLOW</span>
     </div>
     <div class="landing-top-actions">
       <span class="landing-version-pill">v0.2.0</span>
@@ -195,8 +196,13 @@
   </main>
 
   <footer class="landing-footer">
-    <p>Airflow Orchestration Web App - v0.2 secure orchestration with role-based operations and admin governance.</p>
+    <p>OLIFLOW | Your Airflow Pipeline Builder.</p>
   </footer>
 </body>
 </html>
+
+
+
+
+
 

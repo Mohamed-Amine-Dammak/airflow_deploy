@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   const h = React.createElement;
   const useEffect = React.useEffect;
   const useMemo = React.useMemo;
@@ -4327,13 +4327,13 @@
         h(
           "div",
           { className: "topbar-brand" },
-          h(
-            "div",
-            { className: "topbar-title-row" },
-            h("div", { className: "topbar-title" }, "Airflow Pipeline Builder"),
-            h("span", { className: "topbar-version" }, "v1")
-          ),
-          h("div", { className: "topbar-subtitle" }, "Orchestration workspace")
+          h("img", {
+            className: "topbar-logo",
+            src: "/static/libs/logo_no_bg.png",
+            alt: "OLIFLOW",
+          }),
+          h("span", { className: "topbar-brand-text" }, "OLIFLOW"),
+          h("span", { className: "topbar-version topbar-version-subtle" }, "v1")
         ),
         h(
           "div",
@@ -5814,3 +5814,5 @@
   const root = ReactDOM.createRoot(document.getElementById("app-root"));
   root.render(h(App));
 })();
+
+

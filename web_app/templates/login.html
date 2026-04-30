@@ -62,33 +62,39 @@
     }
 
     .login-left__logo {
-      width: 64px;
-      height: 64px;
-      border-radius: 16px;
-      background: var(--accent);
-      display: grid;
-      place-items: center;
-      font-size: 32px;
-      font-weight: 700;
-      color: #fff;
-      box-shadow: 0 0 40px var(--accent-glow);
+      width: 96px;
+      height: 96px;
+      object-fit: contain;
+      display: block;
     }
 
     .login-left__title {
-      font-size: 28px;
-      font-weight: 700;
+      font-size: 40px;
+      font-weight: 800;
       color: #fff;
-      letter-spacing: -0.02em;
-      line-height: 1.2;
+      letter-spacing: -0.01em;
+      line-height: 1.05;
+      margin: 0;
     }
 
-    .login-left__title span { color: var(--accent); }
+    .login-left__title span { color: #16e0c3; }
+
+    .login-left__kicker {
+      margin: 0 0 6px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.62);
+    }
 
     .login-left__subtitle {
-      font-size: 14px;
-      color: rgba(255,255,255,0.45);
-      max-width: 300px;
-      line-height: 1.6;
+      margin: 12px auto 0;
+      font-size: 18px;
+      font-weight: 500;
+      color: rgba(232, 245, 255, 0.88);
+      max-width: 460px;
+      line-height: 1.4;
     }
 
     .login-left__features {
@@ -435,10 +441,11 @@
     </svg>
 
     <div class="login-left__brand">
-      <div class="login-left__logo">&#x2B21;</div>
+      <img class="login-left__logo" src="{{ url_for('static', filename='libs/oliflow-transparent.png') }}" alt="OLIFLOW logo">
       <div>
-        <div class="login-left__title">Airflow <span>Pipeline</span><br>Builder</div>
-        <div class="login-left__subtitle">Compose, generate, and monitor your Apache Airflow DAGs without writing a single line of Python.</div>
+        <p class="login-left__kicker">Data Orchestration Platform</p>
+        <h1 class="login-left__title"> <span>OLIFLOW</span><br></h1>
+        <p class="login-left__subtitle">Compose, generate, and monitor Airflow DAGs with clarity and control.</p>
       </div>
       <div class="login-left__features">
         <div class="feature-pill"><span class="feature-pill__dot"></span>Visual DAG builder drag &amp; drop</div>
@@ -454,7 +461,7 @@
     <div class="login-card">
 
       <div class="login-card__header">
-        <div class="login-card__eyebrow">Airflow Builder</div>
+        <div class="login-card__eyebrow">OLIFLOW</div>
         <div class="login-card__title">Login</div>
         <div class="login-card__subtitle">Enter your credentials to access the workspace.</div>
       </div>
@@ -590,5 +597,3 @@
   </script>
 </body>
 </html>
-
-

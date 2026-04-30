@@ -81,9 +81,25 @@ body.builder-page .panel-left {
 
 .topbar * { color: var(--topbar-text); }
 
-.topbar-title  { color: #fff !important; font-weight: 700 !important; }
+.topbar-title  {
+  font-size: 2rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.015em !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+  background: linear-gradient(90deg, #ffffff 0%, #f2f7ff 45%, #8ec5ff 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+  text-shadow: 0 2px 14px rgba(26, 166, 255, 0.22) !important;
+}
 .topbar-version { color: rgba(255,255,255,0.6) !important; font-family: var(--font-mono); }
-.topbar-subtitle { color: rgba(255,255,255,0.5) !important; }
+.topbar-subtitle {
+  color: #91a8c4 !important;
+  font-size: 0.92rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+}
 .context-value { color: #fff !important; }
 .context-label { color: rgba(255,255,255,0.6) !important; }
 

@@ -3,10 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ pipeline_name if pipeline_name else 'Pipeline Builder' }} — Airflow Builder</title>
-  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='libs/airflow-favicon.svg') }}">
+  <title>{{ pipeline_name if pipeline_name else 'Pipeline Builder' }} — OLIFLOW</title>
 
-  <!-- Design System — doit être chargé AVANT style.css pour que les tokens CSS soient disponibles -->
+  
+
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='libs/favicon-16x16.png') }}?v=4">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='libs/favicon-32x32.png') }}?v=4">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='libs/favicon.ico') }}?v=4">
+<!-- Design System — doit être chargé AVANT style.css pour que les tokens CSS soient disponibles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/design-tokens.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
@@ -100,4 +104,9 @@
   {% include 'partials/home_button.html' %}
 </body>
 </html>
+
+
+
+
+
 
