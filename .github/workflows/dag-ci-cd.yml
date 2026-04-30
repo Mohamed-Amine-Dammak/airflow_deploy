@@ -41,9 +41,6 @@ jobs:
         run: |
           find airflow/dags -name "*.py" -print0 | xargs -0 -I {} python -m py_compile {}
 
-      - name: Lint DAGs (non-blocking)
-        run: |
-          ruff check airflow/dags --output-format=github || true
 
       - name: Format check DAGs (non-blocking)
         run: |
