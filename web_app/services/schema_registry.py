@@ -426,8 +426,16 @@ MODULE_REGISTRY: dict[str, dict[str, Any]] = {
         "display_name": "Azure Blob",
         "description": "Upload, download, or delete blobs.",
         "template": "module_azure_upload.py.j2",
-        "required_fields": ["container_name", "action"],
+        "required_fields": ["wasb_conn_id", "container_name", "action"],
         "fields": [
+            {
+                "name": "wasb_conn_id",
+                "label": "WASB Connection ID",
+                "type": "text",
+                "required": True,
+                "default": "wasb_default",
+                "placeholder": "wasb_default",
+            },
             {
                 "name": "action",
                 "label": "Action",
@@ -555,14 +563,6 @@ MODULE_REGISTRY: dict[str, dict[str, Any]] = {
                 "placeholder": "uploads/exp_",
             },
             {
-                "name": "file_extension",
-                "label": "File Extension",
-                "type": "text",
-                "required": False,
-                "show_if": {"action": "download"},
-                "default": ".csv",
-            },
-            {
                 "name": "local_dir_download",
                 "label": "Local Download Directory",
                 "type": "text",
@@ -676,11 +676,32 @@ MODULE_REGISTRY: dict[str, dict[str, Any]] = {
     },
     "sftp_upload": {
         "type": "sftp_upload",
-        "display_name": "SFTP Upload",
-        "description": "Upload one file or multiple files by prefix to remote SFTP directory.",
+        "display_name": "SFTP",
+        "description": "Upload, download, or delete files on SFTP.",
         "template": "module_sftp_upload.py.j2",
-        "required_fields": ["remote_dir", "local_file_path"],
+        "required_fields": ["conn_name", "action", "remote_dir"],
         "fields": [
+            {
+                "name": "conn_name",
+                "label": "SFTP Connection Name",
+                "type": "text",
+                "required": True,
+                "default": "sftp",
+                "placeholder": "sftp",
+                "description": "Airflow connection ID to use for SFTP.",
+            },
+            {
+                "name": "action",
+                "label": "Action",
+                "type": "select",
+                "required": True,
+                "default": "upload",
+                "options": [
+                    {"value": "upload", "label": "Upload"},
+                    {"value": "download", "label": "Download"},
+                    {"value": "delete", "label": "Delete"},
+                ],
+            },
             {
                 "name": "remote_dir",
                 "label": "Remote Directory",
@@ -688,29 +709,119 @@ MODULE_REGISTRY: dict[str, dict[str, Any]] = {
                 "required": True,
             },
             {
-                "name": "local_file_path",
-                "label": "Local Path",
-                "type": "text",
-                "required": True,
-                "description": "Single mode: full file path. Multiple mode: local directory path.",
-            },
-            {
                 "name": "upload_mode",
                 "label": "Upload Mode",
                 "type": "select",
                 "required": False,
                 "default": "single",
+                "show_if": {"action": "upload"},
                 "options": [
                     {"value": "single", "label": "One File"},
                     {"value": "multiple", "label": "Multiple Files (Prefix)"},
                 ],
             },
             {
+                "name": "local_file_browser",
+                "label": "Browse Local File",
+                "type": "file_single",
+                "required": False,
+                "show_if_all": [{"action": "upload"}, {"upload_mode": "single"}],
+                "description": "Pick one local file from your computer.",
+            },
+            {
+                "name": "local_file_path",
+                "label": "Local File Path",
+                "type": "text",
+                "required": False,
+                "show_if_all": [{"action": "upload"}, {"upload_mode": "single"}],
+                "description": "Filled automatically after file selection. You can also paste a full path.",
+            },
+            {
+                "name": "local_file_paths",
+                "label": "Browse Multiple Local Files",
+                "type": "file_multiple",
+                "required": False,
+                "show_if_all": [{"action": "upload"}, {"upload_mode": "multiple"}],
+                "description": "Pick one or many local files from your computer.",
+            },
+            {
+                "name": "local_directory_path",
+                "label": "Local Directory Path",
+                "type": "text",
+                "required": False,
+                "show_if_all": [{"action": "upload"}, {"upload_mode": "multiple"}],
+                "description": "Optional fallback: directory to scan when explicit file list is not provided.",
+            },
+            {
                 "name": "file_prefix",
                 "label": "File Prefix",
                 "type": "text",
                 "required": False,
-                "show_if": {"upload_mode": "multiple"},
+                "show_if_all": [{"action": "upload"}, {"upload_mode": "multiple"}],
+                "placeholder": "CUSTOMER_",
+            },
+            {
+                "name": "download_mode",
+                "label": "Download Mode",
+                "type": "select",
+                "required": False,
+                "default": "single",
+                "show_if": {"action": "download"},
+                "options": [
+                    {"value": "single", "label": "One File"},
+                    {"value": "multiple", "label": "Multiple Files (Prefix)"},
+                ],
+            },
+            {
+                "name": "remote_file_name",
+                "label": "Remote File Name",
+                "type": "text",
+                "required": False,
+                "show_if_all": [{"action": "download"}, {"download_mode": "single"}],
+                "placeholder": "example.csv",
+            },
+            {
+                "name": "remote_file_prefix",
+                "label": "Remote File Prefix",
+                "type": "text",
+                "required": False,
+                "show_if_all": [{"action": "download"}, {"download_mode": "multiple"}],
+                "placeholder": "CUSTOMER_",
+            },
+            {
+                "name": "local_dir_download",
+                "label": "Local Download Directory",
+                "type": "text",
+                "required": False,
+                "show_if": {"action": "download"},
+                "default": "/opt/airflow/local_downloads/sftp",
+            },
+            {
+                "name": "delete_mode",
+                "label": "Delete Mode",
+                "type": "select",
+                "required": False,
+                "default": "single",
+                "show_if": {"action": "delete"},
+                "options": [
+                    {"value": "single", "label": "One File"},
+                    {"value": "multiple", "label": "Multiple Files (Prefix)"},
+                ],
+            },
+            {
+                "name": "delete_file_name",
+                "label": "Remote File Name",
+                "type": "text",
+                "required": False,
+                "show_if_all": [{"action": "delete"}, {"delete_mode": "single"}],
+                "placeholder": "example.csv",
+            },
+            {
+                "name": "delete_prefix",
+                "label": "Remote File Prefix",
+                "type": "text",
+                "required": False,
+                "show_if_all": [{"action": "delete"}, {"delete_mode": "multiple"}],
                 "placeholder": "CUSTOMER_",
             },
         ],
@@ -720,8 +831,17 @@ MODULE_REGISTRY: dict[str, dict[str, Any]] = {
         "display_name": "SFTP Sensor",
         "description": "Wait on remote prefix in SFTP directory.",
         "template": "module_sftp_sensor.py.j2",
-        "required_fields": ["remote_dir", "sftp_prefix_sensor"],
+        "required_fields": ["conn_name", "remote_dir", "sftp_prefix_sensor"],
         "fields": [
+            {
+                "name": "conn_name",
+                "label": "SFTP Connection Name",
+                "type": "text",
+                "required": True,
+                "default": "sftp",
+                "placeholder": "sftp",
+                "description": "Airflow connection ID to use for SFTP.",
+            },
             {
                 "name": "remote_dir",
                 "label": "Remote Directory",
@@ -1183,6 +1303,7 @@ def normalize_module_config(module_type: str, config: dict[str, Any]) -> tuple[d
         else:
             normalized["project_ids"] = _as_list(normalized.get("project_ids", []))
     elif module_type == "azure":
+        normalized["wasb_conn_id"] = str(normalized.get("wasb_conn_id") or "wasb_default").strip() or "wasb_default"
         action = str(normalized.get("action") or "").strip().lower()
         if action not in {"upload", "download", "delete"}:
             has_upload_markers = bool(normalized.get("local_file_path") or normalized.get("blob_name"))
@@ -1236,9 +1357,6 @@ def normalize_module_config(module_type: str, config: dict[str, Any]) -> tuple[d
             local_dir_download = str(normalized.get("local_dir_download") or "").strip()
             if not local_dir_download:
                 normalized["local_dir_download"] = "/opt/airflow/local_downloads/azure"
-            extension = str(normalized.get("file_extension") or "").strip()
-            if extension and not extension.startswith("."):
-                normalized["file_extension"] = f".{extension}"
             if normalized.get("file_prefix"):
                 normalized["file_prefix"] = str(normalized.get("file_prefix")).lstrip("/")
             if normalized.get("file_name"):
@@ -1318,12 +1436,44 @@ def normalize_module_config(module_type: str, config: dict[str, Any]) -> tuple[d
         if normalized.get("prefix"):
             normalized["prefix"] = str(normalized.get("prefix")).lstrip("/")
     elif module_type == "sftp_upload":
+        normalized["conn_name"] = str(normalized.get("conn_name") or "sftp").strip() or "sftp"
+        action = str(normalized.get("action") or "upload").strip().lower()
+        normalized["action"] = action if action in {"upload", "download", "delete"} else "upload"
+
         raw_mode = str(normalized.get("upload_mode") or "").strip().lower()
         if not raw_mode:
             raw_mode = "multiple" if normalized.get("file_prefix") else "single"
         normalized["upload_mode"] = raw_mode if raw_mode in {"single", "multiple"} else "single"
+
+        download_mode = str(normalized.get("download_mode") or "single").strip().lower()
+        normalized["download_mode"] = download_mode if download_mode in {"single", "multiple"} else "single"
+        delete_mode = str(normalized.get("delete_mode") or "single").strip().lower()
+        normalized["delete_mode"] = delete_mode if delete_mode in {"single", "multiple"} else "single"
+
+        if normalized.get("local_file_path") is not None:
+            normalized["local_file_path"] = str(normalized.get("local_file_path") or "").strip()
+        browser_single = str(normalized.get("local_file_browser") or "").strip()
+        if browser_single and not normalized.get("local_file_path"):
+            normalized["local_file_path"] = browser_single
+        normalized["local_file_paths"] = _as_list(normalized.get("local_file_paths", []))
+        if normalized.get("local_directory_path") is not None:
+            normalized["local_directory_path"] = str(normalized.get("local_directory_path") or "").strip()
         if normalized.get("file_prefix") is not None:
             normalized["file_prefix"] = str(normalized.get("file_prefix") or "").strip()
+        if normalized.get("remote_file_name") is not None:
+            normalized["remote_file_name"] = str(normalized.get("remote_file_name") or "").strip().lstrip("/")
+        if normalized.get("remote_file_prefix") is not None:
+            normalized["remote_file_prefix"] = str(normalized.get("remote_file_prefix") or "").strip().lstrip("/")
+        if normalized.get("delete_file_name") is not None:
+            normalized["delete_file_name"] = str(normalized.get("delete_file_name") or "").strip().lstrip("/")
+        if normalized.get("delete_prefix") is not None:
+            normalized["delete_prefix"] = str(normalized.get("delete_prefix") or "").strip().lstrip("/")
+        if normalized.get("local_dir_download") is not None:
+            normalized["local_dir_download"] = str(normalized.get("local_dir_download") or "").strip()
+        if not normalized.get("local_dir_download"):
+            normalized["local_dir_download"] = "/opt/airflow/local_downloads/sftp"
+    elif module_type == "sftp_sensor":
+        normalized["conn_name"] = str(normalized.get("conn_name") or "sftp").strip() or "sftp"
     elif module_type == "parallel_join":
         normalized["trigger_rule"] = str(normalized.get("trigger_rule") or "all_success").strip().lower()
     elif module_type == "conditional_router":
@@ -1408,6 +1558,8 @@ def validate_module_config(module_type: str, config: dict[str, Any]) -> list[str
         if not isinstance(monitor_timeout_seconds, int) or monitor_timeout_seconds <= 0:
             errors.append("powerbi.monitor_timeout_seconds must be an integer > 0.")
     elif module_type == "azure":
+        if not str(config.get("wasb_conn_id") or "").strip():
+            errors.append("azure.wasb_conn_id is required.")
         action = config.get("action")
         if action not in {"upload", "download", "delete"}:
             errors.append("azure.action must be 'upload', 'download', or 'delete'.")
@@ -1427,8 +1579,6 @@ def validate_module_config(module_type: str, config: dict[str, Any]) -> list[str
         if action == "download":
             if not config.get("local_dir_download"):
                 errors.append("azure.local_dir_download is required for download.")
-            if not config.get("file_extension"):
-                errors.append("azure.file_extension is required for download.")
             mode = str(config.get("download_mode", "single")).strip().lower()
             if mode not in {"single", "multiple"}:
                 errors.append("azure.download_mode must be 'single' or 'multiple'.")
@@ -1522,16 +1672,54 @@ def validate_module_config(module_type: str, config: dict[str, Any]) -> list[str
         if not isinstance(timeout, int) or timeout <= 0:
             errors.append("azure_blob_sensor.timeout must be an integer > 0.")
     elif module_type == "sftp_upload":
-        if not config.get("local_file_path"):
-            errors.append("sftp_upload.local_file_path is required.")
+        if not str(config.get("conn_name") or "").strip():
+            errors.append("sftp_upload.conn_name is required.")
         if not config.get("remote_dir"):
             errors.append("sftp_upload.remote_dir is required.")
-        upload_mode = str(config.get("upload_mode", "single")).strip().lower()
-        if upload_mode not in {"single", "multiple"}:
-            errors.append("sftp_upload.upload_mode must be 'single' or 'multiple'.")
-        elif upload_mode == "multiple" and not str(config.get("file_prefix", "")).strip():
-            errors.append("sftp_upload.file_prefix is required when upload_mode is multiple.")
+        action = str(config.get("action") or "upload").strip().lower()
+        if action not in {"upload", "download", "delete"}:
+            errors.append("sftp_upload.action must be 'upload', 'download', or 'delete'.")
+        elif action == "upload":
+            upload_mode = str(config.get("upload_mode", "single")).strip().lower()
+            if upload_mode not in {"single", "multiple"}:
+                errors.append("sftp_upload.upload_mode must be 'single' or 'multiple'.")
+            elif upload_mode == "single":
+                if not str(config.get("local_file_path") or "").strip():
+                    errors.append("sftp_upload.local_file_path is required in single upload mode.")
+            else:
+                has_explicit_files = isinstance(config.get("local_file_paths"), list) and any(
+                    str(item).strip() for item in (config.get("local_file_paths") or [])
+                )
+                has_directory = bool(str(config.get("local_directory_path") or "").strip())
+                has_local_path = bool(str(config.get("local_file_path") or "").strip())
+                has_prefix = bool(str(config.get("file_prefix") or "").strip())
+                if not has_explicit_files and not has_directory and not has_local_path:
+                    errors.append(
+                        "sftp_upload.local_file_paths, sftp_upload.local_directory_path, or sftp_upload.local_file_path is required in multiple upload mode."
+                    )
+                if not has_explicit_files and not has_prefix:
+                    errors.append("sftp_upload.file_prefix is required in multiple upload mode when local_file_paths is not provided.")
+        elif action == "download":
+            mode = str(config.get("download_mode", "single")).strip().lower()
+            if mode not in {"single", "multiple"}:
+                errors.append("sftp_upload.download_mode must be 'single' or 'multiple'.")
+            elif mode == "single" and not str(config.get("remote_file_name") or "").strip():
+                errors.append("sftp_upload.remote_file_name is required in single download mode.")
+            elif mode == "multiple" and not str(config.get("remote_file_prefix") or "").strip():
+                errors.append("sftp_upload.remote_file_prefix is required in multiple download mode.")
+            if not str(config.get("local_dir_download") or "").strip():
+                errors.append("sftp_upload.local_dir_download is required for download.")
+        elif action == "delete":
+            mode = str(config.get("delete_mode", "single")).strip().lower()
+            if mode not in {"single", "multiple"}:
+                errors.append("sftp_upload.delete_mode must be 'single' or 'multiple'.")
+            elif mode == "single" and not str(config.get("delete_file_name") or "").strip():
+                errors.append("sftp_upload.delete_file_name is required in single delete mode.")
+            elif mode == "multiple" and not str(config.get("delete_prefix") or "").strip():
+                errors.append("sftp_upload.delete_prefix is required in multiple delete mode.")
     elif module_type == "sftp_sensor":
+        if not str(config.get("conn_name") or "").strip():
+            errors.append("sftp_sensor.conn_name is required.")
         if not config.get("sftp_prefix_sensor"):
             errors.append("sftp_sensor.sftp_prefix_sensor is required.")
         if not config.get("remote_dir"):

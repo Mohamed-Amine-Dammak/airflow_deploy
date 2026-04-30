@@ -1,0 +1,165 @@
+{
+  "pipeline": {
+    "dag_id": "sftp_test",
+    "description": "",
+    "start_date": "2026-01-01",
+    "schedule": null,
+    "schedule_mode": "manual",
+    "catchup": false,
+    "schedule_preset": "",
+    "schedule_cron": "",
+    "interval_value": "",
+    "interval_unit": "minutes",
+    "event_source": "",
+    "custom_schedule_text": "",
+    "retries": 3,
+    "retry_delay_minutes": 5,
+    "alert_emails": [],
+    "alert_mode": "both",
+    "tags": [
+      "demo",
+      "orchestration"
+    ],
+    "output_filename": "sftp_test.py"
+  },
+  "nodes": [
+    {
+      "id": "node_4",
+      "type": "parallel_fork",
+      "label": "Parallel Fork 4",
+      "x": 1304.7460610525948,
+      "y": 223.68066188267298,
+      "config": {}
+    },
+    {
+      "id": "node_5",
+      "type": "sftp_upload",
+      "label": "SFTP 5",
+      "x": 1622.0633675711495,
+      "y": 20.666927337646534,
+      "config": {
+        "action": "upload",
+        "conn_name": "sftp",
+        "delete_file_name": "",
+        "delete_mode": "single",
+        "delete_prefix": "",
+        "download_mode": "single",
+        "file_prefix": "/uploads",
+        "local_dir_download": "/opt/airflow/local_downloads/sftp",
+        "local_directory_path": "/opt/airflow/local_uploads/sftp_test/node_5",
+        "local_file_path": "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+        "local_file_paths": [
+          "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+          "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_37_45.png"
+        ],
+        "remote_dir": "/uploads",
+        "remote_file_name": "",
+        "remote_file_prefix": "",
+        "upload_mode": "multiple"
+      }
+    },
+    {
+      "id": "node_7",
+      "type": "sftp_sensor",
+      "label": "SFTP Sensor 7",
+      "x": 1752.6983075823105,
+      "y": 407.17484446934293,
+      "config": {
+        "conn_name": "sftp",
+        "remote_dir": "/uploads",
+        "sftp_prefix_sensor": "Chat"
+      }
+    },
+    {
+      "id": "node_9",
+      "type": "sftp_upload",
+      "label": "SFTP 5",
+      "x": 2604.222041538783,
+      "y": 201.55583027430944,
+      "config": {
+        "action": "delete",
+        "conn_name": "sftp",
+        "delete_file_name": "",
+        "delete_mode": "multiple",
+        "delete_prefix": "Chat",
+        "download_mode": "multiple",
+        "file_prefix": "/uploads",
+        "local_dir_download": "/opt/airflow/local_downloads/sftp",
+        "local_directory_path": "/opt/airflow/local_uploads/sftp_test/node_5",
+        "local_file_path": "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+        "local_file_paths": [
+          "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+          "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_37_45.png"
+        ],
+        "remote_dir": "/uploads",
+        "remote_file_name": "",
+        "remote_file_prefix": "Chat_",
+        "upload_mode": "multiple"
+      }
+    },
+    {
+      "id": "node_10",
+      "type": "sftp_upload",
+      "label": "SFTP 5",
+      "x": 1948.063489641462,
+      "y": 17.778011322021534,
+      "config": {
+        "action": "download",
+        "conn_name": "sftp",
+        "delete_file_name": "",
+        "delete_mode": "single",
+        "delete_prefix": "",
+        "download_mode": "multiple",
+        "file_prefix": "/uploads",
+        "local_dir_download": "/opt/airflow/local_downloads/sftp",
+        "local_directory_path": "/opt/airflow/local_uploads/sftp_test/node_5",
+        "local_file_path": "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+        "local_file_paths": [
+          "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_46_38.png",
+          "/opt/airflow/local_uploads/sftp_test/node_5/ChatGPT_Image_27_avr._2026_22_37_45.png"
+        ],
+        "remote_dir": "/uploads",
+        "remote_file_name": "",
+        "remote_file_prefix": "ChatGPT_",
+        "upload_mode": "multiple"
+      }
+    },
+    {
+      "id": "node_11",
+      "type": "parallel_join",
+      "label": "Parallel Join 11",
+      "x": 2301.1111907958984,
+      "y": 202.1249713897705,
+      "config": {
+        "trigger_rule": "all_success"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "node_4",
+      "target": "node_7"
+    },
+    {
+      "source": "node_4",
+      "target": "node_5"
+    },
+    {
+      "source": "node_5",
+      "target": "node_10"
+    },
+    {
+      "source": "node_10",
+      "target": "node_11"
+    },
+    {
+      "source": "node_7",
+      "target": "node_11"
+    },
+    {
+      "source": "node_11",
+      "target": "node_9"
+    }
+  ],
+  "group_boxes": []
+}

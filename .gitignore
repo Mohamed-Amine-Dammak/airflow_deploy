@@ -7,6 +7,8 @@ web_app/__pycache__/
 web_app/*.pyc
 web_app/*.log
 web_app\github_app_private_key.pem
+web_app/generated_dags
+web_app/generated_dags
 
 # -----------------------------
 # airflow
@@ -21,6 +23,7 @@ airflow/pipelines/*/evaluation/history/*.tmp.json
 airflow/actions-runner/
 airflow/credgcp.json
 airflow/web_app_data/
+airflow/dags/
 
 # -----------------------------
 # application root

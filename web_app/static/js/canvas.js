@@ -1109,7 +1109,7 @@
               "div",
               { className: "node-body" },
               h("div", null, "Node id: " + node.id),
-              orderIndex ? h("div", null, "Execution order: " + orderIndex) : null,
+              !props.activeRun && orderIndex ? h("div", null, "Execution order: " + orderIndex) : null,
               h(
                 "div",
                 { className: "node-actions" },
@@ -1205,9 +1205,10 @@
           {
             type: "button",
             onClick: function () {
-              setViewport({ x: 120, y: 70, scale: 1 });
+              const vp = viewportRef.current || { x: 0, y: 0 };
+              setViewport({ x: vp.x, y: vp.y, scale: 1 });
             },
-            title: "Reset view",
+            title: "Reset zoom to 100%",
           },
           "Reset"
         ),

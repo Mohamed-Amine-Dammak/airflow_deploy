@@ -78,12 +78,67 @@ def {{ function_name }}_single_tag(
             raise AirflowException(f"Dataform tag '{tag}' failed with state={state}")
         time.sleep(15)
 
+def _resolve_service_account_file(path, connection_id):
+    safe_path = str(path or "").strip()
+    if safe_path and os.path.exists(safe_path):
+        return safe_path
+
+    conn_id = str(connection_id or "").strip()
+    if not conn_id:
+        if safe_path:
+            raise AirflowException(f"Service account file not found: {safe_path}")
+        raise AirflowException("dataform.gcp_connection_id or dataform.service_account_file is required.")
+
+    try:
+        conn = BaseHook.get_connection(conn_id)
+    except Exception as exc:
+        raise AirflowException(f"Unable to load Airflow connection '{conn_id}': {exc}") from exc
+
+    extra = conn.extra_dejson or {}
+    key_path = str(
+        extra.get("key_path")
+        or extra.get("keyfile_path")
+        or extra.get("extra__google_cloud_platform__key_path")
+        or extra.get("extra__google_cloud_platform__keyfile_path")
+        or ""
+    ).strip()
+    if key_path:
+        if os.path.exists(key_path):
+            return key_path
+        raise AirflowException(f"GCP connection '{conn_id}' key path not found: {key_path}")
+
+    key_dict = (
+        extra.get("keyfile_dict")
+        or extra.get("extra__google_cloud_platform__keyfile_dict")
+        or None
+    )
+    if isinstance(key_dict, str):
+        try:
+            key_dict = json.loads(key_dict)
+        except Exception as exc:
+            raise AirflowException(
+                f"GCP connection '{conn_id}' has invalid keyfile_dict JSON."
+            ) from exc
+    if isinstance(key_dict, dict) and key_dict:
+        tmp_path = os.path.join("/tmp", f"gcp_sa_{conn_id}_{int(time.time() * 1000)}.json")
+        with open(tmp_path, "w", encoding="utf-8") as handle:
+            json.dump(key_dict, handle)
+        return tmp_path
+
+    raise AirflowException(
+        f"GCP connection '{conn_id}' is missing key credentials in extras (key_path/keyfile_dict)."
+    )
+
 
 project_id_for_tags = {{ config.get("project_id") | pyrepr }} or ({{ config.get("project_ids", []) | pyrepr }}[0] if {{ config.get("project_ids", []) | pyrepr }} else "")
 region_for_tags = {{ config.get("region") | pyrepr }}
 repository_for_tags = {{ config.get("repository") | pyrepr }}
 compilation_id_for_tags = {{ config.get("compilation_id") | pyrepr }}
-service_account_file_for_tags = {{ config.get("service_account_file") | pyrepr }}
+gcp_connection_id_for_tags = {{ config.get("gcp_connection_id", "") | pyrepr }}
+service_account_file_for_tags = _resolve_service_account_file(
+    {{ config.get("service_account_file") | pyrepr }},
+    gcp_connection_id_for_tags,
+)
 dataform_tags_list = {{ config.get("dataform_tags", []) | pyrepr }}
 
 if not dataform_tags_list:

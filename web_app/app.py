@@ -9,6 +9,7 @@ import time
 import copy
 import base64
 import secrets
+import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -74,7 +75,7 @@ app.config.from_object(AppConfig)
 ensure_app_directories()
 
 dag_generator = DagGenerator(AppConfig.DAG_TEMPLATES_DIR)
-SUPPORTED_CONNECTION_TYPES = {"http", "wasb", "gcp_service_account"}
+SUPPORTED_CONNECTION_TYPES = {"http", "sftp", "git", "email", "wasb", "gcp_service_account"}
 PERMISSION_DEFINITIONS: dict[str, dict[str, str]] = {
     "builder_view": {"label": "View builder workspace", "description": "Open and inspect the pipeline builder."},
     "pipeline_load": {"label": "Load saved pipelines", "description": "Load saved pipeline JSON files."},
@@ -1177,10 +1178,16 @@ def _find_gcp_connection(connection_id: str) -> dict[str, Any] | None:
 
 
 def _copy_gcp_service_account_to_airflow_containers(host_file: Path) -> str:
+    configured = [str(item).strip() for item in AppConfig.GCP_SERVICE_ACCOUNT_DOCKER_CONTAINERS if str(item).strip()]
+    discovered = _resolved_airflow_sync_containers()
+    merged: list[str] = []
+    for name in configured + discovered:
+        if name and name not in merged:
+            merged.append(name)
     return sync_host_file_to_containers_at_path(
         host_file=host_file,
         enabled=AppConfig.AIRFLOW_DOCKER_SYNC_ENABLED,
-        containers=AppConfig.GCP_SERVICE_ACCOUNT_DOCKER_CONTAINERS,
+        containers=merged,
         container_file_path=AppConfig.GCP_SERVICE_ACCOUNT_CONTAINER_FILE,
     )
 
@@ -1614,6 +1621,12 @@ def _normalize_connection_type(raw: str) -> str:
     value = str(raw or "").strip().lower()
     if value in {"http"}:
         return "http"
+    if value in {"sftp", "ssh", "ssh_conn"}:
+        return "sftp"
+    if value in {"git"}:
+        return "git"
+    if value in {"email", "smtp"}:
+        return "email"
     if value in {"wasb", "azure_blob_storage", "azure_blob"}:
         return "wasb"
     if value in {"gcp_service_account", "google_service_account", "gcp", "google"}:
@@ -1714,6 +1727,34 @@ def _parse_extra_payload(raw_extra: Any) -> tuple[dict[str, Any] | None, str | N
     return None, "Extra JSON must be an object or valid JSON text."
 
 
+def _resolved_airflow_sync_containers() -> list[str]:
+    configured = [str(item).strip() for item in AppConfig.AIRFLOW_DOCKER_SYNC_CONTAINERS if str(item).strip()]
+    discovered: list[str] = []
+    try:
+        result = subprocess.run(
+            ["docker", "ps", "--format", "{{.Names}}"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode == 0:
+            names = [line.strip() for line in str(result.stdout or "").splitlines() if line.strip()]
+            discovered = [
+                name
+                for name in names
+                if "airflow" in name.lower()
+                and ("worker" in name.lower() or "scheduler" in name.lower())
+            ]
+    except Exception:  # noqa: BLE001
+        discovered = []
+
+    merged: list[str] = []
+    for name in configured + discovered:
+        if name and name not in merged:
+            merged.append(name)
+    return merged
+
+
 def _build_connection_payload(body: dict[str, Any], *, for_update: bool = False) -> tuple[dict[str, Any] | None, list[str]]:
     errors: list[str] = []
 
@@ -1722,8 +1763,8 @@ def _build_connection_payload(body: dict[str, Any], *, for_update: bool = False)
         errors.append("Connection ID is required.")
 
     conn_type = _normalize_connection_type(body.get("conn_type") or body.get("connection_type"))
-    if conn_type not in {"http", "wasb"}:
-        errors.append("Connection Type must be HTTP or Azure Blob Storage.")
+    if conn_type not in {"http", "sftp", "git", "email", "wasb"}:
+        errors.append("Connection Type must be HTTP, SFTP, Git, Email, or Azure Blob Storage.")
 
     description = str(body.get("description", "")).strip()
     host = str(body.get("host", "")).strip()
@@ -1747,9 +1788,18 @@ def _build_connection_payload(body: dict[str, Any], *, for_update: bool = False)
     if extra_error:
         errors.append(extra_error)
 
-    if conn_type == "http":
+    if conn_type in {"http", "sftp", "git", "email"}:
         if not host:
-            errors.append("Host is required for HTTP connections.")
+            type_label = (
+                "HTTP"
+                if conn_type == "http"
+                else "SFTP"
+                if conn_type == "sftp"
+                else "Git"
+                if conn_type == "git"
+                else "Email"
+            )
+            errors.append(f"Host is required for {type_label} connections.")
     elif conn_type == "wasb":
         if not account_url and not host:
             errors.append("Account URL is required for Azure Blob Storage connections.")
@@ -1763,8 +1813,10 @@ def _build_connection_payload(body: dict[str, Any], *, for_update: bool = False)
     if errors:
         return None, errors
 
+    airflow_conn_type = "smtp" if conn_type == "email" else conn_type
+
     airflow_payload: dict[str, Any] = {
-        "conn_type": conn_type,
+        "conn_type": airflow_conn_type,
         "description": description,
         "host": host,
         "login": login,
@@ -1806,8 +1858,8 @@ def _upsert_gcp_service_account_connection(
             existing_item = item if isinstance(item, dict) else {}
             break
 
-    if for_update and existing_idx < 0:
-        errors.append("GCP connection not found.")
+    # True upsert behavior: allow update even when local store record doesn't exist yet.
+    # This happens when connection exists in Airflow metadata but was not created via this page.
     if not for_update and existing_idx >= 0:
         errors.append("A GCP connection with this ID already exists.")
 
@@ -1853,6 +1905,59 @@ def _upsert_gcp_service_account_connection(
     store["connections"] = rows
     _save_gcp_connections_store(store)
 
+    # Keep a real Airflow connection in metadata DB as well, so DAG runtime can resolve
+    # BaseHook.get_connection(gcp_connection_id) inside worker/scheduler containers.
+    gcp_extra: dict[str, Any] = {
+        "key_path": connection_record["service_account_file"],
+    }
+    host_json_path = Path(str(AppConfig.GCP_SERVICE_ACCOUNT_HOST_FILE))
+    if host_json_path.exists():
+        try:
+            parsed_key = json.loads(host_json_path.read_text(encoding="utf-8"))
+            if isinstance(parsed_key, dict) and parsed_key:
+                gcp_extra["keyfile_dict"] = parsed_key
+        except Exception:
+            # Keep key_path fallback even if JSON parsing fails.
+            pass
+
+    airflow_payload = {
+        "connection_id": safe_connection_id,
+        "conn_type": "google_cloud_platform",
+        "description": connection_record["description"],
+        "extra": json.dumps(gcp_extra),
+    }
+
+    airflow_upsert_warning = ""
+    try:
+        if for_update:
+            try:
+                update_connection(_airflow_api_config(), safe_connection_id, airflow_payload)
+            except AirflowApiError as exc:
+                if exc.status_code == 404:
+                    create_connection(_airflow_api_config(), airflow_payload)
+                else:
+                    raise
+        else:
+            try:
+                create_connection(_airflow_api_config(), airflow_payload)
+            except AirflowApiError as exc:
+                if exc.status_code == 409:
+                    update_connection(_airflow_api_config(), safe_connection_id, airflow_payload)
+                else:
+                    raise
+    except AirflowApiError as exc:
+        # Some Airflow deployments expose read-only connection API (GET allowed, write methods blocked -> 405).
+        # Do not block local GCP connection save in that case; DAG generation can still use synced key path.
+        if exc.status_code == 405:
+            airflow_upsert_warning = (
+                f"Saved locally. Airflow connection API is read-only (405), so metadata upsert for "
+                f"'{safe_connection_id}' was skipped."
+            )
+        else:
+            return None, [f"GCP connection saved locally, but failed to upsert Airflow connection '{safe_connection_id}': {exc}"]
+    except Exception as exc:  # noqa: BLE001
+        return None, [f"GCP connection saved locally, but failed to upsert Airflow connection '{safe_connection_id}': {exc}"]
+
     return {
         "connection_id": connection_record["connection_id"],
         "conn_type": "gcp_service_account",
@@ -1865,6 +1970,7 @@ def _upsert_gcp_service_account_connection(
         "schema": "",
         "extra": None,
         "raw": connection_record,
+        "warning": airflow_upsert_warning,
     }, []
 
 
@@ -2987,7 +3093,7 @@ def api_list_airflow_connections():
     filtered = []
     for item in items:
         conn_type = _normalize_connection_type(item.get("conn_type", ""))
-        if conn_type not in {"http", "wasb"}:
+        if conn_type not in {"http", "sftp", "git", "email", "wasb"}:
             continue
         filtered.append(item)
     filtered.extend(_list_gcp_service_account_connections())
@@ -3015,7 +3121,8 @@ def api_create_airflow_connection():
             for_update=False,
         )
         if errors:
-            return _json_error("Connection validation failed.", 400, errors=errors)
+            status_code = 502 if any("failed to upsert Airflow connection" in str(err).lower() for err in errors) else 400
+            return _json_error("Connection validation failed.", status_code, errors=errors)
     else:
         payload, errors = _build_connection_payload(body, for_update=False)
         if errors:
@@ -3057,7 +3164,8 @@ def api_update_airflow_connection(connection_id: str):
             for_update=True,
         )
         if errors:
-            return _json_error("Connection validation failed.", 400, errors=errors)
+            status_code = 502 if any("failed to upsert Airflow connection" in str(err).lower() for err in errors) else 400
+            return _json_error("Connection validation failed.", status_code, errors=errors)
     else:
         payload, errors = _build_connection_payload(body, for_update=True)
         if errors:
@@ -3160,8 +3268,8 @@ def api_upload_local_files():
                 pipeline_id=pipeline_id,
                 node_id=node_id,
                 target_name=filename,
-                enabled=AppConfig.AIRFLOW_DOCKER_SYNC_ENABLED,
-                containers=AppConfig.AIRFLOW_DOCKER_SYNC_CONTAINERS,
+                enabled=True,
+                containers=_resolved_airflow_sync_containers(),
                 container_base_dir=AppConfig.AIRFLOW_DOCKER_SYNC_BASE_DIR,
             )
         except ContainerFileSyncError as exc:

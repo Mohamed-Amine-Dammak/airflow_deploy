@@ -2,6 +2,7 @@
 def {{ function_name }}():
     action = {{ config.get("action", "upload") | pyrepr }}
     bucket_name = {{ config.get("bucket_name") | pyrepr }}
+    gcp_connection_id = {{ config.get("gcp_connection_id", "") | pyrepr }}
     service_account_file = {{ config.get("service_account_file", "") | pyrepr }}
     destination_path = {{ config.get("destination_path", "") | pyrepr }}
     upload_mode = {{ config.get("upload_mode", "single") | pyrepr }}
@@ -22,13 +23,56 @@ def {{ function_name }}():
     object_names = {{ config.get("object_names", []) | pyrepr }}
     delete_object_prefix = {{ config.get("delete_object_prefix", "") | pyrepr }}
 
-    def _require_service_account_file(path):
+    def _require_service_account_file(path, connection_id):
         safe_path = str(path or "").strip()
-        if not safe_path:
-            raise AirflowException("gcs.service_account_file is required.")
-        if not os.path.exists(safe_path):
-            raise AirflowException(f"Service account file not found: {safe_path}")
-        return safe_path
+        if safe_path and os.path.exists(safe_path):
+            return safe_path
+
+        conn_id = str(connection_id or "").strip()
+        if not conn_id:
+            if safe_path:
+                raise AirflowException(f"Service account file not found: {safe_path}")
+            raise AirflowException("gcs.gcp_connection_id or gcs.service_account_file is required.")
+
+        try:
+            conn = BaseHook.get_connection(conn_id)
+        except Exception as exc:
+            raise AirflowException(f"Unable to load Airflow connection '{conn_id}': {exc}") from exc
+
+        extra = conn.extra_dejson or {}
+        key_path = str(
+            extra.get("key_path")
+            or extra.get("keyfile_path")
+            or extra.get("extra__google_cloud_platform__key_path")
+            or extra.get("extra__google_cloud_platform__keyfile_path")
+            or ""
+        ).strip()
+        if key_path:
+            if os.path.exists(key_path):
+                return key_path
+            raise AirflowException(f"GCP connection '{conn_id}' key path not found: {key_path}")
+
+        key_dict = (
+            extra.get("keyfile_dict")
+            or extra.get("extra__google_cloud_platform__keyfile_dict")
+            or None
+        )
+        if isinstance(key_dict, str):
+            try:
+                key_dict = json.loads(key_dict)
+            except Exception as exc:
+                raise AirflowException(
+                    f"GCP connection '{conn_id}' has invalid keyfile_dict JSON."
+                ) from exc
+        if isinstance(key_dict, dict) and key_dict:
+            tmp_path = os.path.join("/tmp", f"gcp_sa_{conn_id}_{int(time.time() * 1000)}.json")
+            with open(tmp_path, "w", encoding="utf-8") as handle:
+                json.dump(key_dict, handle)
+            return tmp_path
+
+        raise AirflowException(
+            f"GCP connection '{conn_id}' is missing key credentials in extras (key_path/keyfile_dict)."
+        )
 
     def _build_storage_client(path):
         credentials = service_account.Credentials.from_service_account_file(
@@ -83,7 +127,7 @@ def {{ function_name }}():
                 _status, done = downloader.next_chunk()
         return local_path, metadata
 
-    service_account_file = _require_service_account_file(service_account_file)
+    service_account_file = _require_service_account_file(service_account_file, gcp_connection_id)
 
     if action == "upload":
         if not bucket_name:

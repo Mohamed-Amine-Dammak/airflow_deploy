@@ -32,7 +32,21 @@
     n8n: ["workflow_name", "workflow_id", "webhook_path", "status_code"],
     powerbi: ["workspace_id", "dataset_id", "status_code"],
     sftp_sensor: ["detected_file_name", "detected_file_path", "remote_dir", "prefix", "detected"],
-    sftp_upload: ["uploaded", "upload_mode", "uploaded_count", "local_file_path", "local_directory", "remote_path", "remote_paths"],
+    sftp_upload: [
+      "action",
+      "uploaded",
+      "upload_mode",
+      "uploaded_count",
+      "local_file_path",
+      "local_directory",
+      "remote_path",
+      "remote_paths",
+      "downloaded_count",
+      "downloaded_files",
+      "local_dir_download",
+      "deleted_count",
+      "deleted_files",
+    ],
     talend: ["job_name", "executable_id", "execution_id", "last_log"],
     y2: ["results", "local_file", "remote_path", "uploaded"],
     conditional_router: ["selected_branch_node_id", "selected_branch_task_id", "input_value"],
@@ -170,6 +184,14 @@
     }
     const parts = normalized.split("/").filter(Boolean);
     return parts.length ? parts[parts.length - 1] : "";
+  }
+
+  function looksLikePath(pathValue) {
+    const text = String(pathValue || "").trim();
+    if (!text) {
+      return false;
+    }
+    return text.indexOf("/") >= 0 || text.indexOf("\\") >= 0;
   }
 
   function renderField(field, value, onChange, config, formContext, readOnly) {
@@ -328,6 +350,7 @@
             const selectedPath = resolveFilePath(file);
             const isLocalUploadBrowserField = field.name === "local_file_browser";
             const isAzureNode = Boolean(formContext && formContext.node && formContext.node.type === "azure");
+            const isSftpUploadNode = Boolean(formContext && formContext.node && formContext.node.type === "sftp_upload");
             const isAzureLocalUploadBrowserField = isLocalUploadBrowserField && isAzureNode;
             if (!isLocalUploadBrowserField) {
               onChange(field.name, selectedPath);
@@ -351,10 +374,29 @@
               const containerPath = uploaded[0] && uploaded[0].container_path ? String(uploaded[0].container_path) : "";
               if (!containerPath) {
                 if (isLocalUploadBrowserField) {
-                  onChange(field.name, "");
-                  onChange("local_file_path", "");
                   if (isAzureLocalUploadBrowserField) {
+                    onChange(field.name, "");
+                    onChange("local_file_path", "");
                     onChange("local_file_path_container", "");
+                  } else if (isSftpUploadNode) {
+                    if (looksLikePath(selectedPath)) {
+                      const fallbackPath = String(selectedPath).trim();
+                      onChange(field.name, basenameFromPath(fallbackPath) || fallbackPath);
+                      onChange("local_file_path", fallbackPath);
+                    } else {
+                      onChange(field.name, "");
+                      onChange("local_file_path", "");
+                      if (typeof window !== "undefined" && typeof window.showToast === "function") {
+                        window.showToast(
+                          "SFTP file staging failed. Set Pipeline ID (dag_id) first, then browse file again.",
+                          "warning",
+                          5000
+                        );
+                      }
+                    }
+                  } else {
+                    onChange(field.name, "");
+                    onChange("local_file_path", "");
                   }
                 }
                 return;
@@ -374,10 +416,29 @@
               }
             } catch (_error) {
               if (isLocalUploadBrowserField) {
-                onChange(field.name, "");
-                onChange("local_file_path", "");
                 if (isAzureLocalUploadBrowserField) {
+                  onChange(field.name, "");
+                  onChange("local_file_path", "");
                   onChange("local_file_path_container", "");
+                } else if (isSftpUploadNode) {
+                  if (looksLikePath(selectedPath)) {
+                    const fallbackPath = String(selectedPath).trim();
+                    onChange(field.name, basenameFromPath(fallbackPath) || fallbackPath);
+                    onChange("local_file_path", fallbackPath);
+                  } else {
+                    onChange(field.name, "");
+                    onChange("local_file_path", "");
+                    if (typeof window !== "undefined" && typeof window.showToast === "function") {
+                      window.showToast(
+                        "SFTP file staging failed. Set Pipeline ID (dag_id) first, then browse file again.",
+                        "warning",
+                        5000
+                      );
+                    }
+                  }
+                } else {
+                  onChange(field.name, "");
+                  onChange("local_file_path", "");
                 }
               }
             }
@@ -432,6 +493,9 @@
             }).filter(Boolean);
             const isLocalUploadMultipleField = field.name === "local_file_paths";
             const isLocalDeleteMultipleField = field.name === "delete_local_file_paths";
+            const isSftpUploadNode = Boolean(formContext && formContext.node && formContext.node.type === "sftp_upload");
+            const isGcsNode = Boolean(formContext && formContext.node && formContext.node.type === "gcs");
+            const isAzureNode = Boolean(formContext && formContext.node && formContext.node.type === "azure");
             if (!isLocalUploadMultipleField && !isLocalDeleteMultipleField) {
               onChange(field.name, names);
             }
@@ -462,9 +526,35 @@
                 .filter(Boolean);
               if (!containerPaths.length) {
                 if (isLocalUploadMultipleField) {
-                  onChange(field.name, []);
-                  onChange("local_file_path", "");
-                  onChange("local_directory_path", "");
+                  if (isSftpUploadNode) {
+                    const validPathNames = names.filter(looksLikePath);
+                    if (validPathNames.length > 0) {
+                      onChange(field.name, validPathNames);
+                      onChange("local_file_path", validPathNames[0] || "");
+                    } else {
+                      onChange(field.name, []);
+                      onChange("local_file_path", "");
+                      if (typeof window !== "undefined" && typeof window.showToast === "function") {
+                        window.showToast(
+                          "SFTP file staging failed. Set Pipeline ID (dag_id) first, then browse files again.",
+                          "warning",
+                          5000
+                        );
+                      }
+                    }
+                    onChange("local_directory_path", "");
+                  } else {
+                    onChange(field.name, []);
+                    onChange("local_file_path", "");
+                    onChange("local_directory_path", "");
+                    if ((isGcsNode || isAzureNode) && typeof window !== "undefined" && typeof window.showToast === "function") {
+                      window.showToast(
+                        "File staging failed. Set Pipeline ID (dag_id) first, then browse files again.",
+                        "warning",
+                        5000
+                      );
+                    }
+                  }
                 } else if (isLocalDeleteMultipleField) {
                   onChange(field.name, []);
                   onChange("delete_local_directory_path", "");
@@ -480,9 +570,35 @@
               }
             } catch (_error) {
               if (isLocalUploadMultipleField) {
-                onChange(field.name, []);
-                onChange("local_file_path", "");
-                onChange("local_directory_path", "");
+                if (isSftpUploadNode) {
+                  const validPathNames = names.filter(looksLikePath);
+                  if (validPathNames.length > 0) {
+                    onChange(field.name, validPathNames);
+                    onChange("local_file_path", validPathNames[0] || "");
+                  } else {
+                    onChange(field.name, []);
+                    onChange("local_file_path", "");
+                    if (typeof window !== "undefined" && typeof window.showToast === "function") {
+                      window.showToast(
+                        "SFTP file staging failed. Set Pipeline ID (dag_id) first, then browse files again.",
+                        "warning",
+                        5000
+                      );
+                    }
+                  }
+                  onChange("local_directory_path", "");
+                } else {
+                  onChange(field.name, []);
+                  onChange("local_file_path", "");
+                  onChange("local_directory_path", "");
+                  if ((isGcsNode || isAzureNode) && typeof window !== "undefined" && typeof window.showToast === "function") {
+                    window.showToast(
+                      "File staging failed. Set Pipeline ID (dag_id) first, then browse files again.",
+                      "warning",
+                      5000
+                    );
+                  }
+                }
               } else if (isLocalDeleteMultipleField) {
                 onChange(field.name, []);
                 onChange("delete_local_directory_path", "");

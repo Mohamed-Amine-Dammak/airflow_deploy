@@ -1685,6 +1685,9 @@
 
     useEffect(
       function () {
+        if (!showDagVersions) {
+          return;
+        }
         if (suppressPipelineIdVersionEffectRef.current === true) {
           return;
         }
@@ -1696,14 +1699,17 @@
         );
         forceLatestOnNextVersionRefreshRef.current = false;
       },
-      [canLoadPipelines, pipeline.dag_id]
+      [canLoadPipelines, pipeline.dag_id, showDagVersions]
     );
 
     useEffect(
       function () {
+        if (!showDagVersions) {
+          return;
+        }
         refreshSelectedVersionSummary(selectedVersionId, pipeline && pipeline.dag_id);
       },
-      [selectedVersionId, pipeline && pipeline.dag_id]
+      [selectedVersionId, pipeline && pipeline.dag_id, showDagVersions]
     );
 
     useEffect(
