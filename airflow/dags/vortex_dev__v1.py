@@ -90,8 +90,8 @@ if _alert_emails and _alert_mode in {"on_retry", "both"}:
     schedule=_normalize_schedule(None),
     catchup=False,
     default_args=default_args,
-    tags=['demo', 'orchestration'],
-    description='Sequential orchestration pipeline',
+    tags=['vortex', 'n8n', 'dataform', 'cloudrun', 'power bi'],
+    description='',
 )
 def vortex_dev_v1():
     @task(task_id='n8n_1_node_1')
@@ -318,26 +318,7 @@ def vortex_dev_v1():
     def run_node_2():
         cloud_run_url = 'https://ingestioncloudrun-193541357649.europe-west1.run.app/primary_keys'
         service_account_file = '/opt/airflow/credgcp.json'
-        payload = {'dataset': 'raw',
-     'bucket_name': 'os-dpf-vortex-prj-dev',
-     'integration_source': 'n8n',
-     'data_source': 'boond',
-     'tables': {'ABSENCES': {'separator': ';', 'mode': 'full'},
-                'ADMINISTRATIVE': {'separator': ';', 'mode': 'delta'},
-                'AGENCIES': {'separator': ';', 'mode': 'full'},
-                'COMPANIES': {'separator': ';', 'mode': 'full'},
-                'CONTACTS': {'separator': ';', 'mode': 'full'},
-                'DAYS_OFF': {'separator': ';', 'mode': 'full'},
-                'DELIVERIES': {'separator': ';', 'mode': 'full'},
-                'DICTIONARY': {'separator': ';', 'mode': 'full'},
-                'INVOICES': {'separator': ';', 'mode': 'full'},
-                'POSTPRODUCTION_DETAILS': {'separator': ';', 'mode': 'delta'},
-                'PREV_YEAR_LEAVE_BALANCE': {'separator': ';', 'mode': 'full'},
-                'PROJECTS': {'separator': ';', 'mode': 'full'},
-                'RESOURCES': {'separator': ';', 'mode': 'full'},
-                'EXTERNAL_DELIVERIES': {'separator': '|', 'mode': 'full'},
-                'TIMESHEET': {'separator': ';', 'mode': 'full'},
-                'RESOURCES_IMAGES': {'separator': ';', 'mode': 'delta'}}}
+        payload = {}
 
         credentials = service_account.IDTokenCredentials.from_service_account_file(
             service_account_file,
@@ -497,7 +478,7 @@ def vortex_dev_v1():
         raise AirflowException("Unable to build Dataform tag tasks.")
 
     @task
-    def run_node_6_single_tag(
+    def run_node_5_single_tag(
         tag: str,
         project_id: str,
         region: str,
@@ -595,11 +576,11 @@ def vortex_dev_v1():
 
 
     _previous_dataform_tag_task = None
-    task_node_6_entry = None
-    task_node_6_exit = None
+    task_node_5_entry = None
+    task_node_5_exit = None
 
     for _tag in dataform_tags_list:
-        _current_dataform_tag_task = run_node_6_single_tag.override(task_id=_safe_tag_task_id(_tag))(
+        _current_dataform_tag_task = run_node_5_single_tag.override(task_id=_safe_tag_task_id(_tag))(
             tag=_tag,
             project_id=project_id_for_tags,
             region=region_for_tags,
@@ -608,20 +589,20 @@ def vortex_dev_v1():
             service_account_file=service_account_file_for_tags,
         )
 
-        if task_node_6_entry is None:
-            task_node_6_entry = _current_dataform_tag_task
+        if task_node_5_entry is None:
+            task_node_5_entry = _current_dataform_tag_task
 
         if _previous_dataform_tag_task is not None:
             _previous_dataform_tag_task >> _current_dataform_tag_task
 
         _previous_dataform_tag_task = _current_dataform_tag_task
-        task_node_6_exit = _current_dataform_tag_task
+        task_node_5_exit = _current_dataform_tag_task
 
-    if task_node_6_entry is None or task_node_6_exit is None:
+    if task_node_5_entry is None or task_node_5_exit is None:
         raise AirflowException("Unable to build Dataform tag tasks.")
 
     @task
-    def run_node_5_single_tag(
+    def run_node_6_single_tag(
         tag: str,
         project_id: str,
         region: str,
@@ -719,11 +700,11 @@ def vortex_dev_v1():
 
 
     _previous_dataform_tag_task = None
-    task_node_5_entry = None
-    task_node_5_exit = None
+    task_node_6_entry = None
+    task_node_6_exit = None
 
     for _tag in dataform_tags_list:
-        _current_dataform_tag_task = run_node_5_single_tag.override(task_id=_safe_tag_task_id(_tag))(
+        _current_dataform_tag_task = run_node_6_single_tag.override(task_id=_safe_tag_task_id(_tag))(
             tag=_tag,
             project_id=project_id_for_tags,
             region=region_for_tags,
@@ -732,16 +713,16 @@ def vortex_dev_v1():
             service_account_file=service_account_file_for_tags,
         )
 
-        if task_node_5_entry is None:
-            task_node_5_entry = _current_dataform_tag_task
+        if task_node_6_entry is None:
+            task_node_6_entry = _current_dataform_tag_task
 
         if _previous_dataform_tag_task is not None:
             _previous_dataform_tag_task >> _current_dataform_tag_task
 
         _previous_dataform_tag_task = _current_dataform_tag_task
-        task_node_5_exit = _current_dataform_tag_task
+        task_node_6_exit = _current_dataform_tag_task
 
-    if task_node_5_entry is None or task_node_5_exit is None:
+    if task_node_6_entry is None or task_node_6_exit is None:
         raise AirflowException("Unable to build Dataform tag tasks.")
 
     @task(task_id='powerbi_6_node_4')
@@ -931,9 +912,9 @@ def vortex_dev_v1():
 
     task_node_1 >> task_node_2
     task_node_2 >> task_node_3_entry
-    task_node_3_exit >> task_node_6_entry
-    task_node_6_exit >> task_node_5_entry
-    task_node_5_exit >> task_node_4
+    task_node_3_exit >> task_node_5_entry
+    task_node_5_exit >> task_node_6_entry
+    task_node_6_exit >> task_node_4
 
 
 dag = vortex_dev_v1()
