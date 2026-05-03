@@ -1,5 +1,0 @@
-{{ task_var }} = EmptyOperator(
-    task_id={{ task_id | pyrepr }},
-    pool={{ config.get("pool_name", "orchestration_lock_pool") | pyrepr }},
-    pool_slots=int({{ config.get("pool_slots", 1) | pyrepr }}),
-)

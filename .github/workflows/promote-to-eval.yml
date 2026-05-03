@@ -1,0 +1,73 @@
+name: Promote DAG to Eval Branch
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "airflow/dags/**"
+  workflow_dispatch:
+    inputs:
+      pipeline_id:
+        description: "Base pipeline ID (optional; if omitted, all changed DAGs are promoted)"
+        required: false
+      version_id:
+        description: "Specific version ID to promote"
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  promote-to-eval:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml requests
+
+      - name: Configure Git
+        run: |
+          git config user.email "airflow-bot@example.com"
+          git config user.name "Airflow Bot"
+
+      - name: Create or checkout eval branch
+        run: |
+          git fetch origin eval 2>/dev/null || true
+          if git rev-parse --verify origin/eval > /dev/null 2>&1; then
+            git checkout -b eval origin/eval
+          else
+            git checkout --orphan eval
+            git rm -rf .
+            echo "# Eval Branch" > README.md
+            git add README.md
+            git commit -m "Initialize eval branch"
+          fi
+
+      - name: Merge main into eval
+        run: |
+          git merge origin/main --no-edit || true
+
+      - name: Update metadata for eval DAGs
+        run: |
+          python scripts/promotion/mark_eval_versions.py \
+            --root . \
+            --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
+            --version-id "${{ github.event.inputs.version_id }}"
+
+      - name: Push eval branch
+        run: |
+          git push origin eval

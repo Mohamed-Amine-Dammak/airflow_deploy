@@ -1,9 +1,0 @@
-{{ task_var }} = WasbPrefixSensor(
-    task_id={{ task_id | pyrepr }},
-    wasb_conn_id={{ config.get("wasb_conn_id", "wasb_default") | pyrepr }},
-    container_name={{ config.get("container_name") | pyrepr }},
-    prefix={{ (config.get("prefix") or "").lstrip("/") | pyrepr }},
-    poke_interval={{ config.get("poke_interval", 30) | pyrepr }},
-    timeout={{ config.get("timeout", 600) | pyrepr }},
-    mode="poke",
-)

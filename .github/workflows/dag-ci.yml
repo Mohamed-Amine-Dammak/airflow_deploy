@@ -1,0 +1,59 @@
+name: DAG Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "airflow/dags/**"
+      - ".github/workflows/dag-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-dags:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install validation tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff black pytest
+
+      - name: Install Gitleaks
+        run: |
+          set -e
+          GITLEAKS_VERSION=8.30.1
+          curl -fL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz
+          chmod +x gitleaks
+
+      - name: Syntax check DAGs
+        run: |
+          find airflow/dags -name "*.py" -print0 | xargs -0 -I {} python -m py_compile {}
+
+      - name: Lint DAGs (non-blocking)
+        run: |
+          ruff check airflow/dags --output-format=github || true
+
+      - name: Format check DAGs (non-blocking)
+        run: |
+          black --check airflow/dags || true
+
+      - name: Secret scan DAGs
+        run: |
+          ./gitleaks detect --source airflow/dags --no-git --verbose --redact
+
+      - name: Validate DAG import and metadata
+        run: |
+          python scripts/validation/validate_dag_metadata.py --dags-dir airflow/dags
+        continue-on-error: false

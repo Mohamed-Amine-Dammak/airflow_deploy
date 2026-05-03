@@ -1,0 +1,73 @@
+name: Promote DAG to Prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      pipeline_id:
+        description: "Base pipeline ID"
+        required: true
+      version_id:
+        description: "Version ID to promote to prod"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  promote-to-prod:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml requests
+
+      - name: Configure Git
+        run: |
+          git config user.email "airflow-bot@example.com"
+          git config user.name "Airflow Bot"
+
+      - name: Create or checkout prod branch
+        run: |
+          git fetch origin prod 2>/dev/null || true
+          if git rev-parse --verify origin/prod > /dev/null 2>&1; then
+            git checkout -b prod origin/prod
+          else
+            git checkout --orphan prod
+            git rm -rf .
+            echo "# Production Branch" > README.md
+            git add README.md
+            git commit -m "Initialize prod branch"
+          fi
+
+      - name: Get DAG from eval branch
+        run: |
+          git fetch origin eval
+          python scripts/promotion/copy_dag_to_prod.py \
+            --root . \
+            --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
+            --version-id "${{ github.event.inputs.version_id }}" \
+            --eval-branch eval \
+            --prod-branch prod
+
+      - name: Update metadata for promoted DAG
+        run: |
+          python scripts/promotion/mark_champion_version.py \
+            --root . \
+            --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
+            --version-id "${{ github.event.inputs.version_id }}"
+
+      - name: Push prod branch
+        run: |
+          git push origin prod
