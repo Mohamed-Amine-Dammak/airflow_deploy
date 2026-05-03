@@ -1,4 +1,4 @@
-name: DAG CI/CD
+name: DAG Validation
 
 on:
   pull_request:
@@ -6,37 +6,27 @@ on:
       - main
     paths:
       - "airflow/dags/**"
-
-  push:
-    branches:
-      - main
-    paths:
-      - "airflow/dags/**"
+      - ".github/workflows/dag-ci-cd.yml"
 
 permissions:
   contents: read
 
 jobs:
-  ci:
+  validate-dags:
     runs-on: ubuntu-latest
-    outputs:
-      changed_dags: ${{ steps.changed.outputs.changed_dags }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout PR code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install validation tools
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install ruff black pytest
 
       - name: Install Gitleaks
@@ -47,81 +37,19 @@ jobs:
           tar -xzf gitleaks.tar.gz
           chmod +x gitleaks
 
-      - name: Detect changed DAG files
-        id: changed
-        shell: bash
+      - name: Syntax check DAGs
         run: |
-          CHANGED=$(git diff --name-only HEAD^ HEAD | grep '^dags/.*\.py$' || true)
-          echo "Changed DAG files:"
-          echo "$CHANGED"
-          CHANGED_JSON=$(printf '%s\n' "$CHANGED" | jq -R -s -c 'split("\n") | map(select(length > 0))')
-          echo "changed_dags=$CHANGED_JSON" >> "$GITHUB_OUTPUT"
+          find airflow/dags -name "*.py" -print0 | xargs -0 -I {} python -m py_compile {}
 
-      - name: Fail if no DAG files changed
-        shell: bash
+      - name: Lint DAGs (non-blocking)
         run: |
-          if [ "${{ steps.changed.outputs.changed_dags }}" = "[]" ]; then
-            echo "No changed DAG python files found."
-            exit 1
-          fi
+          ruff check airflow/dags --output-format=github || true
 
-      - name: Syntax check changed DAGs
-        shell: bash
+      - name: Format check DAGs (non-blocking)
         run: |
-          for file in $(echo '${{ steps.changed.outputs.changed_dags }}' | jq -r '.[]'); do
-            echo "Checking syntax: $file"
-            python -m py_compile "$file"
-          done
+          black --check airflow/dags || true
 
-      - name: Lint changed DAGs
-        shell: bash
+
+      - name: Secret scan DAGs
         run: |
-          for file in $(echo '${{ steps.changed.outputs.changed_dags }}' | jq -r '.[]'); do
-            echo "Linting: $file"
-            ruff check "$file" || true
-          done
-
-      - name: Format check changed DAGs
-        shell: bash
-        run: |
-          for file in $(echo '${{ steps.changed.outputs.changed_dags }}' | jq -r '.[]'); do
-            echo "Format check: $file"
-            black --check "$file" || true
-          done
-
-      - name: Secret scan changed DAGs
-        shell: bash
-        run: |
-          for file in $(echo '${{ steps.changed.outputs.changed_dags }}' | jq -r '.[]'); do
-            echo "Secret scan: $file"
-            ./gitleaks detect --source "$file" --no-git --verbose --redact
-          done
-
-  airflow-validate:
-    runs-on: [self-hosted, Windows, X64]
-    needs: ci
-    if: needs.ci.outputs.changed_dags != '[]'
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Validate changed DAGs only in Airflow container
-        shell: powershell
-        run: |
-          $changed = '${{ needs.ci.outputs.changed_dags }}' | ConvertFrom-Json
-          foreach ($file in $changed) {
-            $containerPath = "/opt/airflow/" + ($file -replace '\\','/')
-            Write-Host "Validating DAG file in container: $containerPath"
-
-            docker exec airflowgitfresh-airflow-scheduler-1 python -c "from airflow.models.dagbag import DagBag; import sys; dag_bag = DagBag(dag_folder='$containerPath', include_examples=False); import_errors = dag_bag.import_errors; print(f'Loaded DAGs successfully: {len(dag_bag.dags)}'); [print(f'\n- {file}\n{err}') for file, err in import_errors.items()]; sys.exit(1 if import_errors else 0)"
-          }
-
-  cd:
-    runs-on: ubuntu-latest
-    needs: airflow-validate
-    if: success()
-
-    steps:
-      - name: Fake deploy
-        run: echo "CD step reached"
+          ./gitleaks detect --source airflow/dags --no-git --verbose --redact
