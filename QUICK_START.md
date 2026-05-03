@@ -201,7 +201,7 @@ POST   /api/workflows/{id}/versions/{id}/rollback        Restore previous
 ### "DAG failed parsing"
 **Solution**: Check syntax:
 ```bash
-python -m py_compile airflow/dags/my_dag.py
+python -m py_compile dags/my_dag.py
 ```
 
 ### "Can't find champion"

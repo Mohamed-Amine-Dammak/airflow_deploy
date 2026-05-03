@@ -13,17 +13,15 @@ web_app/generated_dags
 # -----------------------------
 # airflow
 # -----------------------------
-airflow/.env
-airflow/.venv/
-airflow/__pycache__/
-airflow/*.pyc
-airflow/logs/
-airflow/*.log
-airflow/pipelines/*/evaluation/history/*.tmp.json
-airflow/actions-runner/
-airflow/credgcp.json
-airflow/web_app_data/
-airflow/dags/
+.env
+.venv/
+logs/
+*.log
+pipelines/*/evaluation/history/*.tmp.json
+actions-runner/
+credgcp.json
+web_app_data/
+dags/
 
 # -----------------------------
 # application root

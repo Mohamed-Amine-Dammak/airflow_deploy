@@ -22,7 +22,7 @@ PROD_BRANCH=prod                          # Branch for champion DAGs only
 PROMOTION_THRESHOLD=0.05                  # Minimum 5% improvement required to promote
 ALLOW_STATIC_ONLY_PROMOTION=false         # Only promote after runtime evaluation
 ENABLE_AUTO_PROMOTION=false               # Require manual promotion trigger
-AIRFLOW_DAGS_PATH=airflow/dags           # Path to DAGs in repo
+AIRFLOW_DAGS_PATH=dags                   # Path to DAGs in repo
 ```
 
 ## Workflow

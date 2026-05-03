@@ -4,7 +4,7 @@ End-to-end project for building, validating, generating, and operating Apache Ai
 
 This repository contains:
 
-- `airflow/`: Docker Compose-based Airflow stack (CeleryExecutor, Postgres, Redis, API server, scheduler, worker, triggerer).
+- `(root)`: Docker Compose-based Airflow stack (CeleryExecutor, Postgres, Redis, API server, scheduler, worker, triggerer).
 - `web_app/`: Flask + React-style frontend/backend application for visual pipeline authoring and operations.
 
 ## Key Features
@@ -23,9 +23,9 @@ This repository contains:
 This project is configured so Airflow can read DAGs from:
 
 1. Local DAG folder (mounted volume):
-   - `/opt/airflow/dags` (host: `application/airflow/dags`)
+   - `/opt/airflow/dags` (host: `dags`)
 2. Git-based DAG bundle (`GitDagBundle`):
-   - configured in `application/airflow/docker-compose.yaml` via:
+   - configured in `docker-compose.yaml` via:
      - `AIRFLOW__DAG_PROCESSOR__DAG_BUNDLE_CONFIG_LIST`
      - bundle name: `github_dags`
      - `git_conn_id: git_default`
@@ -115,7 +115,7 @@ AIRFLOW_API_PASSWORD=airflow
 AIRFLOW_API_VERIFY_TLS=0
 
 # Host folder where generated DAG files are copied
-AIRFLOW_DAGS_DIR=D:\web_app_airflow\application\airflow\dags
+AIRFLOW_DAGS_DIR=D:\\dataops\\APACHE-AIRFLOW\\dags
 ```
 
 Optional sync settings (already supported by app):
@@ -147,7 +147,7 @@ Most common URL: `http://127.0.0.1:8000`.
 
 ## Daily Developer Workflow
 
-From `application/airflow`:
+From repository root:
 
 ```powershell
 docker compose up -d
@@ -181,16 +181,17 @@ docker compose down -v
   - Web app auto-tries fallback ports.
   - Airflow port `8080` can be changed in compose if needed.
 - DAG not visible in Airflow:
-  - verify `AIRFLOW_DAGS_DIR` points to your mounted `application/airflow/dags`
-  - check scheduler logs in `application/airflow/logs`
+  - verify `AIRFLOW_DAGS_DIR` points to your mounted `dags`
+  - check scheduler logs in `logs`
   - verify DAG file syntax.
 - Git DAG bundle not loading:
   - ensure `git_default` connection exists and is valid.
 - Permission issues on Linux:
-  - set `AIRFLOW_UID` in `application/airflow/.env` as recommended by Airflow docs.
+  - set `AIRFLOW_UID` in `.env` as recommended by Airflow docs.
 
 ## Security Note
 
 - Do not commit real secrets in `.env` files.
 - Rotate credentials/tokens before sharing/deploying.
+
 

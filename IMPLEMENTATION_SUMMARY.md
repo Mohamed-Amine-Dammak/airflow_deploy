@@ -119,7 +119,7 @@ PROD_BRANCH = "prod"                          # Production branch
 PROMOTION_THRESHOLD = 0.05                    # 5% improvement required
 ALLOW_STATIC_ONLY_PROMOTION = False           # Require runtime metrics
 ENABLE_AUTO_PROMOTION = False                 # Manual promotion
-AIRFLOW_DAGS_PATH = "airflow/dags"           # DAG directory
+AIRFLOW_DAGS_PATH = "dags"                   # DAG directory
 ```
 
 ### [web_app/services/pipeline_versions.py](web_app/services/pipeline_versions.py)
@@ -243,7 +243,7 @@ PROD_BRANCH=prod                    # Branch for champions only
 PROMOTION_THRESHOLD=0.05            # 5% improvement required
 ALLOW_STATIC_ONLY_PROMOTION=false   # Require runtime evaluation
 ENABLE_AUTO_PROMOTION=false         # Manual promotion required
-AIRFLOW_DAGS_PATH=airflow/dags     # DAG directory path
+AIRFLOW_DAGS_PATH=dags             # DAG directory path
 ```
 
 ---
