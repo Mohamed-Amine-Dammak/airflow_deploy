@@ -16,6 +16,7 @@
       pipelineName: "",
       logs: [],
     },
+    airflowDags: [],
   };
 
   const usersBody = byId("admin-users-body");
@@ -31,6 +32,23 @@
   const generatedPaginationBox = byId("admin-generated-pagination");
   const requestsBody = byId("admin-requests-body");
   const requestsStatusBox = byId("admin-requests-status");
+  const airflowDagsBody = byId("admin-airflow-dags-body");
+  const airflowDagsStatusBox = byId("admin-airflow-dags-status");
+  const airflowDagsRefreshBtn = byId("admin-airflow-dags-refresh");
+  const scheduleOverlay = byId("admin-schedule-overlay");
+  const scheduleOkBtn = byId("admin-schedule-ok");
+  const scheduleCancelBtn = byId("admin-schedule-cancel");
+  const scheduleCloseIconBtn = byId("admin-schedule-close-icon");
+  const scheduleStatus = byId("admin-schedule-status");
+  const scheduleDailyWrap = byId("admin-schedule-daily-wrap");
+  const scheduleHourlyWrap = byId("admin-schedule-hourly-wrap");
+  const scheduleCustomWrap = byId("admin-schedule-custom-wrap");
+  const scheduleDailyTimeInput = byId("admin-schedule-daily-time");
+  const scheduleHourlyMinuteInput = byId("admin-schedule-hourly-minute");
+  const scheduleCustomInput = byId("admin-schedule-custom-input");
+  const scheduleDailyPreview = byId("admin-schedule-daily-preview");
+  const scheduleHourlyPreview = byId("admin-schedule-hourly-preview");
+  const scheduleTimezoneLabel = byId("admin-schedule-timezone");
   const pipelineLogsOverlay = byId("admin-pipeline-logs-overlay");
   const pipelineLogsCloseBtn = byId("admin-pipeline-logs-close");
   const pipelineLogsBody = byId("admin-pipeline-logs-body");
@@ -41,6 +59,13 @@
   const logDetailsBody = byId("admin-log-details-body");
   const logDetailsSubtitle = byId("admin-log-details-subtitle");
   const logDetailsStatus = byId("admin-log-details-status");
+  const scheduleRadios = Array.from(document.querySelectorAll('input[name="admin-schedule-mode"]'));
+  const scheduleModalState = {
+    dagId: "",
+    resolve: null,
+    timezone: "",
+    previousMode: "",
+  };
 
   function parseFileRows(listEl, kind) {
     const rows = [];
@@ -194,6 +219,21 @@
     requestsStatusBox.textContent = text;
   }
 
+  function setAirflowDagsStatus(message, kind) {
+    if (!airflowDagsStatusBox) {
+      return;
+    }
+    const text = String(message || "").trim();
+    if (!text) {
+      airflowDagsStatusBox.textContent = "";
+      airflowDagsStatusBox.style.display = "none";
+      return;
+    }
+    airflowDagsStatusBox.style.display = "";
+    airflowDagsStatusBox.className = "admin-inline-status " + (kind || "info");
+    airflowDagsStatusBox.textContent = text;
+  }
+
   function setPipelineLogsStatus(message, kind) {
     if (!pipelineLogsStatus) {
       return;
@@ -222,6 +262,21 @@
     logDetailsStatus.style.display = "";
     logDetailsStatus.className = "admin-inline-status " + (kind || "info");
     logDetailsStatus.textContent = text;
+  }
+
+  function setScheduleStatus(message, kind) {
+    if (!scheduleStatus) {
+      return;
+    }
+    const text = String(message || "").trim();
+    if (!text) {
+      scheduleStatus.textContent = "";
+      scheduleStatus.style.display = "none";
+      return;
+    }
+    scheduleStatus.style.display = "";
+    scheduleStatus.className = "admin-inline-status " + (kind || "info");
+    scheduleStatus.textContent = text;
   }
 
   function formatReadableDate(value) {
@@ -288,6 +343,261 @@
     }
     logDetailsOverlay.hidden = true;
     setLogDetailsStatus("", "info");
+  }
+
+  function selectedScheduleMode() {
+    const selected = scheduleRadios.find(function (radio) {
+      return radio.checked;
+    });
+    return selected ? String(selected.value || "").trim() : "";
+  }
+
+  function twoDigit(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) {
+      return "00";
+    }
+    return n < 10 ? "0" + n : String(n);
+  }
+
+  function getLocalTimezoneLabel() {
+    try {
+      return String(Intl.DateTimeFormat().resolvedOptions().timeZone || "").trim();
+    } catch (_err) {
+      return "";
+    }
+  }
+
+  function buildFromNowDefaults() {
+    const now = new Date();
+    const minute = Number(now.getMinutes());
+    const hour = Number(now.getHours());
+    return {
+      dailyTime: twoDigit(hour) + ":" + twoDigit(minute),
+      hourlyMinute: String(minute),
+    };
+  }
+
+  function parseDailyCronToTime(cron) {
+    const text = String(cron || "").trim();
+    const m = text.match(/^(\d{1,2})\s+(\d{1,2})\s+\*\s+\*\s+\*$/);
+    if (!m) {
+      return "";
+    }
+    const minute = Number(m[1]);
+    const hour = Number(m[2]);
+    if (minute < 0 || minute > 59 || hour < 0 || hour > 23) {
+      return "";
+    }
+    return twoDigit(hour) + ":" + twoDigit(minute);
+  }
+
+  function parseHourlyCronToMinute(cron) {
+    const text = String(cron || "").trim();
+    const m = text.match(/^(\d{1,2})\s+\*\s+\*\s+\*\s+\*$/);
+    if (!m) {
+      return "";
+    }
+    const minute = Number(m[1]);
+    if (minute < 0 || minute > 59) {
+      return "";
+    }
+    return String(minute);
+  }
+
+  function buildDailyCronFromInput() {
+    const value = String((scheduleDailyTimeInput && scheduleDailyTimeInput.value) || "").trim();
+    const m = value.match(/^(\d{2}):(\d{2})$/);
+    if (!m) {
+      return "";
+    }
+    const hour = Number(m[1]);
+    const minute = Number(m[2]);
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return "";
+    }
+    return String(minute) + " " + String(hour) + " * * *";
+  }
+
+  function buildHourlyCronFromInput() {
+    const raw = String((scheduleHourlyMinuteInput && scheduleHourlyMinuteInput.value) || "").trim();
+    if (raw === "") {
+      return "";
+    }
+    const minute = Number(raw);
+    if (!Number.isInteger(minute) || minute < 0 || minute > 59) {
+      return "";
+    }
+    return String(minute) + " * * * *";
+  }
+
+  function scheduleModalResultFromState() {
+    const mode = selectedScheduleMode();
+    if (!mode) {
+      return { isValid: false, error: "Please select a scheduling mode.", schedule: null };
+    }
+    if (mode === "manual") {
+      return { isValid: true, schedule: null };
+    }
+    if (mode === "@daily") {
+      const cron = buildDailyCronFromInput();
+      if (!cron) {
+        return { isValid: false, error: "Please select a valid daily run time.", schedule: null };
+      }
+      return { isValid: true, schedule: cron };
+    }
+    if (mode === "@hourly") {
+      const cron = buildHourlyCronFromInput();
+      if (!cron) {
+        return { isValid: false, error: "Minute must be between 0 and 59.", schedule: null };
+      }
+      return { isValid: true, schedule: cron };
+    }
+    if (mode === "custom") {
+      const cron = String((scheduleCustomInput && scheduleCustomInput.value) || "").trim();
+      if (!cron) {
+        return { isValid: false, error: "Cron expression is required for custom scheduling.", schedule: null };
+      }
+      return { isValid: true, schedule: cron };
+    }
+    return { isValid: false, error: "Invalid scheduling mode.", schedule: null };
+  }
+
+  function refreshScheduleModalUi() {
+    const mode = selectedScheduleMode();
+    const showCustom = mode === "custom";
+    const showDaily = mode === "@daily";
+    const showHourly = mode === "@hourly";
+    scheduleRadios.forEach(function (radio) {
+      const card = radio.closest(".admin-schedule-option");
+      if (!card) {
+        return;
+      }
+      if (radio.checked) {
+        card.classList.add("is-selected");
+      } else {
+        card.classList.remove("is-selected");
+      }
+    });
+    if (scheduleDailyWrap) {
+      scheduleDailyWrap.hidden = !showDaily;
+    }
+    if (scheduleHourlyWrap) {
+      scheduleHourlyWrap.hidden = !showHourly;
+    }
+    if (scheduleCustomWrap) {
+      scheduleCustomWrap.hidden = !showCustom;
+    }
+    if (scheduleDailyPreview) {
+      scheduleDailyPreview.hidden = !showDaily;
+      if (showDaily) {
+        const timeValue = String((scheduleDailyTimeInput && scheduleDailyTimeInput.value) || "").trim();
+        const tz = scheduleModalState.timezone ? " (" + scheduleModalState.timezone + ")" : "";
+        scheduleDailyPreview.textContent = timeValue
+          ? "Runs every day at " + timeValue + tz
+          : "Select a run time.";
+      }
+    }
+    if (scheduleHourlyPreview) {
+      scheduleHourlyPreview.hidden = !showHourly;
+      if (showHourly) {
+        const minute = String((scheduleHourlyMinuteInput && scheduleHourlyMinuteInput.value) || "").trim();
+        const tz2 = scheduleModalState.timezone ? " (" + scheduleModalState.timezone + ")" : "";
+        scheduleHourlyPreview.textContent = minute !== ""
+          ? "Runs every hour at minute " + twoDigit(minute) + tz2
+          : "Select a minute (0-59).";
+      }
+    }
+    const result = scheduleModalResultFromState();
+    if (scheduleOkBtn) {
+      scheduleOkBtn.disabled = !result.isValid;
+    }
+    if (result.isValid) {
+      setScheduleStatus("", "info");
+    }
+  }
+
+  function preselectScheduleMode(existingSchedule) {
+    const safe = String(existingSchedule || "").trim();
+    let mode = "manual";
+    let customValue = "";
+    const parsedDaily = parseDailyCronToTime(safe);
+    const parsedHourly = parseHourlyCronToMinute(safe);
+    if (safe === "@daily") {
+      mode = "@daily";
+    } else if (safe === "@hourly") {
+      mode = "@hourly";
+    } else if (parsedDaily) {
+      mode = "@daily";
+    } else if (parsedHourly) {
+      mode = "@hourly";
+    } else if (safe && safe !== "manual") {
+      mode = "custom";
+      customValue = safe;
+    }
+    scheduleRadios.forEach(function (radio) {
+      radio.checked = String(radio.value || "") === mode;
+    });
+    if (scheduleDailyTimeInput) {
+      scheduleDailyTimeInput.value = parsedDaily || scheduleDailyTimeInput.value || "";
+    }
+    if (scheduleHourlyMinuteInput) {
+      scheduleHourlyMinuteInput.value = parsedHourly || scheduleHourlyMinuteInput.value || "";
+    }
+    if (scheduleCustomInput) {
+      scheduleCustomInput.value = customValue;
+    }
+    scheduleModalState.previousMode = mode;
+    refreshScheduleModalUi();
+  }
+
+  function closeScheduleModal() {
+    if (!scheduleOverlay) {
+      return;
+    }
+    scheduleOverlay.hidden = true;
+    scheduleModalState.dagId = "";
+    scheduleModalState.resolve = null;
+    setScheduleStatus("", "info");
+  }
+
+  function openScheduleModal(existingSchedule, dagId) {
+    if (!scheduleOverlay) {
+      return Promise.resolve(null);
+    }
+    scheduleOverlay.hidden = false;
+    scheduleModalState.dagId = String(dagId || "").trim();
+    const defaults = buildFromNowDefaults();
+    if (scheduleDailyTimeInput) {
+      scheduleDailyTimeInput.value = defaults.dailyTime;
+    }
+    if (scheduleHourlyMinuteInput) {
+      scheduleHourlyMinuteInput.value = defaults.hourlyMinute;
+    }
+    if (scheduleTimezoneLabel) {
+      const timezone = getLocalTimezoneLabel();
+      scheduleModalState.timezone = timezone;
+      scheduleTimezoneLabel.textContent = timezone ? "Local timezone: " + timezone : "Local timezone";
+    }
+    preselectScheduleMode(existingSchedule);
+    if (selectedScheduleMode() === "custom" && scheduleCustomInput) {
+      scheduleCustomInput.focus();
+    } else if (selectedScheduleMode() === "@daily" && scheduleDailyTimeInput) {
+      scheduleDailyTimeInput.focus();
+    } else if (selectedScheduleMode() === "@hourly" && scheduleHourlyMinuteInput) {
+      scheduleHourlyMinuteInput.focus();
+    }
+    return new Promise(function (resolve) {
+      scheduleModalState.resolve = resolve;
+    });
+  }
+
+  function resolveScheduleModal(result) {
+    const resolver = scheduleModalState.resolve;
+    closeScheduleModal();
+    if (typeof resolver === "function") {
+      resolver(result);
+    }
   }
 
   function renderPipelineLogsRows(logs) {
@@ -607,6 +917,124 @@
     });
   }
 
+  function renderAirflowDagsTable() {
+    if (!airflowDagsBody) {
+      return;
+    }
+    airflowDagsBody.innerHTML = "";
+    if (!Array.isArray(state.airflowDags) || !state.airflowDags.length) {
+      const row = document.createElement("tr");
+      row.innerHTML = '<td colspan="6" class="admin-empty">No DAGs found in Airflow.</td>';
+      airflowDagsBody.appendChild(row);
+      return;
+    }
+
+    state.airflowDags.forEach(function (item) {
+      const dagId = String(item.dag_id || "").trim();
+      const schedule = String(item.timetable_summary || item.schedule_interval || "").trim() || "manual";
+      const nextRun = formatReadableDate(item.next_dagrun);
+      const pausedLabel = item.is_paused ? "Yes" : "No";
+      const builderLabel = item.has_builder_version
+        ? String(item.pipeline_id || "") + " / " + String(item.version_id || "")
+        : "Not linked";
+      const row = document.createElement("tr");
+      row.innerHTML =
+        '<td><button type="button" class="btn btn-secondary admin-airflow-dag-open" data-builder-url="' +
+        String(item.builder_url || "") +
+        '">' +
+        (dagId || "-") +
+        "</button></td>" +
+        "<td>" + schedule + "</td>" +
+        "<td>" + nextRun + "</td>" +
+        "<td>" + pausedLabel + "</td>" +
+        "<td>" + builderLabel + "</td>" +
+        '<td class="connections-actions-cell">' +
+        '<button type="button" class="btn btn-primary admin-airflow-dag-run" data-dag-id="' + dagId + '">Run</button>' +
+        '<button type="button" class="btn btn-secondary admin-airflow-dag-schedule" data-dag-id="' + dagId + '" data-current-schedule="' + schedule + '">Scheduling Mode</button>' +
+        '<button type="button" class="btn btn-secondary btn-danger-soft admin-airflow-dag-delete" data-dag-id="' + dagId + '">Delete</button>' +
+        "</td>";
+      airflowDagsBody.appendChild(row);
+    });
+  }
+
+  async function loadAirflowDags() {
+    try {
+      setAirflowDagsStatus("Loading Airflow DAGs...", "info");
+      const data = await fetchJson("/api/admin/airflow-dags");
+      state.airflowDags = Array.isArray(data.dags) ? data.dags : [];
+      renderAirflowDagsTable();
+      setAirflowDagsStatus("", "info");
+    } catch (error) {
+      state.airflowDags = [];
+      renderAirflowDagsTable();
+      setAirflowDagsStatus(error && error.message ? error.message : "Unable to load Airflow DAGs.", "error");
+    }
+  }
+
+  async function runAirflowDag(dagId) {
+    const safeDagId = String(dagId || "").trim();
+    if (!safeDagId) {
+      return;
+    }
+    try {
+      await fetchJson("/api/admin/airflow-dags/" + encodeURIComponent(safeDagId) + "/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      setAirflowDagsStatus("Run started for " + safeDagId + ".", "success");
+    } catch (error) {
+      setAirflowDagsStatus(error && error.message ? error.message : "Unable to run DAG.", "error");
+    }
+  }
+
+  async function deleteAirflowDag(dagId) {
+    const safeDagId = String(dagId || "").trim();
+    if (!safeDagId) {
+      return;
+    }
+    if (!window.confirm("Delete DAG '" + safeDagId + "' from Airflow?")) {
+      return;
+    }
+    try {
+      await fetchJson("/api/admin/airflow-dags/" + encodeURIComponent(safeDagId), { method: "DELETE" });
+      setAirflowDagsStatus("Deleted DAG " + safeDagId + ".", "success");
+      await loadAirflowDags();
+    } catch (error) {
+      setAirflowDagsStatus(error && error.message ? error.message : "Unable to delete DAG.", "error");
+    }
+  }
+
+  async function changeAirflowDagSchedule(dagId, currentSchedule) {
+    const safeDagId = String(dagId || "").trim();
+    if (!safeDagId) {
+      return;
+    }
+    const selection = await openScheduleModal(currentSchedule, safeDagId);
+    if (!selection || selection.cancelled) {
+      return;
+    }
+    try {
+      const data = await fetchJson("/api/admin/airflow-dags/" + encodeURIComponent(safeDagId) + "/schedule", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schedule: selection.schedule }),
+      });
+      if (data && data.warning) {
+        setAirflowDagsStatus("Schedule updated for " + safeDagId + ". " + String(data.warning), "success");
+      } else {
+        setAirflowDagsStatus("Schedule updated for " + safeDagId + ".", "success");
+      }
+      await loadAirflowDags();
+    } catch (error) {
+      setAirflowDagsStatus(
+        (error && error.message ? error.message : "Unable to update schedule.") +
+          " Airflow may not allow schedule patching in this deployment.",
+        "error"
+      );
+    }
+  }
+
   async function deleteUser(user) {
     if (!user || !user.id) {
       return;
@@ -763,6 +1191,42 @@
   }
 
   document.addEventListener("click", function (event) {
+    const openDagBtn = event.target.closest(".admin-airflow-dag-open");
+    if (openDagBtn) {
+      event.preventDefault();
+      const builderUrl = String(openDagBtn.getAttribute("data-builder-url") || "").trim();
+      if (!builderUrl) {
+        setAirflowDagsStatus("No linked pipeline version exists for this DAG.", "info");
+        return;
+      }
+      window.location.href = builderUrl;
+      return;
+    }
+
+    const runDagBtn = event.target.closest(".admin-airflow-dag-run");
+    if (runDagBtn) {
+      event.preventDefault();
+      runAirflowDag(runDagBtn.getAttribute("data-dag-id") || "");
+      return;
+    }
+
+    const deleteDagBtn = event.target.closest(".admin-airflow-dag-delete");
+    if (deleteDagBtn) {
+      event.preventDefault();
+      deleteAirflowDag(deleteDagBtn.getAttribute("data-dag-id") || "");
+      return;
+    }
+
+    const scheduleDagBtn = event.target.closest(".admin-airflow-dag-schedule");
+    if (scheduleDagBtn) {
+      event.preventDefault();
+      changeAirflowDagSchedule(
+        scheduleDagBtn.getAttribute("data-dag-id") || "",
+        scheduleDagBtn.getAttribute("data-current-schedule") || ""
+      );
+      return;
+    }
+
     const logsBtn = event.target.closest(".admin-file-logs");
     if (logsBtn) {
       event.preventDefault();
@@ -814,6 +1278,57 @@
       }
     });
   }
+  if (scheduleOkBtn) {
+    scheduleOkBtn.addEventListener("click", function () {
+      const result = scheduleModalResultFromState();
+      if (!result.isValid) {
+        setScheduleStatus(result.error || "Please provide a valid scheduling mode.", "error");
+        return;
+      }
+      resolveScheduleModal({ cancelled: false, schedule: result.schedule });
+    });
+  }
+  if (scheduleCancelBtn) {
+    scheduleCancelBtn.addEventListener("click", function () {
+      resolveScheduleModal({ cancelled: true, schedule: null });
+    });
+  }
+  if (scheduleCloseIconBtn) {
+    scheduleCloseIconBtn.addEventListener("click", function () {
+      resolveScheduleModal({ cancelled: true, schedule: null });
+    });
+  }
+  if (scheduleOverlay) {
+    scheduleOverlay.addEventListener("click", function (event) {
+      if (event.target === scheduleOverlay) {
+        resolveScheduleModal({ cancelled: true, schedule: null });
+      }
+    });
+  }
+  scheduleRadios.forEach(function (radio) {
+    radio.addEventListener("change", function () {
+      const mode = String(radio.value || "").trim();
+      if (radio.checked) {
+        scheduleModalState.previousMode = mode;
+      }
+      refreshScheduleModalUi();
+    });
+  });
+  if (scheduleDailyTimeInput) {
+    scheduleDailyTimeInput.addEventListener("input", function () {
+      refreshScheduleModalUi();
+    });
+  }
+  if (scheduleHourlyMinuteInput) {
+    scheduleHourlyMinuteInput.addEventListener("input", function () {
+      refreshScheduleModalUi();
+    });
+  }
+  if (scheduleCustomInput) {
+    scheduleCustomInput.addEventListener("input", function () {
+      refreshScheduleModalUi();
+    });
+  }
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && pipelineLogsOverlay && !pipelineLogsOverlay.hidden) {
       closePipelineLogsModal();
@@ -821,10 +1336,21 @@
     }
     if (event.key === "Escape" && logDetailsOverlay && !logDetailsOverlay.hidden) {
       closeLogDetailsModal();
+      return;
+    }
+    if (event.key === "Escape" && scheduleOverlay && !scheduleOverlay.hidden) {
+      resolveScheduleModal({ cancelled: true, schedule: null });
     }
   });
 
+  if (airflowDagsRefreshBtn) {
+    airflowDagsRefreshBtn.addEventListener("click", function () {
+      loadAirflowDags();
+    });
+  }
+
   loadUsers();
   loadRequests();
+  loadAirflowDags();
   initializeFilePagination();
 })();

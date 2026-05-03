@@ -1383,3 +1383,117 @@ def get_airflow_platform_snapshot(config: AirflowApiConfig) -> dict[str, Any]:
         snapshot["health"] = normalized_health
 
     return snapshot
+
+
+def list_dags(config: AirflowApiConfig, limit: int = 500) -> list[dict[str, Any]]:
+    headers = _build_auth_header(config)
+    safe_limit = max(1, min(int(limit or 500), 2000))
+    resp = _request_api_with_versions(
+        config=config,
+        method="GET",
+        path_suffix=f"/dags?limit={safe_limit}",
+        headers=headers,
+        expected_statuses={200},
+    )
+    payload = _safe_json(resp)
+    dags = _payload_list(payload, "dags", "items")
+    normalized: list[dict[str, Any]] = []
+    for item in dags:
+        dag_id = str(item.get("dag_id") or "").strip()
+        if not dag_id:
+            continue
+        normalized.append(
+            {
+                "dag_id": dag_id,
+                "description": item.get("description") or "",
+                "is_paused": bool(item.get("is_paused")),
+                "timetable_summary": item.get("timetable_summary") or "",
+                "schedule_interval": item.get("schedule_interval"),
+                "next_dagrun": item.get("next_dagrun"),
+                "file_token": item.get("file_token"),
+            }
+        )
+    return normalized
+
+
+def update_dag_schedule(config: AirflowApiConfig, dag_id: str, schedule: str | None) -> dict[str, Any]:
+    headers = {**_build_auth_header(config), "Content-Type": "application/json"}
+    encoded_dag_id = quote(dag_id, safe="")
+    schedule_value = None if schedule is None else str(schedule).strip()
+    if schedule_value == "":
+        schedule_value = None
+
+    payload_candidates = [
+        {"schedule_interval": schedule_value},
+        {"timetable_summary": schedule_value},
+    ]
+    urls = (
+        f"{config.base_url}/api/v2/dags/{encoded_dag_id}",
+        f"{config.base_url}/api/v1/dags/{encoded_dag_id}",
+    )
+    attempts: list[str] = []
+
+    for url in urls:
+        for payload in payload_candidates:
+            try:
+                resp = requests.patch(
+                    url,
+                    headers=headers,
+                    json=payload,
+                    timeout=config.timeout_seconds,
+                    verify=config.verify_tls,
+                )
+            except RequestException as exc:
+                raise AirflowApiError(f"Unable to reach Airflow DAG schedule endpoint: {exc}") from exc
+
+            if resp.status_code in {200, 202, 204}:
+                details = _safe_json(resp)
+                return {
+                    "dag_id": dag_id,
+                    "schedule_requested": schedule_value,
+                    "schedule_interval": details.get("schedule_interval"),
+                    "timetable_summary": details.get("timetable_summary"),
+                    "raw_response": details,
+                }
+            attempts.append(f"{url} payload={list(payload.keys())[0]} -> {resp.status_code}")
+            if resp.status_code not in {400, 404, 405, 422}:
+                raise AirflowApiError(
+                    f"Airflow DAG schedule update failed: {resp.status_code} {resp.text}",
+                    status_code=resp.status_code,
+                )
+
+    raise AirflowApiError(
+        "Airflow rejected DAG schedule update request. "
+        + ("Attempts: " + " | ".join(attempts) if attempts else ""),
+        status_code=400,
+    )
+
+
+def delete_dag(config: AirflowApiConfig, dag_id: str) -> dict[str, Any]:
+    headers = _build_auth_header(config)
+    encoded_dag_id = quote(dag_id, safe="")
+    urls = (
+        f"{config.base_url}/api/v2/dags/{encoded_dag_id}",
+        f"{config.base_url}/api/v1/dags/{encoded_dag_id}",
+    )
+    for url in urls:
+        try:
+            resp = requests.delete(
+                url,
+                headers=headers,
+                timeout=config.timeout_seconds,
+                verify=config.verify_tls,
+            )
+        except RequestException as exc:
+            raise AirflowApiError(f"Unable to reach Airflow DAG delete endpoint: {exc}") from exc
+
+        if resp.status_code in {200, 202, 204}:
+            return {"dag_id": dag_id, "deleted": True}
+        if resp.status_code == 404:
+            continue
+        raise AirflowApiError(
+            f"Airflow DAG delete failed: {resp.status_code} {resp.text}",
+            status_code=resp.status_code,
+        )
+
+    raise AirflowApiError(f"DAG '{dag_id}' not found in Airflow.", status_code=404)

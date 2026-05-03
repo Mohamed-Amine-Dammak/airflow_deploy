@@ -14,6 +14,15 @@
     catchup: false,
     schedule_preset: "",
     schedule_cron: "",
+    schedule_preset_hourly_minute: "0",
+    schedule_preset_daily_time: "00:00",
+    schedule_preset_weekly_day: "monday",
+    schedule_preset_weekly_time: "00:00",
+    schedule_preset_monthly_day: "1",
+    schedule_preset_monthly_time: "00:00",
+    schedule_preset_yearly_month: "1",
+    schedule_preset_yearly_day: "1",
+    schedule_preset_yearly_time: "00:00",
     interval_value: "",
     interval_unit: "minutes",
     event_source: "",
@@ -443,12 +452,33 @@
     }
   }
 
+  function getBuilderInitialSelection() {
+    try {
+      const params = new URLSearchParams(window.location.search || "");
+      return {
+        pipeline_id: String(params.get("pipeline_id") || "").trim(),
+        version_id: String(params.get("version_id") || "").trim(),
+      };
+    } catch (_err) {
+      return { pipeline_id: "", version_id: "" };
+    }
+  }
+
   function hydrateScheduleForUi(rawPipeline) {
     const next = Object.assign({}, defaultPipeline, rawPipeline || {});
     next.start_date = String(next.start_date || "2026-01-01");
     next.schedule_mode = String(next.schedule_mode || "").toLowerCase();
     next.schedule_preset = String(next.schedule_preset || "").toLowerCase();
     next.schedule_cron = String(next.schedule_cron || "");
+    next.schedule_preset_hourly_minute = String(next.schedule_preset_hourly_minute || "0");
+    next.schedule_preset_daily_time = String(next.schedule_preset_daily_time || "00:00");
+    next.schedule_preset_weekly_day = String(next.schedule_preset_weekly_day || "monday").toLowerCase();
+    next.schedule_preset_weekly_time = String(next.schedule_preset_weekly_time || "00:00");
+    next.schedule_preset_monthly_day = String(next.schedule_preset_monthly_day || "1");
+    next.schedule_preset_monthly_time = String(next.schedule_preset_monthly_time || "00:00");
+    next.schedule_preset_yearly_month = String(next.schedule_preset_yearly_month || "1");
+    next.schedule_preset_yearly_day = String(next.schedule_preset_yearly_day || "1");
+    next.schedule_preset_yearly_time = String(next.schedule_preset_yearly_time || "00:00");
     next.interval_unit = String(next.interval_unit || "minutes").toLowerCase();
     next.event_source = String(next.event_source || "");
     next.custom_schedule_text = String(next.custom_schedule_text || "");
@@ -468,6 +498,115 @@
       }
     }
 
+    return next;
+  }
+
+  function clampIntString(value, min, max, fallback) {
+    const n = Number(String(value || "").trim());
+    if (!Number.isInteger(n)) {
+      return String(fallback);
+    }
+    return String(Math.min(max, Math.max(min, n)));
+  }
+
+  function normalizeTimeString(value, fallback) {
+    const text = String(value || "").trim();
+    const m = text.match(/^(\d{1,2}):(\d{1,2})$/);
+    if (!m) {
+      return fallback;
+    }
+    const hh = Number(m[1]);
+    const mm = Number(m[2]);
+    if (!Number.isInteger(hh) || !Number.isInteger(mm) || hh < 0 || hh > 23 || mm < 0 || mm > 59) {
+      return fallback;
+    }
+    const hour = hh < 10 ? "0" + hh : String(hh);
+    const minute = mm < 10 ? "0" + mm : String(mm);
+    return hour + ":" + minute;
+  }
+
+  function deriveScheduleFromPipeline(nextPipeline) {
+    const next = Object.assign({}, nextPipeline || {});
+    const mode = String(next.schedule_mode || "").toLowerCase();
+    const preset = String(next.schedule_preset || "").toLowerCase();
+    const timeDaily = normalizeTimeString(next.schedule_preset_daily_time, "00:00");
+    const timeWeekly = normalizeTimeString(next.schedule_preset_weekly_time, "00:00");
+    const timeMonthly = normalizeTimeString(next.schedule_preset_monthly_time, "00:00");
+    const timeYearly = normalizeTimeString(next.schedule_preset_yearly_time, "00:00");
+    next.schedule_preset_daily_time = timeDaily;
+    next.schedule_preset_weekly_time = timeWeekly;
+    next.schedule_preset_monthly_time = timeMonthly;
+    next.schedule_preset_yearly_time = timeYearly;
+    next.schedule_preset_hourly_minute = clampIntString(next.schedule_preset_hourly_minute, 0, 59, 0);
+    next.schedule_preset_monthly_day = clampIntString(next.schedule_preset_monthly_day, 1, 31, 1);
+    next.schedule_preset_yearly_month = clampIntString(next.schedule_preset_yearly_month, 1, 12, 1);
+    next.schedule_preset_yearly_day = clampIntString(next.schedule_preset_yearly_day, 1, 31, 1);
+
+    if (mode === "manual") {
+      next.schedule = null;
+      return next;
+    }
+    if (mode === "cron") {
+      next.schedule = String(next.schedule_cron || "").trim() || null;
+      return next;
+    }
+    if (mode === "preset") {
+      if (preset === "once") {
+        next.schedule = "@once";
+        return next;
+      }
+      if (preset === "hourly") {
+        next.schedule = String(Number(next.schedule_preset_hourly_minute)) + " * * * *";
+        return next;
+      }
+      if (preset === "daily") {
+        const m = timeDaily.split(":");
+        next.schedule = String(Number(m[1])) + " " + String(Number(m[0])) + " * * *";
+        return next;
+      }
+      if (preset === "weekly") {
+        const weekdayMap = {
+          sunday: 0,
+          monday: 1,
+          tuesday: 2,
+          wednesday: 3,
+          thursday: 4,
+          friday: 5,
+          saturday: 6,
+        };
+        const day = String(next.schedule_preset_weekly_day || "monday").toLowerCase();
+        const dow = weekdayMap[day] != null ? weekdayMap[day] : 1;
+        const m = timeWeekly.split(":");
+        next.schedule = String(Number(m[1])) + " " + String(Number(m[0])) + " * * " + String(dow);
+        return next;
+      }
+      if (preset === "monthly") {
+        const m = timeMonthly.split(":");
+        next.schedule =
+          String(Number(m[1])) +
+          " " +
+          String(Number(m[0])) +
+          " " +
+          String(Number(next.schedule_preset_monthly_day)) +
+          " * *";
+        return next;
+      }
+      if (preset === "yearly") {
+        const m = timeYearly.split(":");
+        next.schedule =
+          String(Number(m[1])) +
+          " " +
+          String(Number(m[0])) +
+          " " +
+          String(Number(next.schedule_preset_yearly_day)) +
+          " " +
+          String(Number(next.schedule_preset_yearly_month)) +
+          " *";
+        return next;
+      }
+      next.schedule = null;
+      return next;
+    }
     return next;
   }
 
@@ -815,6 +954,7 @@
     const canvasClipboardRef = useRef(null);
     const forceLatestOnNextVersionRefreshRef = useRef(false);
     const suppressPipelineIdVersionEffectRef = useRef(false);
+    const initialSelectionHandledRef = useRef(false);
 
     function buildApiCandidates(path) {
       const cleanPath = String(path || "").startsWith("/") ? String(path) : "/" + String(path || "");
@@ -1685,6 +1825,45 @@
 
     useEffect(
       function () {
+        if (initialSelectionHandledRef.current) {
+          return;
+        }
+        if (!canLoadPipelines) {
+          initialSelectionHandledRef.current = true;
+          return;
+        }
+        const selection = getBuilderInitialSelection();
+        const pipelineId = String(selection.pipeline_id || "").trim();
+        const versionId = String(selection.version_id || "").trim();
+        if (!pipelineId || !versionId) {
+          initialSelectionHandledRef.current = true;
+          return;
+        }
+        initialSelectionHandledRef.current = true;
+        suppressPipelineIdVersionEffectRef.current = true;
+        setShowDagVersions(true);
+        setPipeline(function (prev) {
+          return Object.assign({}, prev, { dag_id: pipelineId });
+        });
+        setSelectedVersionId(versionId);
+        refreshPipelineVersions(pipelineId, versionId, false)
+          .then(function (result) {
+            const selected = String((result && result.selectedVersionId) || versionId).trim();
+            if (selected) {
+              setSelectedVersionId(selected);
+              return refreshSelectedVersionSummary(selected, pipelineId);
+            }
+            return null;
+          })
+          .finally(function () {
+            suppressPipelineIdVersionEffectRef.current = false;
+          });
+      },
+      [canLoadPipelines]
+    );
+
+    useEffect(
+      function () {
         if (!showDagVersions) {
           return;
         }
@@ -2475,7 +2654,7 @@
         if (field === "dag_id" && (!next.output_filename || next.output_filename === prev.output_filename)) {
           next.output_filename = (value || "pipeline") + ".py";
         }
-        return next;
+        return deriveScheduleFromPipeline(next);
       });
       setIsDirty(true);
       setSaveState("unsaved");

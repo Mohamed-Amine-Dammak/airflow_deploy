@@ -1369,13 +1369,13 @@ code, pre, kbd, .font-mono { font-family: var(--font-mono) !important; color: va
 [data-theme="light"] .landing-topbar,
 [data-theme="dark"] .landing-topbar {
   width: min(1140px, calc(100% - 2rem)) !important;
-  margin: 0.9rem auto 0.7rem !important;
-  padding: 0.82rem 1.25rem !important;
+  margin: 0.78rem auto 0.58rem !important;
+  padding: 0.7rem 1.1rem !important;
   border-radius: 16px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: 1rem !important;
+  gap: 0.8rem !important;
 }
 
 [data-theme="light"] .landing-topbar {
@@ -1394,12 +1394,38 @@ code, pre, kbd, .font-mono { font-family: var(--font-mono) !important; color: va
   color: #466281 !important;
 }
 
-[data-theme="dark"] .landing-brand strong {
-  color: #e7f0fb !important;
+[data-theme="light"] .landing-brand {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
 }
 
-[data-theme="dark"] .landing-brand small {
-  color: #9cb2c9 !important;
+[data-theme="light"] .landing-brand:hover {
+  background: transparent !important;
+  opacity: 0.88 !important;
+}
+
+[data-theme="light"] .landing-brand-text {
+  color: #1b334d !important;
+  letter-spacing: 0.015em !important;
+}
+
+[data-theme="dark"] .landing-brand {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .landing-brand:hover {
+  background: transparent !important;
+  opacity: 0.9 !important;
+}
+
+[data-theme="dark"] .landing-brand-text {
+  color: #edf4ff !important;
+  letter-spacing: 0.015em !important;
 }
 
 [data-theme="dark"] .landing-topbar {
@@ -1927,6 +1953,85 @@ code, pre, kbd, .font-mono { font-family: var(--font-mono) !important; color: va
 
 [data-theme="dark"] .admin-logs-head {
   border-bottom: 1px solid #2b3d53 !important;
+}
+
+[data-theme="light"] .landing-brand img,
+[data-theme="dark"] .landing-brand img {
+  opacity: 0.95 !important;
+}
+
+[data-theme="light"] .admin-schedule-modal {
+  background: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-schedule-modal {
+  background: #151d2a !important;
+}
+
+[data-theme="light"] .admin-schedule-option {
+  background: #f9fbfd !important;
+  border-color: #d6e2ee !important;
+}
+
+[data-theme="dark"] .admin-schedule-option {
+  background: #11223a !important;
+  border-color: #2d4c6f !important;
+}
+
+[data-theme="light"] .admin-schedule-option.is-selected {
+  background: #e7f7f5 !important;
+  border-color: #0f7a6f !important;
+  box-shadow: inset 0 0 0 1px rgba(15, 122, 111, 0.2) !important;
+}
+
+[data-theme="dark"] .admin-schedule-option.is-selected {
+  background: rgba(21, 167, 184, 0.12) !important;
+  border-color: #15a7b8 !important;
+}
+
+[data-theme="light"] .admin-schedule-option-title {
+  color: #1e334c !important;
+}
+
+[data-theme="dark"] .admin-schedule-option-title {
+  color: #dbe8f5 !important;
+}
+
+[data-theme="light"] .admin-schedule-option-help,
+[data-theme="light"] .admin-schedule-inline-wrap label,
+[data-theme="light"] .admin-schedule-option-preview {
+  color: #5a718b !important;
+}
+
+[data-theme="dark"] .admin-schedule-option-help,
+[data-theme="dark"] .admin-schedule-inline-wrap label {
+  color: #a9bfd8 !important;
+}
+
+[data-theme="dark"] .admin-schedule-option-preview {
+  color: #8fd8de !important;
+}
+
+[data-theme="light"] .admin-schedule-input {
+  background: #ffffff !important;
+  color: #1e334c !important;
+  border-color: #c6d6e7 !important;
+}
+
+[data-theme="dark"] .admin-schedule-input {
+  background: #0f1f34 !important;
+  color: #dbe8f5 !important;
+  border-color: #2d587d !important;
+}
+
+[data-theme="light"] .admin-schedule-footer {
+  background: #ffffff !important;
+  border-top-color: #dbe7f3 !important;
+}
+
+[data-theme="dark"] .admin-schedule-footer {
+  background: #151d2a !important;
+  border-top-color: #2b3d53 !important;
 }
 
 [data-theme="dark"] .admin-task-log-box {

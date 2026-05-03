@@ -3379,7 +3379,7 @@
           "created_by": "admin",
           "status": "active",
           "is_current": true,
-          "source_hash": "1ea481ffa398b9fabe4704a1e1fa8ad026d3a45cd834a11a01066f60be65cdb5",
+          "source_hash": "b040df461152d39d86f3820d160e3339b32fa49c3973d7a9e2eedf8b7dc7a785",
           "source_definition": {
             "pipeline": {
               "dag_id": "y2test",
@@ -3418,7 +3418,11 @@
                   "local_file_path": "/opt/airflow/local_downloads/azure/Rollback",
                   "local_file_paths": [],
                   "remote_dir": "/uploads",
-                  "upload_mode": "single"
+                  "upload_mode": "single",
+                  "action": "upload",
+                  "download_mode": "single",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "delete_mode": "single"
                 }
               },
               {
@@ -3712,7 +3716,7 @@
             "node_11": "delay_12_node_11",
             "node_12": "delay_13_node_12"
           },
-          "updated_at": "2026-04-28T13:32:29.523822+00:00",
+          "updated_at": "2026-05-03T12:50:05.996001+00:00",
           "updated_by": "admin"
         }
       ],
@@ -3828,6 +3832,22 @@
           "to_version_id": "v3",
           "actor": "admin",
           "at": "2026-04-28T13:32:29.523822+00:00"
+        },
+        {
+          "event_id": "a4bc848a-704a-43e8-bf4c-4eb1aac4f5d3",
+          "event_type": "update_version_definition",
+          "from_version_id": "v3",
+          "to_version_id": "v3",
+          "actor": "admin",
+          "at": "2026-05-03T12:29:20.575946+00:00"
+        },
+        {
+          "event_id": "893ed01a-c288-4325-bf14-183e7b1af51e",
+          "event_type": "update_version_definition",
+          "from_version_id": "v3",
+          "to_version_id": "v3",
+          "actor": "admin",
+          "at": "2026-05-03T12:50:05.996001+00:00"
         }
       ]
     },
