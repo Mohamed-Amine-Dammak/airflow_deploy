@@ -40,3 +40,6 @@ __pycache__/
 pycache/
 *.py[cod]
 *.pyc.*
+
+
+web_app/
