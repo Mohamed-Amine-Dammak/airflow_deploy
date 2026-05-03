@@ -1,241 +1,52 @@
-<<<<<<< HEAD
-# Airflow Orchestration Platform + Web Builder
+# Airflow Orchestration Platform + DataOps Promotion
 
-End-to-end project for building, validating, generating, and operating Apache Airflow DAGs from a web UI.
+End-to-end project for building, generating, evaluating, and promoting Apache Airflow DAGs from a web UI.
 
-This repository contains:
+## Repository Layout
 
-- `(root)`: Docker Compose-based Airflow stack (CeleryExecutor, Postgres, Redis, API server, scheduler, worker, triggerer).
-- `web_app/`: Flask + React-style frontend/backend application for visual pipeline authoring and operations.
+- `docker-compose.yaml`, `Dockerfile`, `config/`, `dags/`, `logs/`, `plugins/`: Airflow stack at repository root.
+- `web_app/`: Flask web application for DAG authoring, publishing, and operations.
+- `scripts/`: helper scripts for validation, evaluation, and promotion metadata updates.
 
-## Key Features
+## Core Concepts
 
-- Visual DAG/pipeline builder (drag-and-drop nodes, connect, configure).
-- JSON save/load for pipeline definitions.
-- DAG generation from templates into Python files.
-- DAG run trigger + run/task monitoring + logs from the web app.
-- Airflow Connections management from UI.
-- Admin dashboard (users, roles, requests, platform metrics/health).
-- Requests workflow (submit and track requests).
-- Theme support (light/dark) across pages.
+- DAG versions are tracked in `web_app/pipeline_versions_store.json`.
+- Promotion lifecycle uses statuses like `draft`, `submitted`, `eval`, `challenger`, `champion`, `archived`.
+- Scoring and promotion APIs are exposed by the web app.
 
-## Airflow DAG Sources: Local + Git
+## Run Locally
 
-This project is configured so Airflow can read DAGs from:
-
-1. Local DAG folder (mounted volume):
-   - `/opt/airflow/dags` (host: `dags`)
-2. Git-based DAG bundle (`GitDagBundle`):
-   - configured in `docker-compose.yaml` via:
-     - `AIRFLOW__DAG_PROCESSOR__DAG_BUNDLE_CONFIG_LIST`
-     - bundle name: `github_dags`
-     - `git_conn_id: git_default`
-     - `subdir: dags`
-     - `tracking_ref: main`
-
-If you want Git DAG sync active, make sure Airflow has a valid `git_default` connection.  
-If you only want local DAGs, you can remove/disable the Git bundle block in Compose config.
-
-## Repository Structure
-
-```text
-application/
-├── airflow/
-│   ├── docker-compose.yaml
-│   ├── Dockerfile
-│   ├── .env
-│   ├── dags/
-│   ├── logs/
-│   ├── config/
-│   └── plugins/
-└── web_app/
-    ├── app.py
-    ├── config.py
-    ├── requirements.txt
-    ├── .env
-    ├── templates/
-    ├── static/
-    ├── dag_templates/
-    ├── generated_dags/
-    └── saved_pipelines/
-```
-
-## Prerequisites
-
-- Git
-- Docker Desktop + Docker Compose plugin
-- Python 3.10+ (recommended)
-- PowerShell (commands below use PowerShell syntax)
-
-## Installation and Run
-
-### 1. Clone
+1. Start Airflow from repo root:
 
 ```powershell
-git clone <your-repo-url>
-cd web_app_airflow\application
-```
-
-### 2. Start Airflow with Docker Compose
-
-```powershell
-cd .\airflow
 docker compose up airflow-init
 docker compose up -d
 ```
 
-Notes:
-
-- Airflow API/UI is exposed on `http://localhost:8080`.
-- Default bootstrap credentials (from compose defaults) are usually:
-  - username: `airflow`
-  - password: `airflow`
-
-### 3. Set up Python virtual environment for Web App
+2. Start web app:
 
 ```powershell
-cd ..\web_app
+cd .\web_app
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-```
-
-### 4. Configure Web App environment
-
-Edit `application/web_app/.env` (or set env vars in shell).  
-Typical minimum values:
-
-```env
-APP_ADMIN_USERNAME=admin
-APP_ADMIN_PASSWORD=admin123
-FLASK_SECRET_KEY=change-me
-
-AIRFLOW_API_BASE_URL=http://localhost:8080
-AIRFLOW_API_USERNAME=airflow
-AIRFLOW_API_PASSWORD=airflow
-AIRFLOW_API_VERIFY_TLS=0
-
-# Host folder where generated DAG files are copied
-AIRFLOW_DAGS_DIR=D:\\dataops\\APACHE-AIRFLOW\\dags
-```
-
-Optional sync settings (already supported by app):
-
-```env
-AIRFLOW_DOCKER_SYNC_ENABLED=true
-AIRFLOW_DOCKER_SYNC_BASE_DIR=/opt/airflow/local_uploads
-AIRFLOW_DOCKER_SYNC_CONTAINERS=airflowgitfresh-airflow-scheduler-1,airflowgitfresh-airflow-dag-processor-1,airflowgitfresh-airflow-triggerer-1
-```
-
-### 5. Launch Web App
-
-```powershell
 python .\app.py
 ```
-
-The app auto-selects an available port (starts from `8000`).  
-Most common URL: `http://127.0.0.1:8000`.
 
 ## Main URLs
 
-- Home: `http://127.0.0.1:8000/`
-- Login: `http://127.0.0.1:8000/login`
-- Builder: `http://127.0.0.1:8000/builder`
-- Airflow Connections: `http://127.0.0.1:8000/airflow-connections`
-- Requests: `http://127.0.0.1:8000/requests`
-- Admin Dashboard: `http://127.0.0.1:8000/admin-dashboard`
+- Web app: `http://127.0.0.1:8000`
 - Airflow UI/API: `http://localhost:8080`
 
-## Daily Developer Workflow
+## Scoring and Promotion APIs
 
-From repository root:
+- `POST /api/workflows/{workflow_id}/versions/{version_id}/score`
+- `GET /api/workflows/{workflow_id}/champion`
+- `GET /api/workflows/{workflow_id}/challengers`
+- `POST /api/workflows/{workflow_id}/versions/{version_id}/promote`
+- `POST /api/workflows/{workflow_id}/versions/{version_id}/rollback`
 
-```powershell
-docker compose up -d
-```
+## Notes
 
-From `application/web_app`:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-python .\app.py
-```
-
-## Stop / Cleanup
-
-Stop Airflow stack:
-
-```powershell
-cd .\application\airflow
-docker compose down
-```
-
-Stop and remove volumes (full reset):
-
-```powershell
-docker compose down -v
-```
-
-## Troubleshooting
-
-- Port already in use:
-  - Web app auto-tries fallback ports.
-  - Airflow port `8080` can be changed in compose if needed.
-- DAG not visible in Airflow:
-  - verify `AIRFLOW_DAGS_DIR` points to your mounted `dags`
-  - check scheduler logs in `logs`
-  - verify DAG file syntax.
-- Git DAG bundle not loading:
-  - ensure `git_default` connection exists and is valid.
-- Permission issues on Linux:
-  - set `AIRFLOW_UID` in `.env` as recommended by Airflow docs.
-
-## Security Note
-
-- Do not commit real secrets in `.env` files.
-- Rotate credentials/tokens before sharing/deploying.
-
-
-=======
-# Airflow2 Orchestration Platform
-
-This repository implements a version-aware DAG CI/CD scaffold.
-
-## Core design
-
-- One repo, one Airflow instance.
-- Airflow scans deployable DAG views in `dags/`.
-- Historical DAG versions live in `pipelines/<logical_dag_id>/versions/`.
-- Scoring and promotion logic live outside DAG runtime code.
-- Promotion is allowed only when candidate is accepted by policy and comparison rules.
-- Rollback is metadata-driven via pipeline manifest fields.
-
-## Key directories
-
-- `pipelines/`: source-of-truth history, manifest, runtime config, evaluation results.
-- `dags/eval`: candidate DAGs currently under evaluation.
-- `dags/prod`: champion DAGs currently in production.
-- `scoring/`: policies, profiles, thresholds, and decision logic.
-- `scripts/`: validation, deployment, evaluation, and connection lifecycle tooling.
-
-## Migration note
-
-Existing DAGs under `dags/` were not removed. New `eval/` and `prod/` views were added for controlled rollout.
-
-## Dynamic Eval and Promotion
-
-Use these commands after publishing candidate DAGs to `dags/eval`:
-
-```bash
-python scripts/deployments/publish_eval_dag.py --root . --pipeline-id <pipeline_id>
-python scripts/eval/collect_eval_metrics.py --root . --airflow-url http://localhost:8081 --airflow-api-prefix /api/v2 --airflow-username <user> --airflow-password <pass>
-python scripts/deployments/promote_candidate.py --root .
-```
-
-What this does:
-
-- waits for candidate eval DAG run completion in Airflow
-- fetches runtime/task metrics through Airflow API
-- scores candidate vs champion using policy by change type
-- promotes only the best accepted candidate version
->>>>>>> 8b1edd99b6beedd76b6af90bffb520cfee52c7bd
+- Keep secrets (`.env`, keys, tokens) out of Git history.
+- If you use Git-backed DAG publishing, ensure connection/config matches your repo and branch strategy.
