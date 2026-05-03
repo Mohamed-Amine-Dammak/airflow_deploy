@@ -23,6 +23,15 @@
     { value: "hours", label: "Hours" },
     { value: "days", label: "Days" },
   ];
+  const WEEKDAY_OPTIONS = [
+    { value: "sunday", label: "Sunday" },
+    { value: "monday", label: "Monday" },
+    { value: "tuesday", label: "Tuesday" },
+    { value: "wednesday", label: "Wednesday" },
+    { value: "thursday", label: "Thursday" },
+    { value: "friday", label: "Friday" },
+    { value: "saturday", label: "Saturday" },
+  ];
   const ROUTER_COMMON_XCOM_KEYS_BY_TYPE = {
     azure: ["downloaded_files", "uploaded", "blob_name", "container_name", "create_container", "deleted", "deleted_count", "deleted_blobs"],
     azure_blob_sensor: ["matches", "matched_blobs", "blob_name", "blob_path"],
@@ -909,6 +918,50 @@
     if (mode === "preset" && !String(pipeline.schedule_preset || "").trim()) {
       return ["Pick one preset frequency."];
     }
+    if (mode === "preset") {
+      const preset = String(pipeline.schedule_preset || "").toLowerCase();
+      if (preset === "hourly") {
+        const minute = Number(String(pipeline.schedule_preset_hourly_minute || "").trim());
+        if (!Number.isInteger(minute) || minute < 0 || minute > 59) {
+          return ["Hourly minute must be between 0 and 59."];
+        }
+      }
+      if (preset === "daily") {
+        if (!/^\d{2}:\d{2}$/.test(String(pipeline.schedule_preset_daily_time || "").trim())) {
+          return ["Daily start time is required (HH:MM)."];
+        }
+      }
+      if (preset === "weekly") {
+        if (!String(pipeline.schedule_preset_weekly_day || "").trim()) {
+          return ["Pick a weekday for weekly scheduling."];
+        }
+        if (!/^\d{2}:\d{2}$/.test(String(pipeline.schedule_preset_weekly_time || "").trim())) {
+          return ["Weekly start time is required (HH:MM)."];
+        }
+      }
+      if (preset === "monthly") {
+        const day = Number(String(pipeline.schedule_preset_monthly_day || "").trim());
+        if (!Number.isInteger(day) || day < 1 || day > 31) {
+          return ["Monthly day must be between 1 and 31."];
+        }
+        if (!/^\d{2}:\d{2}$/.test(String(pipeline.schedule_preset_monthly_time || "").trim())) {
+          return ["Monthly start time is required (HH:MM)."];
+        }
+      }
+      if (preset === "yearly") {
+        const month = Number(String(pipeline.schedule_preset_yearly_month || "").trim());
+        const dayOfMonth = Number(String(pipeline.schedule_preset_yearly_day || "").trim());
+        if (!Number.isInteger(month) || month < 1 || month > 12) {
+          return ["Yearly month must be between 1 and 12."];
+        }
+        if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
+          return ["Yearly day must be between 1 and 31."];
+        }
+        if (!/^\d{2}:\d{2}$/.test(String(pipeline.schedule_preset_yearly_time || "").trim())) {
+          return ["Yearly start time is required (HH:MM)."];
+        }
+      }
+    }
 
     if (mode === "cron") {
       const cron = String(pipeline.schedule_cron || "").trim();
@@ -962,6 +1015,7 @@
     }
 
     if (mode === "preset") {
+      const preset = String(pipeline.schedule_preset || "").toLowerCase();
       return h(
         "div",
         { className: "schedule-mode-content" },
@@ -979,7 +1033,175 @@
             return h("option", { key: option.value || "empty", value: option.value }, option.label);
           })
         ),
-        h("small", { className: "field-help" }, "Choose a common schedule without writing cron.")
+        h("small", { className: "field-help" }, "Choose a common schedule without writing cron."),
+        preset === "hourly"
+          ? h(
+              "div",
+              { className: "field" },
+              h("label", { className: "field-sub-label" }, "Run At Minute"),
+              h("input", {
+                type: "number",
+                min: "0",
+                max: "59",
+                step: "1",
+                value: String(pipeline.schedule_preset_hourly_minute || "0"),
+                readOnly: Boolean(readOnly),
+                disabled: Boolean(readOnly),
+                onChange: function (event) {
+                  onChange("schedule_preset_hourly_minute", event.target.value);
+                },
+              })
+            )
+          : null,
+        preset === "daily"
+          ? h(
+              "div",
+              { className: "field" },
+              h("label", { className: "field-sub-label" }, "Start Time"),
+              h("input", {
+                type: "time",
+                step: "60",
+                value: String(pipeline.schedule_preset_daily_time || "00:00"),
+                readOnly: Boolean(readOnly),
+                disabled: Boolean(readOnly),
+                onChange: function (event) {
+                  onChange("schedule_preset_daily_time", event.target.value);
+                },
+              })
+            )
+          : null,
+        preset === "weekly"
+          ? h(
+              "div",
+              { className: "field-inline-combo" },
+              h(
+                "div",
+                { className: "field" },
+                h("label", { className: "field-sub-label" }, "Weekday"),
+                h(
+                  "select",
+                  {
+                    value: String(pipeline.schedule_preset_weekly_day || "monday"),
+                    disabled: Boolean(readOnly),
+                    onChange: function (event) {
+                      onChange("schedule_preset_weekly_day", event.target.value);
+                    },
+                  },
+                  WEEKDAY_OPTIONS.map(function (option) {
+                    return h("option", { key: option.value, value: option.value }, option.label);
+                  })
+                )
+              ),
+              h(
+                "div",
+                { className: "field" },
+                h("label", { className: "field-sub-label" }, "Start Time"),
+                h("input", {
+                  type: "time",
+                  step: "60",
+                  value: String(pipeline.schedule_preset_weekly_time || "00:00"),
+                  readOnly: Boolean(readOnly),
+                  disabled: Boolean(readOnly),
+                  onChange: function (event) {
+                    onChange("schedule_preset_weekly_time", event.target.value);
+                  },
+                })
+              )
+            )
+          : null,
+        preset === "monthly"
+          ? h(
+              "div",
+              { className: "field-inline-combo" },
+              h(
+                "div",
+                { className: "field" },
+                h("label", { className: "field-sub-label" }, "Day Of Month"),
+                h("input", {
+                  type: "number",
+                  min: "1",
+                  max: "31",
+                  step: "1",
+                  value: String(pipeline.schedule_preset_monthly_day || "1"),
+                  readOnly: Boolean(readOnly),
+                  disabled: Boolean(readOnly),
+                  onChange: function (event) {
+                    onChange("schedule_preset_monthly_day", event.target.value);
+                  },
+                })
+              ),
+              h(
+                "div",
+                { className: "field" },
+                h("label", { className: "field-sub-label" }, "Start Time"),
+                h("input", {
+                  type: "time",
+                  step: "60",
+                  value: String(pipeline.schedule_preset_monthly_time || "00:00"),
+                  readOnly: Boolean(readOnly),
+                  disabled: Boolean(readOnly),
+                  onChange: function (event) {
+                    onChange("schedule_preset_monthly_time", event.target.value);
+                  },
+                })
+              )
+            )
+          : null,
+        preset === "yearly"
+          ? h(
+              "div",
+              { className: "field-inline-combo" },
+              h(
+                "div",
+                { className: "field" },
+                h("label", { className: "field-sub-label" }, "Month"),
+                h("input", {
+                  type: "number",
+                  min: "1",
+                  max: "12",
+                  step: "1",
+                  value: String(pipeline.schedule_preset_yearly_month || "1"),
+                  readOnly: Boolean(readOnly),
+                  disabled: Boolean(readOnly),
+                  onChange: function (event) {
+                    onChange("schedule_preset_yearly_month", event.target.value);
+                  },
+                })
+              ),
+              h(
+                "div",
+                { className: "field" },
+                h("label", { className: "field-sub-label" }, "Day"),
+                h("input", {
+                  type: "number",
+                  min: "1",
+                  max: "31",
+                  step: "1",
+                  value: String(pipeline.schedule_preset_yearly_day || "1"),
+                  readOnly: Boolean(readOnly),
+                  disabled: Boolean(readOnly),
+                  onChange: function (event) {
+                    onChange("schedule_preset_yearly_day", event.target.value);
+                  },
+                })
+              ),
+              h(
+                "div",
+                { className: "field" },
+                h("label", { className: "field-sub-label" }, "Start Time"),
+                h("input", {
+                  type: "time",
+                  step: "60",
+                  value: String(pipeline.schedule_preset_yearly_time || "00:00"),
+                  readOnly: Boolean(readOnly),
+                  disabled: Boolean(readOnly),
+                  onChange: function (event) {
+                    onChange("schedule_preset_yearly_time", event.target.value);
+                  },
+                })
+              )
+            )
+          : null
       );
     }
 

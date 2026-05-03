@@ -184,6 +184,32 @@
       </section>
 
       <section class="admin-card">
+        <div class="admin-section-head">
+          <h2>Airflow DAG Management</h2>
+          <button type="button" class="btn btn-secondary" id="admin-airflow-dags-refresh">Refresh</button>
+        </div>
+        <p class="admin-help">List registered DAGs, run/delete them, adjust schedule when API allows it, and open matching builder version.</p>
+        <div id="admin-airflow-dags-status" class="admin-inline-status" aria-live="polite" style="display:none;"></div>
+        <div class="connections-table-wrap">
+          <table class="connections-table">
+            <thead>
+              <tr>
+                <th>DAG ID</th>
+                <th>Schedule</th>
+                <th>Next Run</th>
+                <th>Paused</th>
+                <th>Builder Version</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-airflow-dags-body">
+              <tr><td colspan="6" class="admin-empty">Loading Airflow DAGs...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-card">
         <h2>Airflow Platform Snapshot</h2>
         {% if metrics.airflow_platform %}
           <div class="admin-snapshot-grid">
@@ -289,6 +315,72 @@
       <div id="admin-log-details-status" class="admin-inline-status" style="display:none;" aria-live="polite"></div>
       <div id="admin-log-details-body" class="admin-log-details-body">
         <p class="admin-empty">Select a log entry to view details.</p>
+      </div>
+    </div>
+  </div>
+  <div id="admin-schedule-overlay" class="admin-logs-overlay" hidden>
+    <div class="admin-logs-modal admin-schedule-modal" role="dialog" aria-modal="true" aria-labelledby="admin-schedule-title">
+      <div class="admin-logs-head">
+        <div>
+          <h3 id="admin-schedule-title">Select Scheduling Mode</h3>
+          <p class="admin-empty">Choose how you want to schedule this job.</p>
+        </div>
+        <button type="button" class="btn btn-secondary admin-schedule-close-icon" id="admin-schedule-close-icon" aria-label="Close scheduling modal">X</button>
+      </div>
+      <div class="admin-schedule-body">
+        <div class="admin-schedule-options">
+          <label class="admin-schedule-option" for="admin-schedule-manual">
+            <input type="radio" name="admin-schedule-mode" id="admin-schedule-manual" value="manual">
+            <span class="admin-schedule-option-main">
+              <span class="admin-schedule-option-title">Manual</span>
+              <span class="admin-schedule-option-help">Run only when triggered manually</span>
+            </span>
+          </label>
+          <label class="admin-schedule-option" for="admin-schedule-daily">
+            <input type="radio" name="admin-schedule-mode" id="admin-schedule-daily" value="@daily">
+            <span class="admin-schedule-option-main">
+              <span class="admin-schedule-option-title">Daily</span>
+              <span class="admin-schedule-option-help">Runs once per day. Uses predefined schedule.</span>
+              <span id="admin-schedule-daily-preview" class="admin-schedule-option-preview" hidden></span>
+              <span id="admin-schedule-daily-wrap" class="admin-schedule-inline-wrap" hidden>
+                <label for="admin-schedule-daily-time">Run time</label>
+                <input id="admin-schedule-daily-time" class="admin-schedule-input admin-schedule-inline-input" type="time" step="60">
+              </span>
+            </span>
+          </label>
+          <label class="admin-schedule-option" for="admin-schedule-hourly">
+            <input type="radio" name="admin-schedule-mode" id="admin-schedule-hourly" value="@hourly">
+            <span class="admin-schedule-option-main">
+              <span class="admin-schedule-option-title">Hourly</span>
+              <span class="admin-schedule-option-help">Runs every hour. Uses predefined schedule.</span>
+              <span id="admin-schedule-hourly-preview" class="admin-schedule-option-preview" hidden></span>
+              <span id="admin-schedule-hourly-wrap" class="admin-schedule-inline-wrap" hidden>
+                <label for="admin-schedule-hourly-minute">Run at minute</label>
+                <input id="admin-schedule-hourly-minute" class="admin-schedule-input admin-schedule-inline-input" type="number" min="0" max="59" step="1" placeholder="0-59">
+              </span>
+            </span>
+          </label>
+          <label class="admin-schedule-option" for="admin-schedule-custom">
+            <input type="radio" name="admin-schedule-mode" id="admin-schedule-custom" value="custom">
+            <span class="admin-schedule-option-main">
+              <span class="admin-schedule-option-title">Custom Cron</span>
+              <span class="admin-schedule-option-help">Advanced: define your own cron expression</span>
+              <span id="admin-schedule-custom-wrap" class="admin-schedule-inline-wrap" hidden>
+                <label for="admin-schedule-custom-input">Cron Expression</label>
+                <input id="admin-schedule-custom-input" class="admin-schedule-input admin-schedule-inline-input" type="text" placeholder="0 0 * * *">
+                <small class="admin-empty">Use standard cron syntax: minute hour day month weekday</small>
+              </span>
+            </span>
+          </label>
+        </div>
+        <small id="admin-schedule-timezone" class="admin-empty"></small>
+        <div id="admin-schedule-status" class="admin-inline-status" style="display:none;" aria-live="polite"></div>
+      </div>
+      <div class="admin-schedule-footer">
+        <div class="admin-schedule-actions">
+          <button type="button" class="btn btn-secondary" id="admin-schedule-cancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="admin-schedule-ok" disabled>Save Schedule</button>
+        </div>
       </div>
     </div>
   </div>

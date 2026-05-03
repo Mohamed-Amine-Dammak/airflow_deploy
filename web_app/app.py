@@ -13,7 +13,7 @@ import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import quote_plus, urlencode
 from uuid import uuid4
 
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
@@ -27,16 +27,19 @@ from services.airflow_api import (
     AirflowApiError,
     check_dag_readiness,
     create_connection,
+    delete_dag,
     delete_connection,
     get_airflow_platform_snapshot,
     get_dag_run_status,
     get_task_instance_log,
+    list_dags,
     list_dag_runs_for_dag,
     list_dag_run_task_instances,
     list_connections,
     retry_task_instance,
     stop_dag_run,
     trigger_dag_run,
+    update_dag_schedule,
     update_connection,
 )
 from services.container_file_sync import (
@@ -219,6 +222,147 @@ def _airflow_api_config(timeout_seconds: int | None = None) -> AirflowApiConfig:
         verify_tls=AppConfig.AIRFLOW_API_VERIFY_TLS,
         timeout_seconds=timeout_seconds or AppConfig.AIRFLOW_API_TIMEOUT_SECONDS,
     )
+
+
+def _build_airflow_dag_version_lookup() -> dict[str, dict[str, Any]]:
+    try:
+        payload = json.loads(AppConfig.PIPELINE_VERSIONS_STORE_FILE.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+
+    pipelines = payload.get("pipelines") if isinstance(payload, dict) else {}
+    if not isinstance(pipelines, dict):
+        return {}
+
+    lookup: dict[str, dict[str, Any]] = {}
+    for pipeline_id, entry in pipelines.items():
+        if not isinstance(entry, dict):
+            continue
+        versions = entry.get("versions")
+        if not isinstance(versions, list):
+            continue
+        for version in versions:
+            if not isinstance(version, dict):
+                continue
+            airflow_dag_id = str(version.get("airflow_dag_id", "")).strip()
+            version_id = str(version.get("version_id", "")).strip()
+            if not airflow_dag_id or not version_id:
+                continue
+            lookup[airflow_dag_id] = {
+                "pipeline_id": str(pipeline_id).strip(),
+                "version_id": version_id,
+            }
+    return lookup
+
+
+def _apply_schedule_to_pipeline_definition(
+    pipeline_definition: dict[str, Any],
+    schedule_value: Any,
+) -> dict[str, Any]:
+    updated = copy.deepcopy(pipeline_definition if isinstance(pipeline_definition, dict) else {})
+    pipeline = updated.get("pipeline")
+    if not isinstance(pipeline, dict):
+        pipeline = {}
+        updated["pipeline"] = pipeline
+
+    raw = schedule_value
+    normalized = None if raw is None else str(raw).strip()
+    if normalized == "":
+        normalized = None
+
+    if normalized is None:
+        pipeline["schedule"] = None
+        pipeline["schedule_mode"] = "manual"
+        pipeline["schedule_preset"] = ""
+        pipeline["schedule_cron"] = ""
+        pipeline["custom_schedule_text"] = ""
+        pipeline["interval_value"] = ""
+    else:
+        pipeline["schedule"] = normalized
+        pipeline["schedule_mode"] = "cron"
+        pipeline["schedule_preset"] = ""
+        pipeline["schedule_cron"] = normalized
+        pipeline["custom_schedule_text"] = ""
+        pipeline["interval_value"] = ""
+    return updated
+
+
+def _fallback_update_dag_schedule_by_regeneration(dag_id: str, schedule_value: Any) -> dict[str, Any]:
+    lookup = _build_airflow_dag_version_lookup()
+    ref = lookup.get(str(dag_id or "").strip()) or {}
+    pipeline_id = str(ref.get("pipeline_id", "")).strip()
+    version_id = str(ref.get("version_id", "")).strip()
+    if not pipeline_id or not version_id:
+        raise ValueError("This DAG is not linked to a pipeline version, so schedule cannot be rewritten automatically.")
+
+    version = get_pipeline_version(AppConfig.PIPELINE_VERSIONS_STORE_FILE, pipeline_id, version_id)
+    if not isinstance(version, dict):
+        raise ValueError("Linked pipeline version was not found.")
+
+    source_definition = version.get("source_definition")
+    if not isinstance(source_definition, dict):
+        raise ValueError("Linked pipeline version does not include a source definition.")
+
+    updated_source = _apply_schedule_to_pipeline_definition(source_definition, schedule_value)
+    resolved_payload, resolve_errors = _resolve_gcp_connections_in_payload(updated_source)
+    validation = validate_pipeline(resolved_payload)
+    if resolve_errors:
+        validation["valid"] = False
+        validation["errors"] = list(validation.get("errors", [])) + resolve_errors
+    if not validation.get("valid"):
+        errors = validation.get("errors", [])
+        raise ValueError(
+            "Schedule update would make the pipeline invalid: "
+            + (" | ".join([str(item) for item in errors[:3]]) if errors else "unknown validation error")
+        )
+
+    normalized_payload = validation["normalized_payload"]
+    payload_for_generation = json.loads(json.dumps(normalized_payload))
+    payload_pipeline = payload_for_generation.get("pipeline")
+    if not isinstance(payload_pipeline, dict):
+        payload_pipeline = {}
+        payload_for_generation["pipeline"] = payload_pipeline
+    payload_pipeline["dag_id"] = str(dag_id).strip()
+
+    output_filename = str(version.get("output_filename", "")).strip()
+    if output_filename:
+        payload_pipeline["output_filename"] = output_filename
+
+    generated = dag_generator.generate(payload_for_generation, validation["execution_order"])
+    write_result = write_and_copy_dag(
+        filename=generated["filename"],
+        content=generated["content"],
+        generated_dags_dir=AppConfig.GENERATED_DAGS_DIR,
+        airflow_dags_dir=AppConfig.AIRFLOW_DAGS_DIR,
+    )
+
+    update_version_definition(
+        AppConfig.PIPELINE_VERSIONS_STORE_FILE,
+        pipeline_id=pipeline_id,
+        version_id=version_id,
+        source_definition=normalized_payload,
+        generated_local_path=write_result["local_path"],
+        generated_airflow_path=write_result["airflow_path"],
+        node_task_map=generated.get("node_task_map", {}),
+        node_primary_task_map=generated.get("node_primary_task_map", {}),
+        actor=_current_actor_username(),
+    )
+
+    normalized_schedule = None if schedule_value is None else str(schedule_value).strip() or None
+    return {
+        "dag_id": dag_id,
+        "schedule_requested": normalized_schedule,
+        "schedule_interval": normalized_schedule,
+        "timetable_summary": normalized_schedule or "manual",
+        "fallback_applied": True,
+        "fallback_strategy": "update_pipeline_definition_and_regenerate",
+        "pipeline_id": pipeline_id,
+        "version_id": version_id,
+        "generated_filename": write_result.get("filename"),
+        "airflow_path": write_result.get("airflow_path"),
+        "airflow_copy_success": bool(write_result.get("airflow_copy_success")),
+        "warnings": write_result.get("warnings", []),
+    }
 
 
 def _is_airflow_not_registered_error(exc: Exception) -> bool:
@@ -2918,6 +3062,128 @@ def api_admin_delete_generated_dag_file(filename: str):
             "metrics": _collect_admin_dashboard_metrics(),
         }
     )
+
+
+@app.get("/api/admin/airflow-dags")
+def api_admin_airflow_dags():
+    forbidden = _require_admin_access()
+    if forbidden is not None:
+        return forbidden
+
+    try:
+        dags = list_dags(_airflow_api_config())
+    except AirflowApiError as exc:
+        return _json_error(f"Unable to list Airflow DAGs: {exc}", exc.status_code or 502)
+    except Exception as exc:  # noqa: BLE001
+        return _json_error(f"Unable to list Airflow DAGs: {exc}", 500)
+
+    version_lookup = _build_airflow_dag_version_lookup()
+    rows: list[dict[str, Any]] = []
+    for dag in dags:
+        dag_id = str(dag.get("dag_id", "")).strip()
+        version_ref = version_lookup.get(dag_id) or {}
+        pipeline_id = str(version_ref.get("pipeline_id", "")).strip()
+        version_id = str(version_ref.get("version_id", "")).strip()
+        has_builder_version = bool(pipeline_id and version_id)
+        builder_url = (
+            url_for("builder")
+            + "?pipeline_id="
+            + quote_plus(pipeline_id)
+            + "&version_id="
+            + quote_plus(version_id)
+            if has_builder_version
+            else ""
+        )
+        rows.append(
+            {
+                **dag,
+                "pipeline_id": pipeline_id,
+                "version_id": version_id,
+                "has_builder_version": has_builder_version,
+                "builder_url": builder_url,
+            }
+        )
+
+    rows.sort(key=lambda item: str(item.get("dag_id", "")).lower())
+    return jsonify({"success": True, "dags": rows})
+
+
+@app.post("/api/admin/airflow-dags/<dag_id>/run")
+def api_admin_run_airflow_dag(dag_id: str):
+    forbidden = _require_admin_access()
+    if forbidden is not None:
+        return forbidden
+
+    safe_dag_id = str(dag_id or "").strip()
+    if not safe_dag_id:
+        return _json_error("dag_id is required.", 400)
+    try:
+        result = trigger_dag_run(_airflow_api_config(), safe_dag_id, conf={})
+    except AirflowApiError as exc:
+        return _json_error(f"Unable to run DAG: {exc}", exc.status_code or 502)
+    except Exception as exc:  # noqa: BLE001
+        return _json_error(f"Unable to run DAG: {exc}", 500)
+    return jsonify({"success": True, **result})
+
+
+@app.patch("/api/admin/airflow-dags/<dag_id>/schedule")
+def api_admin_update_airflow_dag_schedule(dag_id: str):
+    forbidden = _require_admin_access()
+    if forbidden is not None:
+        return forbidden
+
+    safe_dag_id = str(dag_id or "").strip()
+    if not safe_dag_id:
+        return _json_error("dag_id is required.", 400)
+
+    payload = request.get_json(silent=True) or {}
+    schedule_value = payload.get("schedule")
+
+    try:
+        result = update_dag_schedule(_airflow_api_config(), safe_dag_id, schedule_value)
+    except AirflowApiError as exc:
+        fallback_statuses = {400, 405, 422}
+        if getattr(exc, "status_code", None) in fallback_statuses:
+            try:
+                fallback_result = _fallback_update_dag_schedule_by_regeneration(safe_dag_id, schedule_value)
+            except Exception as fallback_exc:  # noqa: BLE001
+                return _json_error(
+                    f"Unable to update DAG schedule via API ({exc}) and fallback regeneration failed: {fallback_exc}",
+                    exc.status_code or 502,
+                )
+            return jsonify(
+                {
+                    "success": True,
+                    **fallback_result,
+                    "warning": (
+                        "Airflow API rejected direct DAG schedule patch, so the linked DAG definition was regenerated "
+                        "with the new schedule."
+                    ),
+                }
+            )
+        return _json_error(f"Unable to update DAG schedule: {exc}", exc.status_code or 502)
+    except Exception as exc:  # noqa: BLE001
+        return _json_error(f"Unable to update DAG schedule: {exc}", 500)
+    return jsonify({"success": True, **result})
+
+
+@app.delete("/api/admin/airflow-dags/<dag_id>")
+def api_admin_delete_airflow_dag(dag_id: str):
+    forbidden = _require_admin_access()
+    if forbidden is not None:
+        return forbidden
+
+    safe_dag_id = str(dag_id or "").strip()
+    if not safe_dag_id:
+        return _json_error("dag_id is required.", 400)
+
+    try:
+        result = delete_dag(_airflow_api_config(), safe_dag_id)
+    except AirflowApiError as exc:
+        return _json_error(f"Unable to delete DAG: {exc}", exc.status_code or 502)
+    except Exception as exc:  # noqa: BLE001
+        return _json_error(f"Unable to delete DAG: {exc}", 500)
+    return jsonify({"success": True, **result})
 
 
 @app.get("/api/admin/pipeline-logs/<pipeline_id>")
