@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # -----------------------------
 # web_app
 # -----------------------------
@@ -13,11 +14,16 @@ web_app/generated_dags
 # -----------------------------
 # airflow
 # -----------------------------
+=======
+﻿__pycache__/
+*.pyc
+>>>>>>> 8b1edd99b6beedd76b6af90bffb520cfee52c7bd
 .env
 .venv/
 logs/
 *.log
 pipelines/*/evaluation/history/*.tmp.json
+<<<<<<< HEAD
 actions-runner/
 credgcp.json
 web_app_data/
@@ -41,3 +47,5 @@ pycache/
 
 
 web_app/
+=======
+>>>>>>> 8b1edd99b6beedd76b6af90bffb520cfee52c7bd

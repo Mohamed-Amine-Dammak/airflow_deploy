@@ -24,7 +24,11 @@
 # The following variables are supported:
 #
 # AIRFLOW_IMAGE_NAME           - Docker image name used to run Airflow.
+<<<<<<< HEAD
 #                                Default: apache/airflow:3.2.1
+=======
+#                                Default: apache/airflow:3.1.7
+>>>>>>> 8b1edd99b6beedd76b6af90bffb520cfee52c7bd
 # AIRFLOW_UID                  - User ID in Airflow containers
 #                                Default: 50000
 # AIRFLOW_PROJ_DIR             - Base path to which all the files will be volumed.
@@ -49,7 +53,11 @@ x-airflow-common:
   # In order to add custom dependencies or upgrade provider distributions you can use your extended image.
   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
+<<<<<<< HEAD
   image: ${AIRFLOW_IMAGE_NAME:-local-airflow:3.2.1-git}
+=======
+  image: ${AIRFLOW_IMAGE_NAME:-local-airflow:3.1.7-git}
+>>>>>>> 8b1edd99b6beedd76b6af90bffb520cfee52c7bd
   build: .
   env_file:
     - ${ENV_FILE_PATH:-.env}
@@ -73,7 +81,11 @@ x-airflow-common:
     # for other purpose (development, test and especially production usage) build/extend Airflow image.
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
     # The following line can be used to set a custom config file, stored in the local config folder
+<<<<<<< HEAD
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+=======
+    #AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+>>>>>>> 8b1edd99b6beedd76b6af90bffb520cfee52c7bd
     AIRFLOW__METRICS__STATSD_ON: "True"
     AIRFLOW__METRICS__STATSD_HOST: "datadog-agent"
     AIRFLOW__METRICS__STATSD_PORT: "8125"
@@ -103,7 +115,11 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+<<<<<<< HEAD
 
+=======
+    - C:/ProgramData/Cegid:/mnt/cegid
+>>>>>>> 8b1edd99b6beedd76b6af90bffb520cfee52c7bd
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -146,7 +162,11 @@ services:
     <<: *airflow-common
     command: api-server
     ports:
+<<<<<<< HEAD
       - "8080:8080"
+=======
+      - "8081:8080"
+>>>>>>> 8b1edd99b6beedd76b6af90bffb520cfee52c7bd
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/version"]
       interval: 30s
@@ -357,6 +377,7 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+<<<<<<< HEAD
 
   web_app:
     image: oliveairflow.azurecr.io/web_app:${WEB_APP_IMAGE_TAG}
@@ -391,6 +412,8 @@ services:
     depends_on:
       airflow-apiserver:
         condition: service_healthy
+=======
+>>>>>>> 8b1edd99b6beedd76b6af90bffb520cfee52c7bd
     
   datadog-agent_github_dags:
     image: gcr.io/datadoghq/agent:7
@@ -403,11 +426,19 @@ services:
       DD_LOGS_CONFIG_USE_HTTP: "true"
       DD_LOGS_CONFIG_PROCESSING_RULES_ENABLED: "true"
       DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION: "true"
+<<<<<<< HEAD
+=======
+    ports:
+      - "8125:8125/udp"
+>>>>>>> 8b1edd99b6beedd76b6af90bffb520cfee52c7bd
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./datadog/datadog.yaml:/etc/datadog-agent/datadog.yaml:ro
       - ./datadog/conf.d/airflow.d/conf.yaml:/etc/datadog-agent/conf.d/airflow.d/conf.yaml:ro
+<<<<<<< HEAD
       - ./datadog/conf.d/http_check.d/conf.yaml:/etc/datadog-agent/conf.d/http_check.d/conf.yaml:ro
+=======
+>>>>>>> 8b1edd99b6beedd76b6af90bffb520cfee52c7bd
       - ./logs:/opt/airflow/logs:ro
     # CRITICAL FIX: Run as root to read all log files
     user: "0:0"
