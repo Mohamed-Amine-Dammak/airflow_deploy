@@ -1,3 +1,387 @@
 {
-  "pipelines": {}
+  "pipelines": {
+    "testdataops": {
+      "current_version_id": "v4",
+      "versions": [
+        {
+          "pipeline_id": "testdataops",
+          "version_id": "v1",
+          "dag_version": 1,
+          "airflow_dag_id": "testdataops__v1",
+          "output_filename": "testdataops__v1.py",
+          "created_at": "2026-05-08T12:48:29.242111+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "0cf930c06512fb1f2e942ac577e427846052583cf77fd14b9fc57a2cabf86786",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "testdataops",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "testdataops.py"
+            },
+            "nodes": [
+              {
+                "id": "node_4",
+                "type": "delay",
+                "label": "Delay 4",
+                "x": 182,
+                "y": 153,
+                "config": {
+                  "delay_minutes": 1
+                }
+              }
+            ],
+            "edges": [],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testdataops__v1.py",
+          "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testdataops__v1.py",
+          "node_task_map": {
+            "node_4": [
+              "delay_1_node_4"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_4": "delay_1_node_4"
+          },
+          "base_pipeline_id": "testdataops",
+          "promotion_status": "draft",
+          "score": null,
+          "score_type": null,
+          "score_breakdown": {},
+          "last_eval_run_id": null,
+          "promoted_at": null,
+          "promoted_by": null,
+          "github_pr_url": null,
+          "github_commit_sha": null
+        },
+        {
+          "pipeline_id": "testdataops",
+          "version_id": "v2",
+          "dag_version": 2,
+          "airflow_dag_id": "testdataops__v2",
+          "output_filename": "testdataops__v2.py",
+          "created_at": "2026-05-08T12:49:52.053520+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "33739f474ff6ec05189940017d35769e84b2882ca7fd24319d4a702b944664e6",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "testdataops",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "testdataops.py"
+            },
+            "nodes": [
+              {
+                "id": "node_5",
+                "type": "y2",
+                "label": "Y2 Scheduled Task 5",
+                "x": 403,
+                "y": 330,
+                "config": {
+                  "folder_id_value": "okk",
+                  "task_ids_value": [
+                    "ok"
+                  ]
+                }
+              }
+            ],
+            "edges": [],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testdataops__v2.py",
+          "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testdataops__v2.py",
+          "node_task_map": {
+            "node_5": [
+              "y2_1_node_5"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_5": "y2_1_node_5"
+          },
+          "base_pipeline_id": "testdataops",
+          "promotion_status": "draft",
+          "score": null,
+          "score_type": null,
+          "score_breakdown": {},
+          "last_eval_run_id": null,
+          "promoted_at": null,
+          "promoted_by": null,
+          "github_pr_url": null,
+          "github_commit_sha": null
+        },
+        {
+          "pipeline_id": "testdataops",
+          "version_id": "v3",
+          "dag_version": 3,
+          "airflow_dag_id": "testdataops__v3",
+          "output_filename": "testdataops__v3.py",
+          "created_at": "2026-05-08T12:52:32.243985+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "99e02f1158d077a98dffa21a7ec618298c274cbe8697f4f6667c80ecd8214b63",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "testdataops",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "testdataops.py"
+            },
+            "nodes": [
+              {
+                "id": "node_5",
+                "type": "y2",
+                "label": "Y2 Scheduled Task 5",
+                "x": 403,
+                "y": 330,
+                "config": {
+                  "folder_id_value": "okk",
+                  "task_ids_value": [
+                    "ok"
+                  ]
+                }
+              },
+              {
+                "id": "node_6",
+                "type": "delay",
+                "label": "Delay 6",
+                "x": 793.3333129882812,
+                "y": 340.4444580078125,
+                "config": {
+                  "delay_minutes": 1
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_5",
+                "target": "node_6"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testdataops__v3.py",
+          "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testdataops__v3.py",
+          "node_task_map": {
+            "node_5": [
+              "y2_1_node_5"
+            ],
+            "node_6": [
+              "delay_2_node_6"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_5": "y2_1_node_5",
+            "node_6": "delay_2_node_6"
+          },
+          "base_pipeline_id": "testdataops",
+          "promotion_status": "draft",
+          "score": null,
+          "score_type": null,
+          "score_breakdown": {},
+          "last_eval_run_id": null,
+          "promoted_at": null,
+          "promoted_by": null,
+          "github_pr_url": null,
+          "github_commit_sha": null
+        },
+        {
+          "pipeline_id": "testdataops",
+          "version_id": "v4",
+          "dag_version": 4,
+          "airflow_dag_id": "testdataops__v4",
+          "output_filename": "testdataops__v4.py",
+          "created_at": "2026-05-08T12:53:38.809865+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "289e654c167d476de331dca18d18bba230cf8cee10814ec0bd125f3b6a6129d0",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "testdataops",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "testdataops.py"
+            },
+            "nodes": [
+              {
+                "id": "node_6",
+                "type": "delay",
+                "label": "Delay 6",
+                "x": 793.3333129882812,
+                "y": 340.4444580078125,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_7",
+                "type": "delay",
+                "label": "Delay 7",
+                "x": 312.888916015625,
+                "y": 353.88890838623047,
+                "config": {
+                  "delay_minutes": 5
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_7",
+                "target": "node_6"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testdataops__v4.py",
+          "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testdataops__v4.py",
+          "node_task_map": {
+            "node_7": [
+              "delay_1_node_7"
+            ],
+            "node_6": [
+              "delay_2_node_6"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_7": "delay_1_node_7",
+            "node_6": "delay_2_node_6"
+          },
+          "base_pipeline_id": "testdataops",
+          "promotion_status": "draft",
+          "score": null,
+          "score_type": null,
+          "score_breakdown": {},
+          "last_eval_run_id": null,
+          "promoted_at": null,
+          "promoted_by": null,
+          "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/7",
+          "github_commit_sha": "cb2644635aa9adeca80ff4e8810f46d4cd7da0ca",
+          "publish_status": "pr_open",
+          "dag_id": "testdataops__v4",
+          "version": "v4",
+          "workflow_name": "testdataops",
+          "workflow_slug": "testdataops",
+          "repo_file_path": "dags/testdataops_git__v4.py",
+          "git_branch_name": "feature/workflow/testdataops-2",
+          "pull_request_number": 7,
+          "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/7",
+          "commit_sha": "cb2644635aa9adeca80ff4e8810f46d4cd7da0ca",
+          "github_pr_number": 7,
+          "github_branch": "feature/workflow/testdataops-2",
+          "updated_at": "2026-05-08T12:53:53.229472+00:00",
+          "requested_by_user_id": "admin",
+          "requested_by_email": "",
+          "requested_by_display_name": "admin"
+        }
+      ],
+      "switch_events": [
+        {
+          "event_id": "f4f188c1-e2f8-43dc-8b92-f57646bebe4b",
+          "event_type": "create_and_set_current",
+          "from_version_id": null,
+          "to_version_id": "v1",
+          "actor": "admin",
+          "at": "2026-05-08T12:48:29.242111+00:00"
+        },
+        {
+          "event_id": "aca8e66a-ae06-4b5f-806c-4c11489bc262",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v1",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-05-08T12:49:52.053520+00:00"
+        },
+        {
+          "event_id": "e61366b8-d87a-4fb3-9317-267543485034",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v2",
+          "to_version_id": "v3",
+          "actor": "admin",
+          "at": "2026-05-08T12:52:32.243985+00:00"
+        },
+        {
+          "event_id": "c60a369f-1e2b-4d55-ab56-4ab1d9d3ff21",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v3",
+          "to_version_id": "v4",
+          "actor": "admin",
+          "at": "2026-05-08T12:53:38.809865+00:00"
+        }
+      ]
+    }
+  }
 }
