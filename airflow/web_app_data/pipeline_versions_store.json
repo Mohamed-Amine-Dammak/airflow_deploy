@@ -759,11 +759,19 @@
             "node_6": "delay_3_node_6"
           },
           "base_pipeline_id": "testdataops",
-          "promotion_status": "eval",
-          "score": null,
-          "score_type": null,
-          "score_breakdown": {},
-          "last_eval_run_id": null,
+          "promotion_status": "challenger",
+          "score": 79.3,
+          "score_type": "static_only",
+          "score_breakdown": {
+            "reliability": 15.0,
+            "runtime_efficiency": 20.0,
+            "retry_behavior": 15.0,
+            "scheduler_behavior": 8.0,
+            "complexity": 9.8,
+            "maintainability": 10.0,
+            "resource_efficiency": 1.5
+          },
+          "last_eval_run_id": "eval-testdataops-v7-1778248453",
           "promoted_at": null,
           "promoted_by": null,
           "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/10",
@@ -789,7 +797,10 @@
           "local_dag_file": "airflow/dags/testdataops__v7.py",
           "git_dag_file": "dags/testdataops_git__v7.py",
           "dag_file": "dags/testdataops_git__v7.py",
-          "deployment_target": "eval"
+          "deployment_target": "git",
+          "warnings": [],
+          "critical_failures": [],
+          "last_evaluated_at": "2026-05-08T13:54:13.208781+00:00"
         }
       ],
       "switch_events": [
