@@ -1,0 +1,24 @@
+{
+  "dag_id": "testdataops__v7",
+  "pipeline_id": "testdataops",
+  "version_id": "v7",
+  "evaluation_mode": "static_only",
+  "run_count": 1,
+  "status": "completed",
+  "score": 79.3,
+  "score_type": "static_only",
+  "breakdown": {
+    "reliability": 15.0,
+    "runtime_efficiency": 20.0,
+    "retry_behavior": 15.0,
+    "scheduler_behavior": 8.0,
+    "complexity": 9.8,
+    "maintainability": 10.0,
+    "resource_efficiency": 1.5
+  },
+  "warnings": [],
+  "critical_failures": [],
+  "last_eval_run_id": "eval-testdataops-v7-1778247497",
+  "updated_store": "airflow\\web_app_data\\pipeline_versions_store.json",
+  "dag_file_used": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testdataops__v7.py"
+}
