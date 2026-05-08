@@ -13,15 +13,42 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: promote-prod-${{ github.event.inputs.pipeline_id }}
+  cancel-in-progress: false
+
 jobs:
   promote-to-prod:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout eval source
         uses: actions/checkout@v4
         with:
+          ref: eval
+          path: eval-src
           fetch-depth: 0
+
+      - name: Checkout prod worktree
+        uses: actions/checkout@v4
+        with:
+          ref: prod
+          path: prod-worktree
+          fetch-depth: 0
+        continue-on-error: true
+
+      - name: Ensure prod worktree exists
+        run: |
+          if [ ! -d "prod-worktree/.git" ]; then
+            mkdir -p prod-worktree
+            cp -r eval-src/.git prod-worktree/.git
+            cd prod-worktree
+            git checkout --orphan prod
+            git rm -rf . || true
+            echo "# Production Branch" > README.md
+            git add README.md
+            git -c user.email="airflow-bot@example.com" -c user.name="Airflow Bot" commit -m "Initialize prod branch"
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -31,41 +58,31 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyyaml requests
+          pip install requests
 
       - name: Configure Git
         run: |
+          cd prod-worktree
           git config user.email "airflow-bot@example.com"
           git config user.name "Airflow Bot"
 
-      - name: Create or checkout prod branch
-        run: |
-          git fetch origin prod 2>/dev/null || true
-          if git rev-parse --verify origin/prod > /dev/null 2>&1; then
-            git checkout -b prod origin/prod
-          else
-            git checkout --orphan prod
-            git rm -rf .
-            echo "# Production Branch" > README.md
-            git add README.md
-            git commit -m "Initialize prod branch"
-          fi
-
-      - name: Get DAG from eval branch
+      - name: Check promotion eligibility from eval source
         id: eligibility
         continue-on-error: true
         run: |
-          git fetch origin eval
-          python scripts/promotion/check_promotion_eligibility.py \
-            --root . \
+          python eval-src/scripts/promotion/check_promotion_eligibility.py \
+            --root eval-src \
             --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
             --version-id "${{ github.event.inputs.version_id }}"
 
-      - name: Copy DAG from eval branch to prod branch
+      - name: Copy DAG from eval source to prod worktree
         if: steps.eligibility.outcome == 'success'
         run: |
-          python scripts/promotion/copy_dag_to_prod.py \
-            --root . \
+          cd prod-worktree
+          git fetch origin eval
+          cd ..
+          python eval-src/scripts/promotion/copy_dag_to_prod.py \
+            --root prod-worktree \
             --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
             --version-id "${{ github.event.inputs.version_id }}" \
             --eval-branch eval \
@@ -74,30 +91,32 @@ jobs:
       - name: Update metadata for promoted DAG
         if: steps.eligibility.outcome == 'success'
         run: |
-          python scripts/metadata/update_pipeline_metadata.py promote \
-            --store airflow/web_app_data/pipeline_versions_store.json \
+          python eval-src/scripts/metadata/update_pipeline_metadata.py promote \
+            --root prod-worktree \
             --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
             --version-id "${{ github.event.inputs.version_id }}" \
             --promotion-status champion
 
-      - name: Validate metadata JSON after promote update
+      - name: Validate metadata after promote update
         if: steps.eligibility.outcome == 'success'
         run: |
-          python -m json.tool airflow/web_app_data/pipeline_versions_store.json > /dev/null
+          python eval-src/scripts/metadata/validate_metadata.py --root prod-worktree
 
       - name: Commit prod metadata updates
         if: steps.eligibility.outcome == 'success'
         run: |
-          if git diff --quiet -- airflow/web_app_data/pipeline_versions_store.json; then
+          cd prod-worktree
+          if git diff --quiet -- .; then
             echo "No metadata changes to commit"
           else
-            git add airflow/web_app_data/pipeline_versions_store.json
+            git add dags/ airflow/web_app_data/metadata/
             git commit -m "Promote ${{ github.event.inputs.pipeline_id }}/${{ github.event.inputs.version_id }} metadata to champion"
           fi
 
       - name: Push prod branch
         if: steps.eligibility.outcome == 'success'
         run: |
+          cd prod-worktree
           git push origin prod
 
       - name: Write eligibility decision artifact

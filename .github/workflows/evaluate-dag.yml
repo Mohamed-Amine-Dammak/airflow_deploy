@@ -21,8 +21,13 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: metadata-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  evaluate-dag:
+  evaluate-dag-static:
+    if: ${{ github.event.inputs.evaluation_mode == 'static_only' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -55,19 +60,77 @@ jobs:
           AIRFLOW_API_USERNAME: ${{ secrets.AIRFLOW_API_USERNAME }}
           AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
 
-      - name: Validate metadata JSON after scoring update
+      - name: Validate metadata after scoring update
         run: |
-          python -m json.tool airflow/web_app_data/pipeline_versions_store.json > /dev/null
+          python scripts/metadata/validate_metadata.py --root .
 
       - name: Persist evaluation metadata updates
         run: |
           git config user.email "airflow-bot@example.com"
           git config user.name "Airflow Bot"
-          if git diff --quiet -- airflow/web_app_data/pipeline_versions_store.json; then
+          if git diff --quiet -- airflow/web_app_data/metadata; then
             echo "No metadata changes to commit"
           else
-            git add airflow/web_app_data/pipeline_versions_store.json
+            git add airflow/web_app_data/metadata
             git commit -m "Update evaluation score for ${{ github.event.inputs.pipeline_id }} / ${{ github.event.inputs.dag_id }}"
+            git push origin eval
+          fi
+
+      - name: Upload evaluation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-results-${{ github.event.inputs.dag_id }}
+          path: evaluation-results/
+          retention-days: 30
+
+  evaluate-dag-runtime:
+    if: ${{ github.event.inputs.evaluation_mode == 'run_once' || github.event.inputs.evaluation_mode == 'run_multiple' }}
+    runs-on: [self-hosted, airflow-local]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: eval
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Run DAG runtime evaluation
+        run: |
+          python scripts/evaluation/evaluate_dag.py \
+            --root . \
+            --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
+            --dag-id "${{ github.event.inputs.dag_id }}" \
+            --evaluation-mode "${{ github.event.inputs.evaluation_mode }}" \
+            --run-count "${{ github.event.inputs.run_count }}"
+        env:
+          AIRFLOW_API_BASE_URL: ${{ secrets.AIRFLOW_API_BASE_URL }}
+          AIRFLOW_API_USERNAME: ${{ secrets.AIRFLOW_API_USERNAME }}
+          AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
+
+      - name: Validate metadata after scoring update
+        run: |
+          python scripts/metadata/validate_metadata.py --root .
+
+      - name: Persist evaluation metadata updates
+        run: |
+          git config user.email "airflow-bot@example.com"
+          git config user.name "Airflow Bot"
+          if git diff --quiet -- airflow/web_app_data/metadata; then
+            echo "No metadata changes to commit"
+          else
+            git add airflow/web_app_data/metadata
+            git commit -m "Update runtime evaluation score for ${{ github.event.inputs.pipeline_id }} / ${{ github.event.inputs.dag_id }}"
             git push origin eval
           fi
 

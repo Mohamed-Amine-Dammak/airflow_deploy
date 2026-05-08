@@ -13,6 +13,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+METADATA_DIR = SCRIPT_DIR.parent / "metadata"
+if str(METADATA_DIR) not in sys.path:
+    sys.path.insert(0, str(METADATA_DIR))
+
+from version_metadata import find_version_metadata, load_version_metadata, save_version_metadata  # type: ignore
+from airflow_client import (  # type: ignore
+    AirflowClientError,
+    collect_runtime_metrics,
+    get_task_instances,
+    trigger_dag_run,
+    wait_for_dag_run,
+)
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -211,32 +224,101 @@ def main() -> None:
 
     root = Path(args.root)
     versions_file = root / "airflow" / "web_app_data" / "pipeline_versions_store.json"
-    if not versions_file.exists():
-        print(f"ERROR: Version store not found: {versions_file}")
-        sys.exit(1)
-
-    store = load_store(versions_file)
-    version, version_id = find_version(store, args.pipeline_id, args.dag_id)
+    version = find_version_metadata(root, args.pipeline_id, args.dag_id)
+    has_version_file = version is not None
+    version_id = str(version.get("version_id", "")).strip() if version else ""
+    store = None
+    if not version:
+        # Legacy fallback read only.
+        if not versions_file.exists():
+            print(f"ERROR: Metadata not found in per-version files and legacy store missing: {versions_file}")
+            sys.exit(1)
+        store = load_store(versions_file)
+        version, version_id = find_version(store, args.pipeline_id, args.dag_id)
     if not version or not version_id:
         print(f"ERROR: Could not find version for pipeline '{args.pipeline_id}' with key '{args.dag_id}'")
         sys.exit(1)
 
     evaluation_mode = str(args.evaluation_mode or "static_only").strip().lower()
+    if evaluation_mode not in {"static_only", "run_once", "run_multiple"}:
+        print(f"ERROR: Unsupported evaluation_mode '{evaluation_mode}'")
+        sys.exit(1)
     dag_path = _resolve_dag_file(root, version, evaluation_mode)
     dag_content = dag_path.read_text(encoding="utf-8")
 
-    eval_metrics = _load_eval_metrics_from_env() if evaluation_mode != "static_only" else {}
-    if eval_metrics:
-        score_result = _score_with_eval_metrics(dag_content, eval_metrics)
-    else:
+    evaluation_runs: list[dict[str, Any]] = []
+    warnings: list[str] = []
+    critical_failures: list[str] = []
+
+    if evaluation_mode == "static_only":
         score_result = _score_static(dag_content)
+        score_type = "static_only"
+    else:
+        base_url = str(os.getenv("AIRFLOW_API_BASE_URL", "")).strip()
+        username = str(os.getenv("AIRFLOW_API_USERNAME", "")).strip()
+        password = str(os.getenv("AIRFLOW_API_PASSWORD", "")).strip()
+        if not base_url or not username or not password:
+            print("ERROR: AIRFLOW_API_BASE_URL, AIRFLOW_API_USERNAME, AIRFLOW_API_PASSWORD are required for runtime evaluation")
+            sys.exit(1)
+        dag_api_id = str(version.get("git_dag_id") or version.get("local_dag_id") or args.dag_id).strip()
+        run_total = 1 if evaluation_mode == "run_once" else max(2, int(args.run_count))
+        runtime_scores: list[dict[str, Any]] = []
+        failed_runs = 0
+        for idx in range(run_total):
+            try:
+                trig = trigger_dag_run(
+                    base_url,
+                    (username, password),
+                    dag_api_id,
+                    {"source": "github-actions", "pipeline_id": args.pipeline_id, "version_id": version_id, "run_index": idx + 1},
+                )
+                dag_run_id = str(trig.get("dag_run_id") or trig.get("run_id") or "").strip()
+                if not dag_run_id:
+                    raise AirflowClientError("Trigger succeeded but no dag_run_id returned")
+                run = wait_for_dag_run(base_url, (username, password), dag_api_id, dag_run_id)
+                tis = get_task_instances(base_url, (username, password), dag_api_id, dag_run_id)
+                metrics = collect_runtime_metrics(run, tis)
+                evaluation_runs.append(
+                    {
+                        "dag_run_id": dag_run_id,
+                        "dag_id": dag_api_id,
+                        "state": metrics.get("dag_run_state"),
+                        "metrics": metrics,
+                    }
+                )
+                scored = _score_with_eval_metrics(dag_content, metrics)
+                runtime_scores.append(scored)
+                if str(metrics.get("dag_run_state", "")).lower() != "success":
+                    failed_runs += 1
+            except AirflowClientError as exc:
+                print(f"ERROR: Runtime evaluation failed: {exc}")
+                sys.exit(1)
+        # Aggregate runtime scores by average, preserving core schema.
+        if not runtime_scores:
+            print("ERROR: No runtime scores produced")
+            sys.exit(1)
+        keys = list(runtime_scores[0].get("breakdown", {}).keys())
+        avg_breakdown: dict[str, float] = {}
+        for key in keys:
+            vals = [float(item.get("breakdown", {}).get(key, 0.0)) for item in runtime_scores]
+            avg_breakdown[key] = round(sum(vals) / max(1, len(vals)), 1)
+        avg_score = round(sum(float(item.get("score", 0.0)) for item in runtime_scores) / max(1, len(runtime_scores)), 1)
+        if failed_runs > 0:
+            avg_score = max(0.0, round(avg_score - (failed_runs * 10.0), 1))
+            critical_failures.append(f"{failed_runs} runtime DAG run(s) failed.")
+        score_type = "runtime_once" if evaluation_mode == "run_once" else "runtime_multiple"
+        score_result = {
+            "score": avg_score,
+            "score_type": score_type,
+            "breakdown": avg_breakdown,
+            "warnings": warnings,
+            "critical_failures": critical_failures,
+        }
 
     current = str(version.get("promotion_status", "")).strip().lower()
     next_status = "challenger" if current not in {"champion", "archived"} else current
     eval_run_id = f"eval-{args.pipeline_id}-{version_id}-{int(datetime.now(timezone.utc).timestamp())}"
-    patch_version(
-        version,
-        {
+    fields = {
             "score": score_result.get("score"),
             "score_type": score_result.get("score_type"),
             "score_breakdown": score_result.get("breakdown", {}),
@@ -246,10 +328,18 @@ def main() -> None:
             "deployment_target": "git",
             "last_evaluated_at": _now_iso(),
             "last_eval_run_id": eval_run_id,
-        },
-    )
-    save_store(versions_file, store)
-    _validate_json_with_tool(versions_file)
+            "evaluation_runs": evaluation_runs,
+        }
+    patch_version(version, fields)
+    if has_version_file:
+        current = load_version_metadata(root, args.pipeline_id, version_id)
+        current.update(fields)
+        version_file = save_version_metadata(root, args.pipeline_id, version_id, current)
+        _validate_json_with_tool(version_file)
+    else:
+        # legacy fallback write only when per-version file is unavailable
+        save_store(versions_file, store)
+        _validate_json_with_tool(versions_file)
 
     eval_results_dir = root / "evaluation-results"
     eval_results_dir.mkdir(parents=True, exist_ok=True)
@@ -266,8 +356,9 @@ def main() -> None:
         "warnings": score_result.get("warnings", []),
         "critical_failures": score_result.get("critical_failures", []),
         "last_eval_run_id": eval_run_id,
-        "updated_store": str(versions_file),
+        "updated_store": str((root / "airflow" / "web_app_data" / "metadata" / args.pipeline_id / f"{version_id}.json") if has_version_file else versions_file),
         "dag_file_used": str(dag_path),
+        "evaluation_runs": evaluation_runs,
     }
     result_file = eval_results_dir / f"eval_{args.pipeline_id}_{version_id}.json"
     result_file.write_text(json.dumps(result, indent=2), encoding="utf-8")

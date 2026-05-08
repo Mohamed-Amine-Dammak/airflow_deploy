@@ -24,6 +24,10 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: metadata-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   create-pr:
     runs-on: ubuntu-latest
@@ -55,15 +59,12 @@ jobs:
             echo "DAG file not found: ${{ github.event.inputs.dag_file }}"
             exit 1
           fi
-          if [ ! -f "airflow/web_app_data/pipeline_versions_store.json" ]; then
-            mkdir -p airflow/web_app_data
-            echo '{"pipelines":{}}' > airflow/web_app_data/pipeline_versions_store.json
-          fi
+          mkdir -p airflow/web_app_data/metadata/${{ github.event.inputs.pipeline_id }}
 
       - name: Mark metadata as pr_open before PR creation
         run: |
           python scripts/metadata/update_pipeline_metadata.py pr_open \
-            --store airflow/web_app_data/pipeline_versions_store.json \
+            --root . \
             --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
             --version-id "${{ github.event.inputs.version_id }}" \
             --dag-id "${{ github.event.inputs.dag_id }}" \
@@ -74,11 +75,11 @@ jobs:
 
       - name: Validate metadata JSON after pr_open
         run: |
-          python -m json.tool airflow/web_app_data/pipeline_versions_store.json > /dev/null
+          python scripts/metadata/validate_metadata.py --root .
 
       - name: Show metadata before PR creation
         run: |
-          cat airflow/web_app_data/pipeline_versions_store.json
+          cat airflow/web_app_data/metadata/${{ github.event.inputs.pipeline_id }}/${{ github.event.inputs.version_id }}.json
 
       - name: Create or update DAG PR branch
         id: cpr
@@ -91,17 +92,17 @@ jobs:
           body: |
             DAG PR with metadata sync.
             - DAG: `${{ github.event.inputs.dag_file }}`
-            - Metadata: `airflow/web_app_data/pipeline_versions_store.json`
+            - Metadata: `airflow/web_app_data/metadata/${{ github.event.inputs.pipeline_id }}/${{ github.event.inputs.version_id }}.json`
           add-paths: |
             ${{ github.event.inputs.dag_file }}
-            airflow/web_app_data/pipeline_versions_store.json
+            airflow/web_app_data/metadata/${{ github.event.inputs.pipeline_id }}/${{ github.event.inputs.version_id }}.json
           commit-message: "Publish DAG + metadata for ${{ github.event.inputs.pipeline_id }}/${{ github.event.inputs.version_id }}"
 
       - name: Enrich metadata with PR number/url
         if: steps.cpr.outputs.pull-request-number != ''
         run: |
           python scripts/metadata/update_pipeline_metadata.py pr_open \
-            --store airflow/web_app_data/pipeline_versions_store.json \
+            --root . \
             --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
             --version-id "${{ github.event.inputs.version_id }}" \
             --dag-id "${{ github.event.inputs.dag_id }}" \
@@ -115,7 +116,7 @@ jobs:
       - name: Validate metadata JSON after PR enrichment
         if: steps.cpr.outputs.pull-request-number != ''
         run: |
-          python -m json.tool airflow/web_app_data/pipeline_versions_store.json > /dev/null
+          python scripts/metadata/validate_metadata.py --root .
 
       - name: Commit metadata enrichment to PR branch
         if: steps.cpr.outputs.pull-request-number != ''
@@ -125,10 +126,11 @@ jobs:
           git config user.name "Airflow Bot"
           git fetch origin "${{ steps.branch.outputs.name }}"
           git checkout "${{ steps.branch.outputs.name }}"
-          if git diff --quiet -- airflow/web_app_data/pipeline_versions_store.json; then
+          META_FILE="airflow/web_app_data/metadata/${{ github.event.inputs.pipeline_id }}/${{ github.event.inputs.version_id }}.json"
+          if git diff --quiet -- "$META_FILE"; then
             echo "No metadata enrichment changes to commit"
           else
-            git add airflow/web_app_data/pipeline_versions_store.json
+            git add "$META_FILE"
             git commit -m "Add PR metadata for #${{ steps.cpr.outputs.pull-request-number }}"
             git push origin "${{ steps.branch.outputs.name }}"
           fi
