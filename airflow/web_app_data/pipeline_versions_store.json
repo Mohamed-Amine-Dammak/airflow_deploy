@@ -771,7 +771,7 @@
             "maintainability": 10.0,
             "resource_efficiency": 1.5
           },
-          "last_eval_run_id": "eval-testdataops-v7-1778249432",
+          "last_eval_run_id": "eval-testdataops-v7-1778248453",
           "promoted_at": null,
           "promoted_by": null,
           "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/10",
@@ -800,114 +800,7 @@
           "deployment_target": "git",
           "warnings": [],
           "critical_failures": [],
-          "last_evaluated_at": "2026-05-08T14:10:32.731371+00:00",
-          "evaluation_runs": []
-        },
-        {
-          "pipeline_id": "testdataops",
-          "version_id": "v8",
-          "dag_version": 8,
-          "airflow_dag_id": "testdataops__v8",
-          "output_filename": "testdataops__v8.py",
-          "created_at": "2026-05-08T14:20:42.351145+00:00",
-          "created_by": "admin",
-          "status": "active",
-          "is_current": true,
-          "source_hash": "a5456caae2ea3e0d43f01d0213f12d7334edc32150928d8b34754cfc75d74837",
-          "source_definition": {
-            "pipeline": {
-              "dag_id": "testdataops",
-              "description": "",
-              "start_date": "2026-01-01",
-              "schedule": null,
-              "schedule_mode": "manual",
-              "catchup": false,
-              "schedule_preset": "",
-              "schedule_cron": "",
-              "interval_value": "",
-              "interval_unit": "minutes",
-              "event_source": "",
-              "custom_schedule_text": "",
-              "retries": 3,
-              "retry_delay_minutes": 5,
-              "alert_emails": [],
-              "alert_mode": "both",
-              "tags": [
-                "demo",
-                "orchestration"
-              ],
-              "output_filename": "testdataops.py"
-            },
-            "nodes": [
-              {
-                "id": "node_12",
-                "type": "delay",
-                "label": "Delay 12",
-                "x": 185.111083984375,
-                "y": 309.2221984863281,
-                "config": {
-                  "delay_minutes": 1
-                }
-              },
-              {
-                "id": "node_13",
-                "type": "timeout_guard",
-                "label": "Timeout Guard 13",
-                "x": 466.111083984375,
-                "y": 290.2221984863281,
-                "config": {
-                  "timeout_minutes": 30
-                }
-              }
-            ],
-            "edges": [
-              {
-                "source": "node_12",
-                "target": "node_13"
-              }
-            ],
-            "group_boxes": []
-          },
-          "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testdataops__v8.py",
-          "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testdataops__v8.py",
-          "node_task_map": {
-            "node_12": [
-              "delay_1_node_12"
-            ],
-            "node_13": [
-              "timeout_guard_2_node_13"
-            ]
-          },
-          "node_primary_task_map": {
-            "node_12": "delay_1_node_12",
-            "node_13": "timeout_guard_2_node_13"
-          },
-          "base_pipeline_id": "testdataops",
-          "promotion_status": "draft",
-          "score": null,
-          "score_type": null,
-          "score_breakdown": {},
-          "last_eval_run_id": null,
-          "promoted_at": null,
-          "promoted_by": null,
-          "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/11",
-          "github_commit_sha": "2124314203414e28a31578166666901fbc74d381",
-          "publish_status": "pr_open",
-          "dag_id": "testdataops__v8",
-          "version": "v8",
-          "workflow_name": "testdataops",
-          "workflow_slug": "testdataops",
-          "repo_file_path": "dags/testdataops_git__v8.py",
-          "git_branch_name": "feature/workflow/testdataops-6",
-          "pull_request_number": 11,
-          "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/11",
-          "commit_sha": "2124314203414e28a31578166666901fbc74d381",
-          "github_pr_number": 11,
-          "github_branch": "feature/workflow/testdataops-6",
-          "updated_at": "2026-05-08T14:21:01.014639+00:00",
-          "requested_by_user_id": "admin",
-          "requested_by_email": "",
-          "requested_by_display_name": "admin"
+          "last_evaluated_at": "2026-05-08T13:54:13.208781+00:00"
         }
       ],
       "switch_events": [
