@@ -80,6 +80,11 @@ jobs:
             --version-id "${{ github.event.inputs.version_id }}" \
             --promotion-status champion
 
+      - name: Validate metadata JSON after promote update
+        if: steps.eligibility.outcome == 'success'
+        run: |
+          python -m json.tool airflow/web_app_data/pipeline_versions_store.json > /dev/null
+
       - name: Commit prod metadata updates
         if: steps.eligibility.outcome == 'success'
         run: |

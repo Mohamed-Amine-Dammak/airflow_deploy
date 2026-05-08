@@ -28,7 +28,12 @@ def _load_store(path: Path) -> dict[str, Any]:
 
 def _save_store(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    # Overwrite the whole file from a single in-memory JSON object.
+    normalized = dict(payload if isinstance(payload, dict) else {})
+    pipelines = normalized.get("pipelines")
+    if not isinstance(pipelines, dict):
+        normalized["pipelines"] = {}
+    path.write_text(json.dumps(normalized, indent=2), encoding="utf-8")
 
 
 def _iter_versions(payload: dict[str, Any]):
@@ -39,6 +44,23 @@ def _iter_versions(payload: dict[str, Any]):
         for version in versions:
             if isinstance(version, dict):
                 yield pipeline_id, entry, version
+
+
+def _summarize_versions(payload: dict[str, Any]) -> str:
+    rows = []
+    for pid, _, version in _iter_versions(payload):
+        rows.append(
+            {
+                "pipeline_id": pid,
+                "version_id": str(version.get("version_id", "")).strip(),
+                "dag_id": str(version.get("dag_id", "") or version.get("airflow_dag_id", "")).strip(),
+                "github_branch": str(version.get("github_branch", "") or version.get("git_branch_name", "")).strip(),
+                "github_pr_number": int(version.get("github_pr_number") or version.get("pull_request_number") or 0),
+                "publish_status": str(version.get("publish_status", "")).strip(),
+                "promotion_status": str(version.get("promotion_status", "")).strip(),
+            }
+        )
+    return json.dumps(rows, indent=2)
 
 
 def _find_version(
@@ -75,6 +97,45 @@ def _find_version(
     return None
 
 
+def _find_version_for_merged(
+    payload: dict[str, Any],
+    *,
+    pr_number: int | None,
+    branch: str | None,
+    dag_id: str | None,
+    pipeline_id: str | None,
+    version_id: str | None,
+) -> tuple[str, dict[str, Any], dict[str, Any]] | None:
+    # 1) Match by github_pr_number first
+    if pr_number is not None:
+        for pid, entry, version in _iter_versions(payload):
+            if pipeline_id and pid != pipeline_id:
+                continue
+            if version_id and str(version.get("version_id", "")).strip() != version_id:
+                continue
+            if int(version.get("github_pr_number") or version.get("pull_request_number") or 0) == int(pr_number):
+                return pid, entry, version
+    # 2) Fallback by github_branch
+    if branch:
+        for pid, entry, version in _iter_versions(payload):
+            if pipeline_id and pid != pipeline_id:
+                continue
+            if version_id and str(version.get("version_id", "")).strip() != version_id:
+                continue
+            if str(version.get("github_branch", "") or version.get("git_branch_name", "")).strip() == branch:
+                return pid, entry, version
+    # 3) Fallback by dag_id
+    if dag_id:
+        for pid, entry, version in _iter_versions(payload):
+            if pipeline_id and pid != pipeline_id:
+                continue
+            if version_id and str(version.get("version_id", "")).strip() != version_id:
+                continue
+            if str(version.get("dag_id", "") or version.get("airflow_dag_id", "")).strip() == dag_id:
+                return pid, entry, version
+    return None
+
+
 def _apply_common(version: dict[str, Any], *, commit_sha: str, branch: str, pr_number: int | None, pr_url: str) -> None:
     if pr_number is not None:
         version["pull_request_number"] = pr_number
@@ -90,6 +151,30 @@ def _apply_common(version: dict[str, Any], *, commit_sha: str, branch: str, pr_n
         version["github_commit_sha"] = commit_sha
 
 
+def _normalize_version_fields(
+    version: dict[str, Any],
+    *,
+    pipeline_id: str,
+    dag_id: str | None,
+    dag_file: str | None,
+) -> None:
+    safe_pipeline_id = str(pipeline_id or "").strip()
+    safe_dag_id = str(dag_id or version.get("airflow_dag_id") or version.get("dag_id") or "").strip()
+    safe_dag_file = str(dag_file or version.get("dag_file") or version.get("repo_file_path") or "").strip()
+
+    version["pipeline_id"] = safe_pipeline_id
+    version["base_pipeline_id"] = str(version.get("base_pipeline_id") or safe_pipeline_id).strip()
+
+    if safe_dag_id:
+        version["airflow_dag_id"] = safe_dag_id
+        version["dag_id"] = safe_dag_id
+    if safe_dag_file:
+        version["dag_file"] = safe_dag_file
+        version["repo_file_path"] = safe_dag_file
+        if not str(version.get("output_filename", "")).strip():
+            version["output_filename"] = Path(safe_dag_file).name
+
+
 def cmd_pr_open(args: argparse.Namespace) -> int:
     payload = _load_store(args.store)
     found = _find_version(
@@ -101,12 +186,31 @@ def cmd_pr_open(args: argparse.Namespace) -> int:
         branch=args.branch,
     )
     if not found:
-        raise SystemExit("Version not found for pr_open update")
-    pid, _, version = found
+        if not args.pipeline_id or not args.version_id:
+            raise SystemExit("Version not found for pr_open update")
+        pipelines = payload.setdefault("pipelines", {})
+        entry = pipelines.setdefault(args.pipeline_id, {"versions": []})
+        versions = entry.setdefault("versions", [])
+        version = {
+            "pipeline_id": args.pipeline_id,
+            "base_pipeline_id": args.pipeline_id,
+            "version_id": args.version_id,
+            "airflow_dag_id": args.dag_id or "",
+            "dag_id": args.dag_id or "",
+            "version": args.version_id,
+            "output_filename": (Path(args.dag_file).name if args.dag_file else ""),
+        }
+        versions.append(version)
+        pid = args.pipeline_id
+    else:
+        pid, _, version = found
     now = _now_iso()
-    version["pipeline_id"] = pid
-    version["base_pipeline_id"] = str(version.get("base_pipeline_id") or pid)
-    version["dag_id"] = str(version.get("airflow_dag_id") or args.dag_id or "")
+    _normalize_version_fields(
+        version,
+        pipeline_id=pid,
+        dag_id=args.dag_id,
+        dag_file=args.dag_file,
+    )
     version["version"] = str(version.get("version_id") or args.version_id or "")
     version["publish_status"] = args.publish_status or "pr_open"
     version["promotion_status"] = args.promotion_status or str(version.get("promotion_status") or "draft")
@@ -119,11 +223,27 @@ def cmd_pr_open(args: argparse.Namespace) -> int:
 
 def cmd_merged(args: argparse.Namespace) -> int:
     payload = _load_store(args.store)
-    found = _find_version(payload, pipeline_id=args.pipeline_id, dag_id=args.dag_id, version_id=args.version_id, pr_number=args.pr_number, branch=args.branch)
+    found = _find_version_for_merged(
+        payload,
+        pr_number=args.pr_number,
+        branch=args.branch,
+        dag_id=args.dag_id,
+        pipeline_id=args.pipeline_id,
+        version_id=args.version_id,
+    )
     if not found:
-        raise SystemExit("Version not found for merged update")
+        print("Version not found for merged update")
+        print("Known versions:")
+        print(_summarize_versions(payload))
+        raise SystemExit(1)
     _, _, version = found
     now = _now_iso()
+    _normalize_version_fields(
+        version,
+        pipeline_id=str(version.get("pipeline_id") or args.pipeline_id or ""),
+        dag_id=args.dag_id,
+        dag_file=args.dag_file,
+    )
     version["publish_status"] = args.publish_status or "merged_to_git"
     version["promotion_status"] = args.promotion_status or "submitted"
     if args.commit_sha:
@@ -240,6 +360,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--score-json", type=str, default="")
     parser.add_argument("--promotion-status", type=str)
     parser.add_argument("--publish-status", type=str)
+    parser.add_argument("--dag-file", type=str)
     return parser
 
 

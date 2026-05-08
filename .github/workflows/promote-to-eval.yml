@@ -69,6 +69,10 @@ jobs:
             --version-id "${{ github.event.inputs.version_id }}" \
             --branch eval
 
+      - name: Validate metadata JSON after eval update
+        run: |
+          python -m json.tool airflow/web_app_data/pipeline_versions_store.json > /dev/null
+
       - name: Commit eval metadata updates
         run: |
           if git diff --quiet -- airflow/web_app_data/pipeline_versions_store.json; then

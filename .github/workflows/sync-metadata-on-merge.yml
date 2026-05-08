@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout main
+      - name: Checkout merge commit
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
           fetch-depth: 0
 
       - name: Set up Python
@@ -35,6 +35,21 @@ jobs:
             --pr-url "${{ github.event.pull_request.html_url }}" \
             --publish-status merged_to_git \
             --promotion-status submitted
+
+      - name: Validate metadata JSON after merged update
+        run: |
+          python -m json.tool airflow/web_app_data/pipeline_versions_store.json > /dev/null
+
+      - name: Preserve updated metadata from merge snapshot
+        run: |
+          cp airflow/web_app_data/pipeline_versions_store.json /tmp/pipeline_versions_store.json
+
+      - name: Checkout main to publish metadata
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+          cp /tmp/pipeline_versions_store.json airflow/web_app_data/pipeline_versions_store.json
+          python -m json.tool airflow/web_app_data/pipeline_versions_store.json > /dev/null
 
       - name: Commit and push metadata
         run: |

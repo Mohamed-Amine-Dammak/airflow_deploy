@@ -55,6 +55,10 @@ jobs:
           AIRFLOW_API_USERNAME: ${{ secrets.AIRFLOW_API_USERNAME }}
           AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
 
+      - name: Validate metadata JSON after scoring update
+        run: |
+          python -m json.tool airflow/web_app_data/pipeline_versions_store.json > /dev/null
+
       - name: Persist evaluation metadata updates
         run: |
           git config user.email "airflow-bot@example.com"

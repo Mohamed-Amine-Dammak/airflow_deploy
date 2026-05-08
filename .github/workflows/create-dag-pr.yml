@@ -18,7 +18,7 @@ on:
       promotion_status:
         description: "Initial promotion status"
         required: false
-        default: "draft"
+        default: "submitted"
 
 permissions:
   contents: write
@@ -55,6 +55,10 @@ jobs:
             echo "DAG file not found: ${{ github.event.inputs.dag_file }}"
             exit 1
           fi
+          if [ ! -f "airflow/web_app_data/pipeline_versions_store.json" ]; then
+            mkdir -p airflow/web_app_data
+            echo '{"pipelines":{}}' > airflow/web_app_data/pipeline_versions_store.json
+          fi
 
       - name: Mark metadata as pr_open before PR creation
         run: |
@@ -63,9 +67,18 @@ jobs:
             --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
             --version-id "${{ github.event.inputs.version_id }}" \
             --dag-id "${{ github.event.inputs.dag_id }}" \
+            --dag-file "${{ github.event.inputs.dag_file }}" \
             --branch "${{ steps.branch.outputs.name }}" \
             --publish-status pr_open \
             --promotion-status "${{ github.event.inputs.promotion_status }}"
+
+      - name: Validate metadata JSON after pr_open
+        run: |
+          python -m json.tool airflow/web_app_data/pipeline_versions_store.json > /dev/null
+
+      - name: Show metadata before PR creation
+        run: |
+          cat airflow/web_app_data/pipeline_versions_store.json
 
       - name: Create or update DAG PR branch
         id: cpr
@@ -92,11 +105,17 @@ jobs:
             --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
             --version-id "${{ github.event.inputs.version_id }}" \
             --dag-id "${{ github.event.inputs.dag_id }}" \
+            --dag-file "${{ github.event.inputs.dag_file }}" \
             --pr-number "${{ steps.cpr.outputs.pull-request-number }}" \
             --pr-url "${{ steps.cpr.outputs.pull-request-url }}" \
             --branch "${{ steps.branch.outputs.name }}" \
             --publish-status pr_open \
             --promotion-status "${{ github.event.inputs.promotion_status }}"
+
+      - name: Validate metadata JSON after PR enrichment
+        if: steps.cpr.outputs.pull-request-number != ''
+        run: |
+          python -m json.tool airflow/web_app_data/pipeline_versions_store.json > /dev/null
 
       - name: Commit metadata enrichment to PR branch
         if: steps.cpr.outputs.pull-request-number != ''
