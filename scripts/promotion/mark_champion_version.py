@@ -18,7 +18,7 @@ def main():
     args = parser.parse_args()
     
     root = Path(args.root)
-    versions_file = root / "web_app" / "pipeline_versions_store.json"
+    versions_file = root / "airflow" / "web_app_data" / "pipeline_versions_store.json"
     
     if not versions_file.exists():
         print(f"ERROR: Version store not found: {versions_file}")

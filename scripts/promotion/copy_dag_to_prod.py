@@ -21,7 +21,7 @@ def main():
     args = parser.parse_args()
     
     root = Path(args.root)
-    versions_file = root / "web_app" / "pipeline_versions_store.json"
+    versions_file = root / "airflow" / "web_app_data" / "pipeline_versions_store.json"
     dags_dir = root / "dags"
     
     if not versions_file.exists():

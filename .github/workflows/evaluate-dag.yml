@@ -28,6 +28,9 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          ref: eval
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -56,12 +59,12 @@ jobs:
         run: |
           git config user.email "airflow-bot@example.com"
           git config user.name "Airflow Bot"
-          if git diff --quiet -- web_app/pipeline_versions_store.json; then
+          if git diff --quiet -- airflow/web_app_data/pipeline_versions_store.json; then
             echo "No metadata changes to commit"
           else
-            git add web_app/pipeline_versions_store.json
+            git add airflow/web_app_data/pipeline_versions_store.json
             git commit -m "Update evaluation score for ${{ github.event.inputs.pipeline_id }} / ${{ github.event.inputs.dag_id }}"
-            git push origin HEAD
+            git push origin eval
           fi
 
       - name: Upload evaluation results

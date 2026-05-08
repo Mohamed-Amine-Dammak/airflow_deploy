@@ -1,0 +1,49 @@
+name: Sync Metadata On Merge
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  sync-merged-pr-metadata:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Update metadata for merged PR
+        run: |
+          python scripts/metadata/update_pipeline_metadata.py merged \
+            --store airflow/web_app_data/pipeline_versions_store.json \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --branch "${{ github.event.pull_request.head.ref }}" \
+            --commit-sha "${{ github.event.pull_request.merge_commit_sha }}" \
+            --pr-url "${{ github.event.pull_request.html_url }}" \
+            --publish-status merged_to_git \
+            --promotion-status submitted
+
+      - name: Commit and push metadata
+        run: |
+          git config user.email "airflow-bot@example.com"
+          git config user.name "Airflow Bot"
+          if git diff --quiet -- airflow/web_app_data/pipeline_versions_store.json; then
+            echo "No metadata changes to commit"
+          else
+            git add airflow/web_app_data/pipeline_versions_store.json
+            git commit -m "Sync merged PR #${{ github.event.pull_request.number }} metadata"
+            git push origin main
+          fi

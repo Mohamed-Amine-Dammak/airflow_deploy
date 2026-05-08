@@ -52,6 +52,8 @@ jobs:
           fi
 
       - name: Get DAG from eval branch
+        id: eligibility
+        continue-on-error: true
         run: |
           git fetch origin eval
           python scripts/promotion/check_promotion_eligibility.py \
@@ -60,6 +62,7 @@ jobs:
             --version-id "${{ github.event.inputs.version_id }}"
 
       - name: Copy DAG from eval branch to prod branch
+        if: steps.eligibility.outcome == 'success'
         run: |
           python scripts/promotion/copy_dag_to_prod.py \
             --root . \
@@ -69,12 +72,45 @@ jobs:
             --prod-branch prod
 
       - name: Update metadata for promoted DAG
+        if: steps.eligibility.outcome == 'success'
         run: |
-          python scripts/promotion/mark_champion_version.py \
-            --root . \
+          python scripts/metadata/update_pipeline_metadata.py promote \
+            --store airflow/web_app_data/pipeline_versions_store.json \
             --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
-            --version-id "${{ github.event.inputs.version_id }}"
+            --version-id "${{ github.event.inputs.version_id }}" \
+            --promotion-status champion
+
+      - name: Commit prod metadata updates
+        if: steps.eligibility.outcome == 'success'
+        run: |
+          if git diff --quiet -- airflow/web_app_data/pipeline_versions_store.json; then
+            echo "No metadata changes to commit"
+          else
+            git add airflow/web_app_data/pipeline_versions_store.json
+            git commit -m "Promote ${{ github.event.inputs.pipeline_id }}/${{ github.event.inputs.version_id }} metadata to champion"
+          fi
 
       - name: Push prod branch
+        if: steps.eligibility.outcome == 'success'
         run: |
           git push origin prod
+
+      - name: Write eligibility decision artifact
+        if: steps.eligibility.outcome != 'success'
+        run: |
+          mkdir -p evaluation-results
+          cat > evaluation-results/promotion-eligibility.json << 'EOF'
+          {
+            "pipeline_id": "${{ github.event.inputs.pipeline_id }}",
+            "version_id": "${{ github.event.inputs.version_id }}",
+            "eligible": false,
+            "reason": "blocked_by_score_policy"
+          }
+          EOF
+
+      - name: Upload eligibility artifact
+        if: steps.eligibility.outcome != 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: promotion-eligibility-${{ github.event.inputs.pipeline_id }}-${{ github.event.inputs.version_id }}
+          path: evaluation-results/promotion-eligibility.json

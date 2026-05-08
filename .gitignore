@@ -23,10 +23,9 @@ web_app/generated_dags
 logs/
 *.log
 pipelines/*/evaluation/history/*.tmp.json
-<<<<<<< HEAD
 actions-runner/
 credgcp.json
-web_app_data/
+
 dags/
 
 # -----------------------------
@@ -47,5 +46,3 @@ pycache/
 
 
 web_app/
-=======
->>>>>>> 8b1edd99b6beedd76b6af90bffb520cfee52c7bd

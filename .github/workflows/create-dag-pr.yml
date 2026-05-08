@@ -1,0 +1,115 @@
+name: Create DAG PR With Metadata
+
+on:
+  workflow_dispatch:
+    inputs:
+      pipeline_id:
+        description: "Pipeline ID"
+        required: true
+      version_id:
+        description: "Version ID (e.g. v3)"
+        required: true
+      dag_id:
+        description: "Airflow DAG ID (e.g. my_pipeline__v3)"
+        required: true
+      dag_file:
+        description: "Repo-relative DAG file path (e.g. dags/my_pipeline__v3.py)"
+        required: true
+      promotion_status:
+        description: "Initial promotion status"
+        required: false
+        default: "draft"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compute PR branch
+        id: branch
+        shell: bash
+        run: |
+          RAW="feature/workflow/${{ github.event.inputs.pipeline_id }}-${{ github.event.inputs.version_id }}"
+          SAFE=$(echo "$RAW" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9/_-]+/-/g' | sed -E 's/-+/-/g' | sed -E 's#/{2,}#/#g')
+          echo "name=$SAFE" >> "$GITHUB_OUTPUT"
+
+      - name: Validate DAG file exists
+        shell: bash
+        run: |
+          if [ ! -f "${{ github.event.inputs.dag_file }}" ]; then
+            echo "DAG file not found: ${{ github.event.inputs.dag_file }}"
+            exit 1
+          fi
+
+      - name: Mark metadata as pr_open before PR creation
+        run: |
+          python scripts/metadata/update_pipeline_metadata.py pr_open \
+            --store airflow/web_app_data/pipeline_versions_store.json \
+            --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
+            --version-id "${{ github.event.inputs.version_id }}" \
+            --dag-id "${{ github.event.inputs.dag_id }}" \
+            --branch "${{ steps.branch.outputs.name }}" \
+            --publish-status pr_open \
+            --promotion-status "${{ github.event.inputs.promotion_status }}"
+
+      - name: Create or update DAG PR branch
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          branch: ${{ steps.branch.outputs.name }}
+          title: "Publish DAG ${{ github.event.inputs.dag_id }} (${{ github.event.inputs.version_id }})"
+          body: |
+            DAG PR with metadata sync.
+            - DAG: `${{ github.event.inputs.dag_file }}`
+            - Metadata: `airflow/web_app_data/pipeline_versions_store.json`
+          add-paths: |
+            ${{ github.event.inputs.dag_file }}
+            airflow/web_app_data/pipeline_versions_store.json
+          commit-message: "Publish DAG + metadata for ${{ github.event.inputs.pipeline_id }}/${{ github.event.inputs.version_id }}"
+
+      - name: Enrich metadata with PR number/url
+        if: steps.cpr.outputs.pull-request-number != ''
+        run: |
+          python scripts/metadata/update_pipeline_metadata.py pr_open \
+            --store airflow/web_app_data/pipeline_versions_store.json \
+            --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
+            --version-id "${{ github.event.inputs.version_id }}" \
+            --dag-id "${{ github.event.inputs.dag_id }}" \
+            --pr-number "${{ steps.cpr.outputs.pull-request-number }}" \
+            --pr-url "${{ steps.cpr.outputs.pull-request-url }}" \
+            --branch "${{ steps.branch.outputs.name }}" \
+            --publish-status pr_open \
+            --promotion-status "${{ github.event.inputs.promotion_status }}"
+
+      - name: Commit metadata enrichment to PR branch
+        if: steps.cpr.outputs.pull-request-number != ''
+        shell: bash
+        run: |
+          git config user.email "airflow-bot@example.com"
+          git config user.name "Airflow Bot"
+          git fetch origin "${{ steps.branch.outputs.name }}"
+          git checkout "${{ steps.branch.outputs.name }}"
+          if git diff --quiet -- airflow/web_app_data/pipeline_versions_store.json; then
+            echo "No metadata enrichment changes to commit"
+          else
+            git add airflow/web_app_data/pipeline_versions_store.json
+            git commit -m "Add PR metadata for #${{ steps.cpr.outputs.pull-request-number }}"
+            git push origin "${{ steps.branch.outputs.name }}"
+          fi

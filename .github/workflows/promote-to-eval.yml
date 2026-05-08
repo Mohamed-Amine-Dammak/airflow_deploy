@@ -63,10 +63,20 @@ jobs:
 
       - name: Update metadata for eval DAGs
         run: |
-          python scripts/promotion/mark_eval_versions.py \
-            --root . \
+          python scripts/metadata/update_pipeline_metadata.py mark_eval \
+            --store airflow/web_app_data/pipeline_versions_store.json \
             --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
-            --version-id "${{ github.event.inputs.version_id }}"
+            --version-id "${{ github.event.inputs.version_id }}" \
+            --branch eval
+
+      - name: Commit eval metadata updates
+        run: |
+          if git diff --quiet -- airflow/web_app_data/pipeline_versions_store.json; then
+            echo "No metadata changes to commit"
+          else
+            git add airflow/web_app_data/pipeline_versions_store.json
+            git commit -m "Mark DAG metadata as eval"
+          fi
 
       - name: Push eval branch
         run: |
