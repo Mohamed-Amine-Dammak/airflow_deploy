@@ -8,6 +8,10 @@ permissions:
   contents: write
   pull-requests: read
 
+concurrency:
+  group: metadata-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   sync-merged-pr-metadata:
     if: github.event.pull_request.merged == true
@@ -28,7 +32,7 @@ jobs:
       - name: Update metadata for merged PR
         run: |
           python scripts/metadata/update_pipeline_metadata.py merged \
-            --store airflow/web_app_data/pipeline_versions_store.json \
+            --root . \
             --pr-number "${{ github.event.pull_request.number }}" \
             --branch "${{ github.event.pull_request.head.ref }}" \
             --commit-sha "${{ github.event.pull_request.merge_commit_sha }}" \
@@ -38,27 +42,30 @@ jobs:
 
       - name: Validate metadata JSON after merged update
         run: |
-          python -m json.tool airflow/web_app_data/pipeline_versions_store.json > /dev/null
+          python scripts/metadata/validate_metadata.py --root .
 
       - name: Preserve updated metadata from merge snapshot
         run: |
-          cp airflow/web_app_data/pipeline_versions_store.json /tmp/pipeline_versions_store.json
+          mkdir -p /tmp/metadata
+          cp -r airflow/web_app_data/metadata /tmp/metadata/
 
       - name: Checkout main to publish metadata
         run: |
           git fetch origin main
           git checkout -B main origin/main
-          cp /tmp/pipeline_versions_store.json airflow/web_app_data/pipeline_versions_store.json
-          python -m json.tool airflow/web_app_data/pipeline_versions_store.json > /dev/null
+          mkdir -p airflow/web_app_data
+          rm -rf airflow/web_app_data/metadata
+          cp -r /tmp/metadata/metadata airflow/web_app_data/metadata
+          python scripts/metadata/validate_metadata.py --root .
 
       - name: Commit and push metadata
         run: |
           git config user.email "airflow-bot@example.com"
           git config user.name "Airflow Bot"
-          if git diff --quiet -- airflow/web_app_data/pipeline_versions_store.json; then
+          if git diff --quiet -- airflow/web_app_data/metadata; then
             echo "No metadata changes to commit"
           else
-            git add airflow/web_app_data/pipeline_versions_store.json
+            git add airflow/web_app_data/metadata
             git commit -m "Sync merged PR #${{ github.event.pull_request.number }} metadata"
             git push origin main
           fi

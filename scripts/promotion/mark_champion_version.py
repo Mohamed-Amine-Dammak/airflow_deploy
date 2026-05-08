@@ -1,76 +1,51 @@
 #!/usr/bin/env python3
-"""
-Mark a DAG version as champion when promoted to prod.
-"""
+"""Mark champion metadata using per-version files."""
+
+from __future__ import annotations
 
 import argparse
-import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+METADATA_DIR = SCRIPT_DIR.parent / "metadata"
+if str(METADATA_DIR) not in sys.path:
+    sys.path.insert(0, str(METADATA_DIR))
 
-def main():
+from version_metadata import list_pipeline_versions, load_version_metadata, save_version_metadata  # type: ignore
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def main() -> int:
     parser = argparse.ArgumentParser(description="Mark DAG version as champion")
-    parser.add_argument("--root", type=str, required=True, help="Repository root directory")
-    parser.add_argument("--pipeline-id", type=str, required=True, help="Base pipeline ID")
-    parser.add_argument("--version-id", type=str, required=True, help="Version ID to promote")
+    parser.add_argument("--root", type=str, required=True)
+    parser.add_argument("--pipeline-id", type=str, required=True)
+    parser.add_argument("--version-id", type=str, required=True)
     args = parser.parse_args()
-    
+
     root = Path(args.root)
-    versions_file = root / "airflow" / "web_app_data" / "pipeline_versions_store.json"
-    
-    if not versions_file.exists():
-        print(f"ERROR: Version store not found: {versions_file}")
-        sys.exit(1)
-    
-    try:
-        payload = json.loads(versions_file.read_text(encoding="utf-8"))
-    except Exception as e:
-        print(f"ERROR: Could not read versions file: {e}")
-        sys.exit(1)
-    
-    pipelines = payload.get("pipelines", {})
-    entry = pipelines.get(args.pipeline_id)
-    if not entry:
-        print(f"ERROR: Pipeline not found: {args.pipeline_id}")
-        sys.exit(1)
-    
-    versions = entry.get("versions", [])
-    champion_updated = False
-    archived_version_id = None
-    
-    # Archive previous champion
-    for version in versions:
-        if version.get("promotion_status") == "champion":
-            archived_version_id = version.get("version_id")
-            version["promotion_status"] = "archived"
-            version["archived_at"] = datetime.now(timezone.utc).isoformat()
-            print(f"Archived previous champion: {archived_version_id}")
-    
-    # Promote new champion
-    for version in versions:
-        if version.get("version_id") == args.version_id:
-            version["promotion_status"] = "champion"
-            version["promoted_at"] = datetime.now(timezone.utc).isoformat()
-            version["promoted_by"] = "github-actions"
-            champion_updated = True
-            print(f"Promoted {args.version_id} to champion")
-            break
-    
-    if not champion_updated:
-        print(f"ERROR: Version not found: {args.version_id}")
-        sys.exit(1)
-    
-    try:
-        versions_file.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        print(f"Successfully marked {args.version_id} as champion")
-    except Exception as e:
-        print(f"ERROR: Could not write versions file: {e}")
-        sys.exit(1)
-    
-    sys.exit(0)
+    target = load_version_metadata(root, args.pipeline_id, args.version_id)
+    base_id = str(target.get("base_pipeline_id") or args.pipeline_id).strip()
+    now = _now()
+    archived = None
+    for row in list_pipeline_versions(root, args.pipeline_id):
+        if str(row.get("base_pipeline_id", "")).strip() == base_id and str(row.get("promotion_status", "")).strip() == "champion":
+            old = load_version_metadata(root, str(row["pipeline_id"]), str(row["version_id"]))
+            old["promotion_status"] = "archived"
+            old["archived_at"] = now
+            save_version_metadata(root, str(old["pipeline_id"]), str(old["version_id"]), old)
+            archived = str(old["version_id"])
+    target["promotion_status"] = "champion"
+    target["promoted_at"] = now
+    target["promoted_by"] = "github-actions"
+    save_version_metadata(root, args.pipeline_id, args.version_id, target)
+    print(f"Promoted {args.version_id} to champion; archived={archived}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
