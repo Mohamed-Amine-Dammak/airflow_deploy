@@ -2,6 +2,7 @@
   "pipelines": {
     "testdataops": {
       "current_version_id": "v8",
+      "current_version_id": "v8",
       "versions": [
         {
           "pipeline_id": "testdataops",
@@ -65,6 +66,7 @@
           },
           "base_pipeline_id": "testdataops",
           "promotion_status": "eval",
+          "promotion_status": "eval",
           "score": null,
           "score_type": null,
           "score_breakdown": {},
@@ -80,6 +82,9 @@
           "git_dag_file": "dags/testdataops_git__v1.py",
           "repo_file_path": "dags/testdataops_git__v1.py",
           "dag_file": "dags/testdataops_git__v1.py",
+          "deployment_target": "git",
+          "updated_at": "2026-05-08T13:30:17.005095+00:00",
+          "github_branch": "eval"
           "deployment_target": "eval",
           "updated_at": "2026-05-08T13:30:17.005095+00:00",
           "github_branch": "eval"
@@ -149,6 +154,7 @@
           },
           "base_pipeline_id": "testdataops",
           "promotion_status": "eval",
+          "promotion_status": "eval",
           "score": null,
           "score_type": null,
           "score_breakdown": {},
@@ -164,6 +170,9 @@
           "git_dag_file": "dags/testdataops_git__v2.py",
           "repo_file_path": "dags/testdataops_git__v2.py",
           "dag_file": "dags/testdataops_git__v2.py",
+          "deployment_target": "git",
+          "updated_at": "2026-05-08T13:30:17.005095+00:00",
+          "github_branch": "eval"
           "deployment_target": "eval",
           "updated_at": "2026-05-08T13:30:17.005095+00:00",
           "github_branch": "eval"
@@ -252,6 +261,7 @@
           },
           "base_pipeline_id": "testdataops",
           "promotion_status": "eval",
+          "promotion_status": "eval",
           "score": null,
           "score_type": null,
           "score_breakdown": {},
@@ -267,6 +277,9 @@
           "git_dag_file": "dags/testdataops_git__v3.py",
           "repo_file_path": "dags/testdataops_git__v3.py",
           "dag_file": "dags/testdataops_git__v3.py",
+          "deployment_target": "git",
+          "updated_at": "2026-05-08T13:30:17.005095+00:00",
+          "github_branch": "eval"
           "deployment_target": "eval",
           "updated_at": "2026-05-08T13:30:17.005095+00:00",
           "github_branch": "eval"
@@ -352,6 +365,7 @@
           },
           "base_pipeline_id": "testdataops",
           "promotion_status": "eval",
+          "promotion_status": "eval",
           "score": null,
           "score_type": null,
           "score_breakdown": {},
@@ -371,6 +385,8 @@
           "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/7",
           "commit_sha": "12f58a143708fef2f4ad9b0ff7d4f4c045ffb9e4",
           "github_pr_number": 7,
+          "github_branch": "eval",
+          "updated_at": "2026-05-08T13:30:17.005095+00:00",
           "github_branch": "eval",
           "updated_at": "2026-05-08T13:30:17.005095+00:00",
           "requested_by_user_id": "admin",
@@ -482,6 +498,7 @@
           },
           "base_pipeline_id": "testdataops",
           "promotion_status": "eval",
+          "promotion_status": "eval",
           "score": null,
           "score_type": null,
           "score_breakdown": {},
@@ -501,6 +518,8 @@
           "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/8",
           "commit_sha": "27f6739018337e8e673fa6c38f7d97a83c5f3b24",
           "github_pr_number": 8,
+          "github_branch": "eval",
+          "updated_at": "2026-05-08T13:30:17.005095+00:00",
           "github_branch": "eval",
           "updated_at": "2026-05-08T13:30:17.005095+00:00",
           "requested_by_user_id": "admin",
@@ -630,6 +649,7 @@
           },
           "base_pipeline_id": "testdataops",
           "promotion_status": "eval",
+          "promotion_status": "eval",
           "score": null,
           "score_type": null,
           "score_breakdown": {},
@@ -651,6 +671,8 @@
           "github_pr_number": 9,
           "github_branch": "eval",
           "updated_at": "2026-05-08T13:30:17.005095+00:00",
+          "github_branch": "eval",
+          "updated_at": "2026-05-08T13:30:17.005095+00:00",
           "requested_by_user_id": "admin",
           "requested_by_email": "",
           "requested_by_display_name": "admin",
@@ -669,6 +691,8 @@
           "output_filename": "testdataops__v7.py",
           "created_at": "2026-05-08T13:26:32.522739+00:00",
           "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
           "status": "archived",
           "is_current": false,
           "source_hash": "1b22aa0d92656346070f7d1536618c2982d613bd085c3e8c58d1f8b3abd57772",
@@ -771,6 +795,19 @@
             "maintainability": 10.0,
             "resource_efficiency": 1.5
           },
+          "last_eval_run_id": "eval-testdataops-v7-1778249432",
+          "promotion_status": "challenger",
+          "score": 79.3,
+          "score_type": "static_only",
+          "score_breakdown": {
+            "reliability": 15.0,
+            "runtime_efficiency": 20.0,
+            "retry_behavior": 15.0,
+            "scheduler_behavior": 8.0,
+            "complexity": 9.8,
+            "maintainability": 10.0,
+            "resource_efficiency": 1.5
+          },
           "last_eval_run_id": "eval-testdataops-v7-1778248453",
           "promoted_at": null,
           "promoted_by": null,
@@ -789,8 +826,135 @@
           "github_pr_number": 10,
           "github_branch": "eval",
           "updated_at": "2026-05-08T13:30:17.005095+00:00",
+          "github_branch": "eval",
+          "updated_at": "2026-05-08T13:30:17.005095+00:00",
           "requested_by_user_id": "admin",
           "requested_by_email": "",
+          "requested_by_display_name": "admin",
+          "local_dag_id": "testdataops__v7",
+          "git_dag_id": "testdataops_git__v7",
+          "local_dag_file": "airflow/dags/testdataops__v7.py",
+          "git_dag_file": "dags/testdataops_git__v7.py",
+          "dag_file": "dags/testdataops_git__v7.py",
+          "deployment_target": "git",
+          "warnings": [],
+          "critical_failures": [],
+          "last_evaluated_at": "2026-05-08T14:10:32.731371+00:00",
+          "evaluation_runs": []
+        },
+        {
+          "pipeline_id": "testdataops",
+          "version_id": "v8",
+          "dag_version": 8,
+          "airflow_dag_id": "testdataops__v8",
+          "output_filename": "testdataops__v8.py",
+          "created_at": "2026-05-08T14:20:42.351145+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "a5456caae2ea3e0d43f01d0213f12d7334edc32150928d8b34754cfc75d74837",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "testdataops",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "testdataops.py"
+            },
+            "nodes": [
+              {
+                "id": "node_12",
+                "type": "delay",
+                "label": "Delay 12",
+                "x": 185.111083984375,
+                "y": 309.2221984863281,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_13",
+                "type": "timeout_guard",
+                "label": "Timeout Guard 13",
+                "x": 466.111083984375,
+                "y": 290.2221984863281,
+                "config": {
+                  "timeout_minutes": 30
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_12",
+                "target": "node_13"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testdataops__v8.py",
+          "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testdataops__v8.py",
+          "node_task_map": {
+            "node_12": [
+              "delay_1_node_12"
+            ],
+            "node_13": [
+              "timeout_guard_2_node_13"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_12": "delay_1_node_12",
+            "node_13": "timeout_guard_2_node_13"
+          },
+          "base_pipeline_id": "testdataops",
+          "promotion_status": "submitted",
+          "score": null,
+          "score_type": null,
+          "score_breakdown": {},
+          "last_eval_run_id": null,
+          "promoted_at": null,
+          "promoted_by": null,
+          "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/11",
+          "github_commit_sha": "d435df49712b73845dc185e531cf353688c0e9fa",
+          "publish_status": "merged_to_git",
+          "dag_id": "testdataops__v8",
+          "version": "v8",
+          "workflow_name": "testdataops",
+          "workflow_slug": "testdataops",
+          "repo_file_path": "dags/testdataops_git__v8.py",
+          "git_branch_name": "feature/workflow/testdataops-6",
+          "pull_request_number": 11,
+          "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/11",
+          "commit_sha": "d435df49712b73845dc185e531cf353688c0e9fa",
+          "github_pr_number": 11,
+          "github_branch": "feature/workflow/testdataops-6",
+          "updated_at": "2026-05-08T14:22:15.456773+00:00",
+          "requested_by_user_id": "admin",
+          "requested_by_email": "",
+          "requested_by_display_name": "admin",
+          "local_dag_id": "testdataops__v8",
+          "git_dag_id": "testdataops_git__v8",
+          "local_dag_file": "airflow/dags/testdataops__v8.py",
+          "git_dag_file": "dags/testdataops_git__v8.py",
+          "dag_file": "dags/testdataops_git__v8.py",
+          "deployment_target": "git",
+          "merge_commit_sha": "d435df49712b73845dc185e531cf353688c0e9fa",
+          "merged_at": "2026-05-08T14:22:15.456773+00:00"
           "requested_by_display_name": "admin",
           "local_dag_id": "testdataops__v7",
           "git_dag_id": "testdataops_git__v7",
@@ -859,6 +1023,14 @@
           "to_version_id": "v7",
           "actor": "admin",
           "at": "2026-05-08T13:26:32.522739+00:00"
+        },
+        {
+          "event_id": "b5184fc7-4997-4169-bfd7-d16654dbb20c",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v7",
+          "to_version_id": "v8",
+          "actor": "admin",
+          "at": "2026-05-08T14:20:42.351145+00:00"
         },
         {
           "event_id": "b5184fc7-4997-4169-bfd7-d16654dbb20c",
