@@ -59,6 +59,26 @@ def _strip_py(path_text: str) -> str:
     return name[:-3] if name.endswith(".py") else name
 
 
+def _infer_deployment_target(version: dict[str, Any]) -> str:
+    current = str(version.get("deployment_target", "")).strip().lower()
+    if current in {"git", "local", "eval", "prod"}:
+        if current in {"eval", "prod"}:
+            return "git"
+        return current
+    publish_status = str(version.get("publish_status", "")).strip().lower()
+    promotion_status = str(version.get("promotion_status", "")).strip().lower()
+    has_git = bool(str(version.get("git_dag_file", "") or version.get("repo_file_path", "")).strip())
+    if has_git or publish_status in {"pr_open", "merged_to_git", "local_deleted"} or promotion_status in {
+        "submitted",
+        "eval",
+        "challenger",
+        "champion",
+        "archived",
+    }:
+        return "git"
+    return "local"
+
+
 def _validate_identity(version: dict[str, Any]) -> None:
     local_dag_id = str(version.get("local_dag_id", "")).strip()
     local_dag_file = str(version.get("local_dag_file", "")).strip()
@@ -242,13 +262,35 @@ def _normalize_version_fields(
         version["dag_file"] = safe_git_dag_file
         if not str(version.get("output_filename", "")).strip():
             version["output_filename"] = Path(safe_local_dag_file or safe_git_dag_file).name
-    if not str(version.get("deployment_target", "")).strip():
-        version["deployment_target"] = "local"
+    version["deployment_target"] = _infer_deployment_target(version)
     _validate_identity(version)
+
+
+def _migrate_all_versions(payload: dict[str, Any]) -> None:
+    pipelines = payload.setdefault("pipelines", {})
+    if not isinstance(pipelines, dict):
+        payload["pipelines"] = {}
+        pipelines = payload["pipelines"]
+    for pid, entry in pipelines.items():
+        if not isinstance(entry, dict):
+            continue
+        versions = entry.get("versions", [])
+        if not isinstance(versions, list):
+            continue
+        for version in versions:
+            if not isinstance(version, dict):
+                continue
+            _normalize_version_fields(
+                version,
+                pipeline_id=str(version.get("pipeline_id") or pid or ""),
+                dag_id=str(version.get("local_dag_id") or version.get("airflow_dag_id") or version.get("dag_id") or ""),
+                dag_file=str(version.get("git_dag_file") or version.get("repo_file_path") or version.get("dag_file") or ""),
+            )
 
 
 def cmd_pr_open(args: argparse.Namespace) -> int:
     payload = _load_store(args.store)
+    _migrate_all_versions(payload)
     found = _find_version(
         payload,
         pipeline_id=args.pipeline_id,
@@ -296,6 +338,7 @@ def cmd_pr_open(args: argparse.Namespace) -> int:
 
 def cmd_merged(args: argparse.Namespace) -> int:
     payload = _load_store(args.store)
+    _migrate_all_versions(payload)
     found = _find_version_for_merged(
         payload,
         pr_number=args.pr_number,
@@ -331,6 +374,7 @@ def cmd_merged(args: argparse.Namespace) -> int:
 
 def cmd_mark_eval(args: argparse.Namespace) -> int:
     payload = _load_store(args.store)
+    _migrate_all_versions(payload)
     now = _now_iso()
     changed = 0
     for pid, _, version in _iter_versions(payload):
@@ -353,6 +397,7 @@ def cmd_mark_eval(args: argparse.Namespace) -> int:
 
 def cmd_scored(args: argparse.Namespace) -> int:
     payload = _load_store(args.store)
+    _migrate_all_versions(payload)
     found = _find_version(payload, pipeline_id=args.pipeline_id, dag_id=args.dag_id, version_id=args.version_id, pr_number=None, branch=None)
     if not found:
         raise SystemExit("Version not found for scored update")
@@ -376,6 +421,7 @@ def cmd_scored(args: argparse.Namespace) -> int:
 
 def cmd_promote(args: argparse.Namespace) -> int:
     payload = _load_store(args.store)
+    _migrate_all_versions(payload)
     found = _find_version(payload, pipeline_id=args.pipeline_id, dag_id=args.dag_id, version_id=args.version_id, pr_number=None, branch=None)
     if not found:
         raise SystemExit("Version not found for promote update")
@@ -415,6 +461,7 @@ def cmd_promote(args: argparse.Namespace) -> int:
 
 def cmd_rollback(args: argparse.Namespace) -> int:
     payload = _load_store(args.store)
+    _migrate_all_versions(payload)
     found = _find_version(payload, pipeline_id=args.pipeline_id, dag_id=args.dag_id, version_id=args.version_id, pr_number=None, branch=None)
     if not found:
         raise SystemExit("Version not found for rollback update")
@@ -431,9 +478,16 @@ def cmd_rollback(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_migrate(args: argparse.Namespace) -> int:
+    payload = _load_store(args.store)
+    _migrate_all_versions(payload)
+    _save_store(args.store, payload)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Update pipeline metadata JSON")
-    parser.add_argument("command", choices=["pr_open", "merged", "mark_eval", "scored", "promote", "rollback"])
+    parser.add_argument("command", choices=["pr_open", "merged", "mark_eval", "scored", "promote", "rollback", "migrate"])
     parser.add_argument("--store", type=Path, required=True)
     parser.add_argument("--pipeline-id", type=str)
     parser.add_argument("--dag-id", type=str)
@@ -459,6 +513,7 @@ def main() -> int:
         "scored": cmd_scored,
         "promote": cmd_promote,
         "rollback": cmd_rollback,
+        "migrate": cmd_migrate,
     }
     return handlers[args.command](args)
 
