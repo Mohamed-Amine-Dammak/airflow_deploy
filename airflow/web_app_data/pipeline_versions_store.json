@@ -80,7 +80,7 @@
           "git_dag_file": "dags/testdataops_git__v1.py",
           "repo_file_path": "dags/testdataops_git__v1.py",
           "dag_file": "dags/testdataops_git__v1.py",
-          "deployment_target": "eval",
+          "deployment_target": "git",
           "updated_at": "2026-05-08T13:30:17.005095+00:00",
           "github_branch": "eval"
         },
@@ -164,7 +164,7 @@
           "git_dag_file": "dags/testdataops_git__v2.py",
           "repo_file_path": "dags/testdataops_git__v2.py",
           "dag_file": "dags/testdataops_git__v2.py",
-          "deployment_target": "eval",
+          "deployment_target": "git",
           "updated_at": "2026-05-08T13:30:17.005095+00:00",
           "github_branch": "eval"
         },
@@ -267,7 +267,7 @@
           "git_dag_file": "dags/testdataops_git__v3.py",
           "repo_file_path": "dags/testdataops_git__v3.py",
           "dag_file": "dags/testdataops_git__v3.py",
-          "deployment_target": "eval",
+          "deployment_target": "git",
           "updated_at": "2026-05-08T13:30:17.005095+00:00",
           "github_branch": "eval"
         },
@@ -381,7 +381,7 @@
           "local_dag_file": "airflow/dags/testdataops__v4.py",
           "git_dag_file": "dags/testdataops_git__v4.py",
           "dag_file": "dags/testdataops_git__v4.py",
-          "deployment_target": "eval"
+          "deployment_target": "git"
         },
         {
           "pipeline_id": "testdataops",
@@ -511,7 +511,7 @@
           "local_dag_file": "airflow/dags/testdataops__v5.py",
           "git_dag_file": "dags/testdataops_git__v5.py",
           "dag_file": "dags/testdataops_git__v5.py",
-          "deployment_target": "eval"
+          "deployment_target": "git"
         },
         {
           "pipeline_id": "testdataops",
@@ -659,7 +659,7 @@
           "local_dag_file": "airflow/dags/testdataops__v6.py",
           "git_dag_file": "dags/testdataops_git__v6.py",
           "dag_file": "dags/testdataops_git__v6.py",
-          "deployment_target": "eval"
+          "deployment_target": "git"
         },
         {
           "pipeline_id": "testdataops",
@@ -883,7 +883,7 @@
             "node_13": "timeout_guard_2_node_13"
           },
           "base_pipeline_id": "testdataops",
-          "promotion_status": "draft",
+          "promotion_status": "submitted",
           "score": null,
           "score_type": null,
           "score_breakdown": {},
@@ -891,8 +891,8 @@
           "promoted_at": null,
           "promoted_by": null,
           "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/11",
-          "github_commit_sha": "3e8ae9c36cdcff7c20df8c371223e88768c74cfe",
-          "publish_status": "pr_open",
+          "github_commit_sha": "d435df49712b73845dc185e531cf353688c0e9fa",
+          "publish_status": "merged_to_git",
           "dag_id": "testdataops__v8",
           "version": "v8",
           "workflow_name": "testdataops",
@@ -901,13 +901,21 @@
           "git_branch_name": "feature/workflow/testdataops-6",
           "pull_request_number": 11,
           "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/11",
-          "commit_sha": "3e8ae9c36cdcff7c20df8c371223e88768c74cfe",
+          "commit_sha": "d435df49712b73845dc185e531cf353688c0e9fa",
           "github_pr_number": 11,
           "github_branch": "feature/workflow/testdataops-6",
-          "updated_at": "2026-05-08T14:20:59.183946+00:00",
+          "updated_at": "2026-05-08T14:22:15.456773+00:00",
           "requested_by_user_id": "admin",
           "requested_by_email": "",
-          "requested_by_display_name": "admin"
+          "requested_by_display_name": "admin",
+          "local_dag_id": "testdataops__v8",
+          "git_dag_id": "testdataops_git__v8",
+          "local_dag_file": "airflow/dags/testdataops__v8.py",
+          "git_dag_file": "dags/testdataops_git__v8.py",
+          "dag_file": "dags/testdataops_git__v8.py",
+          "deployment_target": "git",
+          "merge_commit_sha": "d435df49712b73845dc185e531cf353688c0e9fa",
+          "merged_at": "2026-05-08T14:22:15.456773+00:00"
         }
       ],
       "switch_events": [
