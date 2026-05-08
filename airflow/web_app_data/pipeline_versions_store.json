@@ -1,7 +1,7 @@
 {
   "pipelines": {
     "testdataops": {
-      "current_version_id": "v5",
+      "current_version_id": "v6",
       "versions": [
         {
           "pipeline_id": "testdataops",
@@ -355,8 +355,8 @@
           "output_filename": "testdataops__v5.py",
           "created_at": "2026-05-08T13:03:45.161096+00:00",
           "created_by": "admin",
-          "status": "active",
-          "is_current": true,
+          "status": "archived",
+          "is_current": false,
           "source_hash": "8ba45abb8c086d9f5f887ad3ccd463bd53c7ef0cd4390958d824a98de7c4f3b9",
           "source_definition": {
             "pipeline": {
@@ -470,6 +470,148 @@
           "requested_by_user_id": "admin",
           "requested_by_email": "",
           "requested_by_display_name": "admin"
+        },
+        {
+          "pipeline_id": "testdataops",
+          "version_id": "v6",
+          "dag_version": 6,
+          "airflow_dag_id": "testdataops__v6",
+          "output_filename": "testdataops__v6.py",
+          "created_at": "2026-05-08T13:21:17.271842+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "75747d759bd52beead0104379c0136c2681401e26cb40cb19a2f037ee73b2fe8",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "testdataops",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "testdataops.py"
+            },
+            "nodes": [
+              {
+                "id": "node_6",
+                "type": "delay",
+                "label": "Delay 6",
+                "x": 793.3333129882812,
+                "y": 340.4444580078125,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_7",
+                "type": "delay",
+                "label": "Delay 7",
+                "x": 312.888916015625,
+                "y": 353.88890838623047,
+                "config": {
+                  "delay_minutes": 5
+                }
+              },
+              {
+                "id": "node_8",
+                "type": "delay",
+                "label": "Delay 8",
+                "x": 211.33331298828125,
+                "y": 108.55557250976562,
+                "config": {
+                  "delay_minutes": 5
+                }
+              },
+              {
+                "id": "node_9",
+                "type": "talend",
+                "label": "Talend 9",
+                "x": 505.77777099609375,
+                "y": 8,
+                "config": {
+                  "job_name": "ok"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_7",
+                "target": "node_6"
+              },
+              {
+                "source": "node_8",
+                "target": "node_7"
+              },
+              {
+                "source": "node_9",
+                "target": "node_8"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testdataops__v6.py",
+          "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testdataops__v6.py",
+          "node_task_map": {
+            "node_9": [
+              "talend_1_node_9"
+            ],
+            "node_8": [
+              "delay_2_node_8"
+            ],
+            "node_7": [
+              "delay_3_node_7"
+            ],
+            "node_6": [
+              "delay_4_node_6"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_9": "talend_1_node_9",
+            "node_8": "delay_2_node_8",
+            "node_7": "delay_3_node_7",
+            "node_6": "delay_4_node_6"
+          },
+          "base_pipeline_id": "testdataops",
+          "promotion_status": "draft",
+          "score": null,
+          "score_type": null,
+          "score_breakdown": {},
+          "last_eval_run_id": null,
+          "promoted_at": null,
+          "promoted_by": null,
+          "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/9",
+          "github_commit_sha": "449392d7d3b008a11122762634c4f5ee935d9803",
+          "publish_status": "pr_open",
+          "dag_id": "testdataops__v6",
+          "version": "v6",
+          "workflow_name": "testdataops",
+          "workflow_slug": "testdataops",
+          "repo_file_path": "dags/testdataops_git__v6.py",
+          "git_branch_name": "feature/workflow/testdataops-4",
+          "pull_request_number": 9,
+          "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/9",
+          "commit_sha": "449392d7d3b008a11122762634c4f5ee935d9803",
+          "github_pr_number": 9,
+          "github_branch": "feature/workflow/testdataops-4",
+          "updated_at": "2026-05-08T13:21:28.373664+00:00",
+          "requested_by_user_id": "admin",
+          "requested_by_email": "",
+          "requested_by_display_name": "admin"
         }
       ],
       "switch_events": [
@@ -512,6 +654,14 @@
           "to_version_id": "v5",
           "actor": "admin",
           "at": "2026-05-08T13:03:45.161096+00:00"
+        },
+        {
+          "event_id": "882afec5-249f-4dc8-8a39-199a82a151a8",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v5",
+          "to_version_id": "v6",
+          "actor": "admin",
+          "at": "2026-05-08T13:21:17.271842+00:00"
         }
       ]
     }
