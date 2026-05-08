@@ -49,7 +49,10 @@ def main() -> None:
     listing = list_versions(versions_file, args.pipeline_id)
     target_version = None
     for version in listing.get("versions", []):
-        if str(version.get("airflow_dag_id", "")).strip() == str(args.dag_id).strip():
+        local_id = str(version.get("local_dag_id") or version.get("airflow_dag_id") or "").strip()
+        git_id = str(version.get("git_dag_id") or "").strip()
+        wanted = str(args.dag_id).strip()
+        if wanted and wanted in {local_id, git_id}:
             target_version = version
             break
 
@@ -67,7 +70,8 @@ def main() -> None:
         print(f"ERROR: Version not found: {args.pipeline_id}/{version_id}")
         sys.exit(1)
 
-    local_path = Path(str(version.get("generated_local_path", "")).strip())
+    local_file = str(version.get("local_dag_file", "")).strip()
+    local_path = root / local_file if local_file else Path(str(version.get("generated_local_path", "")).strip())
     if not local_path.exists():
         print(f"ERROR: DAG version file not found: {local_path}")
         sys.exit(1)
@@ -77,9 +81,9 @@ def main() -> None:
     eval_metrics = _load_eval_metrics_from_env() if evaluation_mode != "static_only" else {}
 
     if eval_metrics:
-        score_result = score_dag_with_eval_metrics(dag_content, eval_metrics, args.dag_id)
+        score_result = score_dag_with_eval_metrics(dag_content, eval_metrics, str(version.get("local_dag_id") or args.dag_id))
     else:
-        score_result = score_dag_static_only(dag_content, args.dag_id)
+        score_result = score_dag_static_only(dag_content, str(version.get("local_dag_id") or args.dag_id))
 
     current_promotion_status = str(version.get("promotion_status", "")).strip().lower()
     next_promotion_status = "challenger"

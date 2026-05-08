@@ -147,6 +147,33 @@ class MetadataUpdateScriptTests(unittest.TestCase):
         self.assertEqual(v["airflow_dag_id"], "testdataops__v4")
         self.assertEqual(v["dag_id"], "testdataops__v4")
 
+    def test_pr_open_separate_local_and_git_identity(self):
+        store = self.tmp_dir / "identity_store.json"
+        store.write_text(json.dumps({"pipelines": {}}, indent=2), encoding="utf-8")
+        self._run(
+            "pr_open",
+            "--store",
+            str(store),
+            "--pipeline-id",
+            "testdataops",
+            "--version-id",
+            "v5",
+            "--dag-id",
+            "testdataops__v5",
+            "--dag-file",
+            "dags/testdataops_git__v5.py",
+            "--publish-status",
+            "pr_open",
+            "--promotion-status",
+            "submitted",
+        )
+        v = json.loads(store.read_text(encoding="utf-8"))["pipelines"]["testdataops"]["versions"][0]
+        self.assertEqual(v["local_dag_id"], "testdataops__v5")
+        self.assertEqual(v["git_dag_id"], "testdataops_git__v5")
+        self.assertEqual(v["local_dag_file"], "airflow/dags/testdataops__v5.py")
+        self.assertEqual(v["git_dag_file"], "dags/testdataops_git__v5.py")
+        self.assertEqual(v["repo_file_path"], "dags/testdataops_git__v5.py")
+
 
 if __name__ == "__main__":
     unittest.main()

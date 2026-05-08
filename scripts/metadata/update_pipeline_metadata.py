@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -34,6 +35,39 @@ def _save_store(path: Path, payload: dict[str, Any]) -> None:
     if not isinstance(pipelines, dict):
         normalized["pipelines"] = {}
     path.write_text(json.dumps(normalized, indent=2), encoding="utf-8")
+
+
+def _inject_git_marker_before_version(name: str) -> str:
+    base = str(name or "").strip()
+    if not base:
+        return ""
+    if re.search(r"(^|[_-])git($|[_-])", base, flags=re.IGNORECASE):
+        return base
+    match = re.search(r"(__v\d+)$", base, flags=re.IGNORECASE)
+    if not match:
+        match = re.search(r"(_v\d+)$", base, flags=re.IGNORECASE)
+    if not match:
+        match = re.search(r"(-v\d+)$", base, flags=re.IGNORECASE)
+    if match:
+        start = match.start()
+        return f"{base[:start]}_git{base[start:]}"
+    return f"{base}_git"
+
+
+def _strip_py(path_text: str) -> str:
+    name = Path(str(path_text or "").strip()).name
+    return name[:-3] if name.endswith(".py") else name
+
+
+def _validate_identity(version: dict[str, Any]) -> None:
+    local_dag_id = str(version.get("local_dag_id", "")).strip()
+    local_dag_file = str(version.get("local_dag_file", "")).strip()
+    git_dag_id = str(version.get("git_dag_id", "")).strip()
+    git_dag_file = str(version.get("git_dag_file", "")).strip()
+    if local_dag_id and local_dag_file and _strip_py(local_dag_file) != local_dag_id:
+        raise SystemExit(f"Invalid local identity: file '{local_dag_file}' does not match local_dag_id '{local_dag_id}'")
+    if git_dag_id and git_dag_file and _strip_py(git_dag_file) != git_dag_id:
+        raise SystemExit(f"Invalid git identity: file '{git_dag_file}' does not match git_dag_id '{git_dag_id}'")
 
 
 def _iter_versions(payload: dict[str, Any]):
@@ -136,6 +170,14 @@ def _find_version_for_merged(
     return None
 
 
+def _versions_for_base_pipeline(payload: dict[str, Any], base_pipeline_id: str) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for _, _, version in _iter_versions(payload):
+        if str(version.get("base_pipeline_id", "")).strip() == str(base_pipeline_id).strip():
+            items.append(version)
+    return items
+
+
 def _apply_common(version: dict[str, Any], *, commit_sha: str, branch: str, pr_number: int | None, pr_url: str) -> None:
     if pr_number is not None:
         version["pull_request_number"] = pr_number
@@ -159,20 +201,50 @@ def _normalize_version_fields(
     dag_file: str | None,
 ) -> None:
     safe_pipeline_id = str(pipeline_id or "").strip()
-    safe_dag_id = str(dag_id or version.get("airflow_dag_id") or version.get("dag_id") or "").strip()
-    safe_dag_file = str(dag_file or version.get("dag_file") or version.get("repo_file_path") or "").strip()
+    safe_local_dag_id = str(
+        dag_id
+        or version.get("local_dag_id")
+        or version.get("airflow_dag_id")
+        or version.get("dag_id")
+        or ""
+    ).strip()
+    safe_git_dag_id = str(version.get("git_dag_id") or _inject_git_marker_before_version(safe_local_dag_id)).strip()
+    provided_dag_file = str(dag_file or "").strip()
+    safe_git_dag_file = str(
+        version.get("git_dag_file")
+        or version.get("repo_file_path")
+        or provided_dag_file
+        or (f"dags/{safe_git_dag_id}.py" if safe_git_dag_id else "")
+    ).strip()
+    safe_local_dag_file = str(
+        version.get("local_dag_file")
+        or (f"airflow/dags/{safe_local_dag_id}.py" if safe_local_dag_id else "")
+    ).strip()
+    # If an explicit repo DAG file is provided, let that drive git_dag_id.
+    if provided_dag_file:
+        provided_stem = _strip_py(provided_dag_file)
+        if provided_stem:
+            safe_git_dag_id = provided_stem
 
     version["pipeline_id"] = safe_pipeline_id
     version["base_pipeline_id"] = str(version.get("base_pipeline_id") or safe_pipeline_id).strip()
-
-    if safe_dag_id:
-        version["airflow_dag_id"] = safe_dag_id
-        version["dag_id"] = safe_dag_id
-    if safe_dag_file:
-        version["dag_file"] = safe_dag_file
-        version["repo_file_path"] = safe_dag_file
+    if safe_local_dag_id:
+        version["local_dag_id"] = safe_local_dag_id
+        version["airflow_dag_id"] = safe_local_dag_id
+        version["dag_id"] = safe_local_dag_id
+    if safe_git_dag_id:
+        version["git_dag_id"] = safe_git_dag_id
+    if safe_local_dag_file:
+        version["local_dag_file"] = safe_local_dag_file
+    if safe_git_dag_file:
+        version["git_dag_file"] = safe_git_dag_file
+        version["repo_file_path"] = safe_git_dag_file  # alias
+        version["dag_file"] = safe_git_dag_file
         if not str(version.get("output_filename", "")).strip():
-            version["output_filename"] = Path(safe_dag_file).name
+            version["output_filename"] = Path(safe_local_dag_file or safe_git_dag_file).name
+    if not str(version.get("deployment_target", "")).strip():
+        version["deployment_target"] = "local"
+    _validate_identity(version)
 
 
 def cmd_pr_open(args: argparse.Namespace) -> int:
@@ -214,6 +286,7 @@ def cmd_pr_open(args: argparse.Namespace) -> int:
     version["version"] = str(version.get("version_id") or args.version_id or "")
     version["publish_status"] = args.publish_status or "pr_open"
     version["promotion_status"] = args.promotion_status or str(version.get("promotion_status") or "draft")
+    version["deployment_target"] = "git"
     _apply_common(version, commit_sha=args.commit_sha or "", branch=args.branch or "", pr_number=args.pr_number, pr_url=args.pr_url or "")
     version["created_at"] = str(version.get("created_at") or now)
     version["updated_at"] = now
@@ -246,6 +319,7 @@ def cmd_merged(args: argparse.Namespace) -> int:
     )
     version["publish_status"] = args.publish_status or "merged_to_git"
     version["promotion_status"] = args.promotion_status or "submitted"
+    version["deployment_target"] = "git"
     if args.commit_sha:
         version["merge_commit_sha"] = args.commit_sha
     version["merged_at"] = now
@@ -267,6 +341,7 @@ def cmd_mark_eval(args: argparse.Namespace) -> int:
         if str(version.get("promotion_status", "")).strip().lower() in {"champion", "archived"}:
             continue
         version["promotion_status"] = "eval"
+        version["deployment_target"] = "eval"
         version["updated_at"] = now
         if args.branch:
             version["github_branch"] = args.branch
@@ -287,6 +362,7 @@ def cmd_scored(args: argparse.Namespace) -> int:
     if args.score_json:
         score_payload = json.loads(args.score_json)
     version["promotion_status"] = args.promotion_status or "challenger"
+    version["deployment_target"] = "eval"
     version["score"] = score_payload.get("score")
     version["score_type"] = score_payload.get("score_type")
     version["score_breakdown"] = score_payload.get("breakdown", {})
@@ -305,13 +381,22 @@ def cmd_promote(args: argparse.Namespace) -> int:
         raise SystemExit("Version not found for promote update")
     pid, entry, target = found
     now = _now_iso()
-    prev = None
+    base_id = str(target.get("base_pipeline_id") or pid).strip()
+    family_versions = []
     for version in entry.get("versions", []):
+        version_base = str(version.get("base_pipeline_id", "")).strip()
+        if not version_base or version_base == base_id:
+            family_versions.append(version)
+    if not family_versions:
+        family_versions = _versions_for_base_pipeline(payload, base_id) or entry.get("versions", [])
+    prev = None
+    for version in family_versions:
         if str(version.get("promotion_status", "")).strip().lower() == "champion":
             prev = str(version.get("version_id", ""))
             version["promotion_status"] = "archived"
             version["updated_at"] = now
     target["promotion_status"] = args.promotion_status or "champion"
+    target["deployment_target"] = "prod"
     target["promoted_at"] = now
     target["updated_at"] = now
     history = entry.setdefault("promotion_history", [])
@@ -319,7 +404,7 @@ def cmd_promote(args: argparse.Namespace) -> int:
         history.append(
             {
                 "at": now,
-                "pipeline_id": pid,
+                "pipeline_id": base_id,
                 "promoted_version_id": str(target.get("version_id", "")),
                 "previous_champion_version_id": prev,
             }

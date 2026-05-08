@@ -5,7 +5,6 @@ Copy DAG version from eval branch to prod branch.
 
 import argparse
 import json
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -51,23 +50,27 @@ def main():
         print(f"ERROR: Version not found: {args.version_id}")
         sys.exit(1)
     
-    output_filename = target_version.get("output_filename")
-    if not output_filename:
-        print(f"ERROR: Version has no output_filename")
+    git_dag_file = str(target_version.get("git_dag_file") or target_version.get("repo_file_path") or "").strip()
+    if not git_dag_file:
+        print("ERROR: Version has no git_dag_file/repo_file_path")
         sys.exit(1)
+    if not git_dag_file.startswith("dags/"):
+        print(f"ERROR: git_dag_file must be under dags/: {git_dag_file}")
+        sys.exit(1)
+    relative_file = git_dag_file[len("dags/"):]
     
     # Get DAG from eval branch
     try:
         # Fetch eval branch content
         result = subprocess.run(
-            ["git", "show", f"{args.eval_branch}:dags/{output_filename}"],
+            ["git", "show", f"{args.eval_branch}:{git_dag_file}"],
             cwd=str(root),
             capture_output=True,
             text=True,
             check=False,
         )
         if result.returncode != 0:
-            print(f"ERROR: Could not fetch {output_filename} from {args.eval_branch} branch: {result.stderr}")
+            print(f"ERROR: Could not fetch {git_dag_file} from {args.eval_branch} branch: {result.stderr}")
             sys.exit(1)
         
         dag_content = result.stdout
@@ -76,11 +79,11 @@ def main():
         sys.exit(1)
     
     # Write to prod branch working tree
-    prod_dag_path = dags_dir / output_filename
+    prod_dag_path = dags_dir / relative_file
     try:
         prod_dag_path.parent.mkdir(parents=True, exist_ok=True)
         prod_dag_path.write_text(dag_content, encoding="utf-8")
-        print(f"Copied {output_filename} to prod working tree")
+        print(f"Copied {git_dag_file} to prod working tree")
     except Exception as e:
         print(f"ERROR: Could not write DAG file: {e}")
         sys.exit(1)
@@ -88,7 +91,7 @@ def main():
     # Stage and commit
     try:
         subprocess.run(
-            ["git", "add", f"dags/{output_filename}"],
+            ["git", "add", git_dag_file],
             cwd=str(root),
             check=True,
         )
@@ -97,7 +100,7 @@ def main():
             cwd=str(root),
             check=False,
         )
-        print(f"Committed {output_filename} to prod branch")
+        print(f"Committed {git_dag_file} to prod branch")
     except Exception as e:
         print(f"ERROR: Git operations failed: {e}")
         sys.exit(1)
