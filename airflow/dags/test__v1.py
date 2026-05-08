@@ -1,7 +1,7 @@
 from airflow.exceptions import AirflowException
 from airflow.exceptions import AirflowSkipException
-from airflow.sdk import dag, task
-from airflow.sdk.bases.hook import BaseHook
+from airflow.decorators import dag, task
+from airflow.hooks.base import BaseHook
 from datetime import datetime, timedelta, timezone
 import json
 import os
@@ -74,7 +74,7 @@ if _alert_emails and _alert_mode in {"on_retry", "both"}:
         1,
         1
     ),
-    schedule=_normalize_schedule(None),
+    schedule=_normalize_schedule('22 14 * * *'),
     catchup=False,
     default_args=default_args,
     tags=['demo', 'orchestration'],

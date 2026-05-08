@@ -41,7 +41,8 @@ def main():
             if args.version_id and version.get("version_id") != args.version_id:
                 continue
             
-            if version.get("promotion_status") == "submitted":
+            current_status = str(version.get("promotion_status", "")).strip().lower()
+            if current_status not in {"champion", "archived"}:
                 version["promotion_status"] = "eval"
                 updated_count += 1
                 print(f"Marked {pipeline_id}/{version.get('version_id')} as eval")

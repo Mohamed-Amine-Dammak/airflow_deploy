@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "airflow/dags/**"
+      - "dags/**"
   workflow_dispatch:
     inputs:
       pipeline_id:

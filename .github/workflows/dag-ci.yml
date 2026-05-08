@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "airflow/dags/**"
+      - "dags/**"
       - ".github/workflows/dag-ci.yml"
 
 permissions:
@@ -39,21 +39,21 @@ jobs:
 
       - name: Syntax check DAGs
         run: |
-          find airflow/dags -name "*.py" -print0 | xargs -0 -I {} python -m py_compile {}
+          find dags -name "*.py" -print0 | xargs -0 -I {} python -m py_compile {}
 
       - name: Lint DAGs (non-blocking)
         run: |
-          ruff check airflow/dags --output-format=github || true
+          ruff check dags --output-format=github || true
 
       - name: Format check DAGs (non-blocking)
         run: |
-          black --check airflow/dags || true
+          black --check dags || true
 
       - name: Secret scan DAGs
         run: |
-          ./gitleaks detect --source airflow/dags --no-git --verbose --redact
+          ./gitleaks detect --source dags --no-git --verbose --redact
 
       - name: Validate DAG import and metadata
         run: |
-          python scripts/validation/validate_dag_metadata.py --dags-dir airflow/dags
+          python scripts/validation/validate_dag_metadata.py --dags-dir dags
         continue-on-error: false

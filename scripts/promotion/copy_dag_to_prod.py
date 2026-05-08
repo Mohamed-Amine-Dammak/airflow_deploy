@@ -22,7 +22,7 @@ def main():
     
     root = Path(args.root)
     versions_file = root / "web_app" / "pipeline_versions_store.json"
-    dags_dir = root / "airflow" / "dags"
+    dags_dir = root / "dags"
     
     if not versions_file.exists():
         print(f"ERROR: Version store not found: {versions_file}")
@@ -60,7 +60,7 @@ def main():
     try:
         # Fetch eval branch content
         result = subprocess.run(
-            ["git", "show", f"{args.eval_branch}:airflow/dags/{output_filename}"],
+            ["git", "show", f"{args.eval_branch}:dags/{output_filename}"],
             cwd=str(root),
             capture_output=True,
             text=True,
@@ -88,7 +88,7 @@ def main():
     # Stage and commit
     try:
         subprocess.run(
-            ["git", "add", f"airflow/dags/{output_filename}"],
+            ["git", "add", f"dags/{output_filename}"],
             cwd=str(root),
             check=True,
         )

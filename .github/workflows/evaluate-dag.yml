@@ -19,7 +19,7 @@ on:
         default: "1"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   evaluate-dag:
@@ -51,6 +51,18 @@ jobs:
           AIRFLOW_API_BASE_URL: ${{ secrets.AIRFLOW_API_BASE_URL }}
           AIRFLOW_API_USERNAME: ${{ secrets.AIRFLOW_API_USERNAME }}
           AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
+
+      - name: Persist evaluation metadata updates
+        run: |
+          git config user.email "airflow-bot@example.com"
+          git config user.name "Airflow Bot"
+          if git diff --quiet -- web_app/pipeline_versions_store.json; then
+            echo "No metadata changes to commit"
+          else
+            git add web_app/pipeline_versions_store.json
+            git commit -m "Update evaluation score for ${{ github.event.inputs.pipeline_id }} / ${{ github.event.inputs.dag_id }}"
+            git push origin HEAD
+          fi
 
       - name: Upload evaluation results
         if: always()
