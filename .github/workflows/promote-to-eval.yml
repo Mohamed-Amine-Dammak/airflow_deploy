@@ -1,23 +1,20 @@
-name: Promote DAG to Eval Branch
+name: Promote Changed Metadata to Eval
 
 on:
   push:
     branches:
       - main
     paths:
-      - "dags/**"
+      - "airflow/web_app_data/metadata/**/*.json"
+      - "dags/**/*.py"
   workflow_dispatch:
     inputs:
-      pipeline_id:
-        description: "Base pipeline ID (optional; if omitted, all changed DAGs are promoted)"
-        required: false
-      dag_id:
-        description: "DAG ID to mark as eval (e.g. pipeline__v4)"
+      metadata_file:
+        description: "Optional metadata file for manual recovery (e.g. airflow/web_app_data/metadata/testops/v2.json)"
         required: false
 
 permissions:
   contents: write
-  pull-requests: read
 
 concurrency:
   group: metadata-${{ github.workflow }}-${{ github.ref }}
@@ -28,72 +25,129 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout main source
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
+          path: main-src
+
+      - name: Checkout eval target
+        uses: actions/checkout@v4
+        with:
+          ref: eval
+          fetch-depth: 0
+          path: eval-worktree
+        continue-on-error: true
+
+      - name: Ensure eval target exists
+        shell: bash
+        run: |
+          if [ ! -d "eval-worktree/.git" ]; then
+            mkdir -p eval-worktree
+            cp -r main-src/.git eval-worktree/.git
+            cd eval-worktree
+            git checkout --orphan eval
+            git rm -rf . || true
+            echo "# Eval Branch" > README.md
+            git add README.md
+            git -c user.email="airflow-bot@example.com" -c user.name="Airflow Bot" commit -m "Initialize eval branch"
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyyaml requests
-
       - name: Configure Git
         run: |
+          cd eval-worktree
           git config user.email "airflow-bot@example.com"
           git config user.name "Airflow Bot"
 
-      - name: Create or checkout eval branch
-        run: |
-          git fetch origin eval 2>/dev/null || true
-          if git rev-parse --verify origin/eval > /dev/null 2>&1; then
-            git checkout -b eval origin/eval
-          else
-            git checkout --orphan eval
-            git rm -rf .
-            echo "# Eval Branch" > README.md
-            git add README.md
-            git commit -m "Initialize eval branch"
-          fi
-
       - name: Merge main into eval
+        shell: bash
         run: |
+          cd eval-worktree
+          git fetch origin main
           git merge origin/main --no-edit || true
 
-      - name: Update metadata for eval DAGs
+      - name: Detect metadata files to promote
+        id: detect
+        shell: bash
         run: |
-          python scripts/metadata/update_pipeline_metadata.py mark_eval \
-            --root . \
-            --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
-            --dag-id "${{ github.event.inputs.dag_id }}"
+          set -euo pipefail
+          cd main-src
+          : > /tmp/metadata_files.txt
+          if [ -n "${{ github.event.inputs.metadata_file }}" ]; then
+            echo "${{ github.event.inputs.metadata_file }}" > /tmp/metadata_files.txt
+          else
+            git diff --name-only HEAD~1 HEAD | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/metadata_files.txt || true
+          fi
+          echo "Detected metadata files:"
+          if [ -s /tmp/metadata_files.txt ]; then
+            sed 's/^/- /' /tmp/metadata_files.txt
+          else
+            echo "- <none>"
+          fi
 
-      - name: Validate metadata JSON after eval update
+      - name: Copy selected metadata and DAG files from main to eval
+        shell: bash
         run: |
-          python scripts/metadata/validate_metadata.py --root .
+          set -euo pipefail
+          if [ ! -s /tmp/metadata_files.txt ]; then
+            exit 0
+          fi
+          cd eval-worktree
+          while IFS= read -r meta_file; do
+            [ -z "$meta_file" ] && continue
+            mkdir -p "$(dirname "$meta_file")"
+            git --git-dir=../main-src/.git show origin/main:"$meta_file" > "$meta_file"
+            dag_file=$(python -c "import json,sys;print((json.load(open(sys.argv[1],encoding='utf-8')).get('git_dag_file') or '').strip())" "$meta_file")
+            if [ -n "$dag_file" ]; then
+              mkdir -p "$(dirname "$dag_file")"
+              git --git-dir=../main-src/.git show origin/main:"$dag_file" > "$dag_file"
+            fi
+          done < /tmp/metadata_files.txt
+
+      - name: Promote changed metadata files to eval
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd eval-worktree
+          if [ ! -s /tmp/metadata_files.txt ]; then
+            echo "No changed metadata files detected; skipping promotion."
+            exit 0
+          fi
+          CMD=(python scripts/promotion/promote_changed_metadata_to_eval.py --root .)
+          while IFS= read -r meta_file; do
+            [ -z "$meta_file" ] && continue
+            CMD+=(--metadata-file "$meta_file")
+          done < /tmp/metadata_files.txt
+          "${CMD[@]}"
 
       - name: Guard legacy store is unchanged
         shell: bash
         run: |
+          cd eval-worktree
           if git diff --name-only | grep -x "airflow/web_app_data/pipeline_versions_store.json" >/dev/null; then
             echo "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
             exit 1
           fi
 
-      - name: Commit eval metadata updates
+      - name: Commit eval DAG and metadata updates
+        shell: bash
         run: |
-          TARGET="airflow/web_app_data/metadata"
-          if git diff --quiet -- "$TARGET"; then
-            echo "No metadata changes to commit"
+          cd eval-worktree
+          if git diff --quiet -- dags airflow/web_app_data/metadata; then
+            echo "No DAG/metadata changes to commit"
           else
-            git add "$TARGET"
-            git commit -m "Mark DAG metadata as eval"
+            git add dags airflow/web_app_data/metadata
+            git commit -m "Promote merged DAG metadata to eval"
           fi
 
       - name: Push eval branch
+        shell: bash
         run: |
+          cd eval-worktree
           git push origin eval
