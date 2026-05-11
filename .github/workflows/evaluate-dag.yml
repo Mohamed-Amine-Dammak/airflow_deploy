@@ -49,13 +49,7 @@ jobs:
 
       - name: Run DAG runtime evaluation
         shell: powershell
-        run: |
-          python scripts/evaluation/evaluate_dag.py `
-            --root . `
-            --pipeline-id "${{ github.event.inputs.pipeline_id }}" `
-            --dag-id "${{ github.event.inputs.dag_id }}" `
-            --evaluation-mode "${{ github.event.inputs.evaluation_mode }}" `
-            --run-count "${{ github.event.inputs.run_count }}"
+        run: python scripts/evaluation/evaluate_dag.py --root . --pipeline-id "${{ github.event.inputs.pipeline_id }}" --dag-id "${{ github.event.inputs.dag_id }}" --evaluation-mode "${{ github.event.inputs.evaluation_mode }}" --run-count "${{ github.event.inputs.run_count }}"
 
       - name: Validate metadata after scoring update
         run: |
