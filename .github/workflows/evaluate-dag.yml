@@ -153,30 +153,6 @@ jobs:
           Write-Output "::add-mask::$token"
           "AIRFLOW_API_TOKEN=$token" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Patch runtime client to use JWT bearer token
-        if: ${{ github.event.inputs.airflow_api_version == 'v2' || github.event.inputs.airflow_api_version == '' }}
-        shell: powershell
-        run: |
-          @'
-          from pathlib import Path
-          p = Path("scripts/evaluation/airflow_client.py")
-          text = p.read_text(encoding="utf-8")
-          old = "        resp = requests.request(method, url, auth=auth, timeout=30, **kwargs)"
-          new = (
-              "        headers = dict(kwargs.pop('headers', {}) or {})\\n"
-              "        token = __import__('os').getenv('AIRFLOW_API_TOKEN', '').strip()\\n"
-              "        if token:\\n"
-              "            headers['Authorization'] = f'Bearer {token}'\\n"
-              "            resp = requests.request(method, url, headers=headers, timeout=30, **kwargs)\\n"
-              "        else:\\n"
-              "            resp = requests.request(method, url, auth=auth, headers=headers, timeout=30, **kwargs)"
-          )
-          if old not in text:
-              raise SystemExit("Could not patch airflow_client.py request line for JWT support")
-          p.write_text(text.replace(old, new), encoding="utf-8")
-          print("Patched airflow_client.py for JWT bearer support")
-          '@ | python -
-
       - name: Run DAG runtime evaluation
         shell: powershell
         run: python scripts/evaluation/evaluate_dag.py --root . --pipeline-id "${{ github.event.inputs.pipeline_id }}" --dag-id "${{ github.event.inputs.dag_id }}" --evaluation-mode "${{ github.event.inputs.evaluation_mode }}" --run-count "${{ github.event.inputs.run_count }}"
