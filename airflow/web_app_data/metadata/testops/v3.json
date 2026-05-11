@@ -1,0 +1,175 @@
+{
+  "pipeline_id": "testops",
+  "version_id": "v3",
+  "dag_version": 3,
+  "airflow_dag_id": "testops__v3",
+  "output_filename": "testops__v3.py",
+  "created_at": "2026-05-11T13:13:42.656676+00:00",
+  "created_by": "admin",
+  "status": "active",
+  "is_current": true,
+  "source_hash": "fc2985a67af5d602e01ca28370a73a4e4ea8580b72964709c3abb3e0c7188892",
+  "source_definition": {
+    "pipeline": {
+      "dag_id": "testops",
+      "description": "",
+      "start_date": "2026-01-01",
+      "schedule": null,
+      "schedule_mode": "manual",
+      "catchup": false,
+      "schedule_preset": "",
+      "schedule_cron": "",
+      "interval_value": "",
+      "interval_unit": "minutes",
+      "event_source": "",
+      "custom_schedule_text": "",
+      "retries": 3,
+      "retry_delay_minutes": 5,
+      "alert_emails": [],
+      "alert_mode": "both",
+      "tags": [
+        "demo",
+        "orchestration"
+      ],
+      "output_filename": "testops.py"
+    },
+    "nodes": [
+      {
+        "id": "node_1",
+        "type": "delay",
+        "label": "Delay 1",
+        "x": 500.99998474121094,
+        "y": 347.99999618530273,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_2",
+        "type": "delay",
+        "label": "Delay 2",
+        "x": 787.9999847412109,
+        "y": 331.99999618530273,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_4",
+        "type": "sftp_upload",
+        "label": "SFTP 4",
+        "x": 8,
+        "y": 409.6666831970215,
+        "config": {
+          "action": "upload",
+          "conn_name": "sftp",
+          "delete_file_name": "",
+          "delete_mode": "single",
+          "delete_prefix": "",
+          "download_mode": "single",
+          "file_prefix": "",
+          "local_dir_download": "/opt/airflow/local_downloads/sftp",
+          "local_directory_path": "",
+          "local_file_path": "ok",
+          "local_file_paths": [],
+          "remote_dir": "/uploads",
+          "remote_file_name": "",
+          "remote_file_prefix": "",
+          "upload_mode": "single"
+        }
+      },
+      {
+        "id": "node_5",
+        "type": "sftp_upload",
+        "label": "SFTP 5",
+        "x": 977.2221527099609,
+        "y": 578.4444389343262,
+        "config": {
+          "conn_name": "sftp",
+          "action": "upload",
+          "remote_dir": "/uploads",
+          "upload_mode": "single",
+          "local_file_path": "1",
+          "local_file_paths": [],
+          "local_directory_path": "",
+          "file_prefix": "",
+          "download_mode": "single",
+          "remote_file_name": "",
+          "remote_file_prefix": "",
+          "local_dir_download": "/opt/airflow/local_downloads/sftp",
+          "delete_mode": "single",
+          "delete_file_name": "",
+          "delete_prefix": ""
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "node_1",
+        "target": "node_2"
+      },
+      {
+        "source": "node_4",
+        "target": "node_1"
+      },
+      {
+        "source": "node_2",
+        "target": "node_5"
+      }
+    ],
+    "group_boxes": []
+  },
+  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testops__v3.py",
+  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testops__v3.py",
+  "node_task_map": {
+    "node_4": [
+      "sftp_upload_1_node_4"
+    ],
+    "node_1": [
+      "delay_2_node_1"
+    ],
+    "node_2": [
+      "delay_3_node_2"
+    ],
+    "node_5": [
+      "sftp_upload_4_node_5"
+    ]
+  },
+  "node_primary_task_map": {
+    "node_4": "sftp_upload_1_node_4",
+    "node_1": "delay_2_node_1",
+    "node_2": "delay_3_node_2",
+    "node_5": "sftp_upload_4_node_5"
+  },
+  "base_pipeline_id": "testops",
+  "promotion_status": "draft",
+  "score": null,
+  "score_type": null,
+  "score_breakdown": {},
+  "last_eval_run_id": null,
+  "promoted_at": null,
+  "promoted_by": null,
+  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/15",
+  "github_commit_sha": "300e06275bb4c23934c710e6b0dec62051d6c0f2",
+  "local_dag_id": "testops__v3",
+  "git_dag_id": "testops_git__v3",
+  "local_dag_file": "airflow/dags/testops__v3.py",
+  "git_dag_file": "dags/testops_git__v3.py",
+  "dag_id": "testops__v3",
+  "deployment_target": "git",
+  "updated_at": "2026-05-11T13:13:46.678146+00:00",
+  "publish_status": "pr_open",
+  "version": "v3",
+  "workflow_name": "testops",
+  "workflow_slug": "testops",
+  "repo_file_path": "dags/testops_git__v3.py",
+  "git_branch_name": "feature/workflow/testops-3",
+  "pull_request_number": 15,
+  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/15",
+  "commit_sha": "300e06275bb4c23934c710e6b0dec62051d6c0f2",
+  "github_pr_number": 15,
+  "github_branch": "feature/workflow/testops-3",
+  "requested_by_user_id": "admin",
+  "requested_by_email": "",
+  "requested_by_display_name": "admin"
+}
