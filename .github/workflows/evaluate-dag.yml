@@ -110,13 +110,8 @@ jobs:
           pip install requests
 
       - name: Run DAG runtime evaluation
-        run: |
-          python scripts/evaluation/evaluate_dag.py \
-            --root . \
-            --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
-            --dag-id "${{ github.event.inputs.dag_id }}" \
-            --evaluation-mode "${{ github.event.inputs.evaluation_mode }}" \
-            --run-count "${{ github.event.inputs.run_count }}"
+        shell: powershell
+        run: python scripts/evaluation/evaluate_dag.py --root . --pipeline-id "${{ github.event.inputs.pipeline_id }}" --dag-id "${{ github.event.inputs.dag_id }}" --evaluation-mode "${{ github.event.inputs.evaluation_mode }}" --run-count "${{ github.event.inputs.run_count }}"
         env:
           AIRFLOW_API_BASE_URL: ${{ secrets.AIRFLOW_API_BASE_URL }}
           AIRFLOW_API_USERNAME: ${{ secrets.AIRFLOW_API_USERNAME }}
@@ -127,24 +122,27 @@ jobs:
           python scripts/metadata/validate_metadata.py --root .
 
       - name: Guard legacy store is unchanged
-        shell: bash
+        shell: powershell
         run: |
-          if git diff --name-only | grep -x "airflow/web_app_data/pipeline_versions_store.json" >/dev/null; then
-            echo "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
+          $changed = git diff --name-only
+          if ($changed -contains "airflow/web_app_data/pipeline_versions_store.json") {
+            Write-Error "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
             exit 1
-          fi
+          }
 
       - name: Persist evaluation metadata updates
+        shell: powershell
         run: |
           git config user.email "airflow-bot@example.com"
           git config user.name "Airflow Bot"
-          if git diff --quiet -- airflow/web_app_data/metadata; then
-            echo "No metadata changes to commit"
-          else
+          git diff --quiet -- airflow/web_app_data/metadata
+          if ($LASTEXITCODE -eq 0) {
+            Write-Output "No metadata changes to commit"
+          } else {
             git add airflow/web_app_data/metadata
             git commit -m "Update runtime evaluation score for ${{ github.event.inputs.pipeline_id }} / ${{ github.event.inputs.dag_id }}"
             git push origin eval
-          fi
+          }
 
       - name: Upload evaluation results
         if: always()
