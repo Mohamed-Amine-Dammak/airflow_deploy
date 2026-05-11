@@ -142,7 +142,7 @@
     "node_5": "sftp_upload_4_node_5"
   },
   "base_pipeline_id": "testops",
-  "promotion_status": "draft",
+  "promotion_status": "submitted",
   "score": null,
   "score_type": null,
   "score_breakdown": {},
@@ -150,15 +150,15 @@
   "promoted_at": null,
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/15",
-  "github_commit_sha": "300e06275bb4c23934c710e6b0dec62051d6c0f2",
+  "github_commit_sha": "c4f2ea96598bcbf2f6b5943e118bada2f193ecb1",
   "local_dag_id": "testops__v3",
   "git_dag_id": "testops_git__v3",
   "local_dag_file": "airflow/dags/testops__v3.py",
   "git_dag_file": "dags/testops_git__v3.py",
   "dag_id": "testops__v3",
   "deployment_target": "git",
-  "updated_at": "2026-05-11T13:13:46.678146+00:00",
-  "publish_status": "pr_open",
+  "updated_at": "2026-05-11T13:14:44.882962+00:00",
+  "publish_status": "merged_to_git",
   "version": "v3",
   "workflow_name": "testops",
   "workflow_slug": "testops",
@@ -171,5 +171,9 @@
   "github_branch": "feature/workflow/testops-3",
   "requested_by_user_id": "admin",
   "requested_by_email": "",
-  "requested_by_display_name": "admin"
+  "requested_by_display_name": "admin",
+  "warnings": [],
+  "critical_failures": [],
+  "merged_at": "2026-05-11T13:14:44.882975+00:00",
+  "merge_commit_sha": "c4f2ea96598bcbf2f6b5943e118bada2f193ecb1"
 }
