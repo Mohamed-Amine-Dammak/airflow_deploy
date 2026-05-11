@@ -42,14 +42,6 @@ def load_store(path: Path) -> dict[str, Any]:
     return payload
 
 
-def save_store(path: Path, store: dict[str, Any]) -> None:
-    normalized = dict(store if isinstance(store, dict) else {})
-    if not isinstance(normalized.get("pipelines"), dict):
-        normalized["pipelines"] = {}
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(normalized, indent=2), encoding="utf-8")
-
-
 def find_version(store: dict[str, Any], pipeline_id: str, dag_or_version_id: str) -> tuple[dict[str, Any] | None, str | None]:
     safe_pid = str(pipeline_id or "").strip()
     safe_key = str(dag_or_version_id or "").strip()
@@ -337,9 +329,12 @@ def main() -> None:
         version_file = save_version_metadata(root, args.pipeline_id, version_id, current)
         _validate_json_with_tool(version_file)
     else:
-        # legacy fallback write only when per-version file is unavailable
-        save_store(versions_file, store)
-        _validate_json_with_tool(versions_file)
+        print(
+            "ERROR: refusing to write legacy metadata store; "
+            "create per-version metadata first at "
+            f"airflow/web_app_data/metadata/{args.pipeline_id}/{version_id}.json"
+        )
+        sys.exit(1)
 
     eval_results_dir = root / "evaluation-results"
     eval_results_dir.mkdir(parents=True, exist_ok=True)
