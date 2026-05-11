@@ -1,48 +1,42 @@
-<<<<<<< HEAD
 # -----------------------------
-# web_app
+# global env/log/cache
+# -----------------------------
+.env
+.venv/
+logs/
+*.log
+__pycache__/
+pycache/
+*.py[cod]
+*.pyc.*
+
+# -----------------------------
+# local secrets / runtime files
+# -----------------------------
+credgcp.json
+actions-runner/
+pipelines/*/evaluation/history/*.tmp.json
+
+# -----------------------------
+# web_app local runtime content
 # -----------------------------
 web_app/.env
 web_app/.venv/
 web_app/__pycache__/
 web_app/*.pyc
 web_app/*.log
-web_app\github_app_private_key.pem
-web_app/generated_dags
-web_app/generated_dags
-
-# -----------------------------
-# airflow
-# -----------------------------
-=======
-﻿__pycache__/
-*.pyc
->>>>>>> 8b1edd99b6beedd76b6af90bffb520cfee52c7bd
-.env
-.venv/
-logs/
-*.log
-pipelines/*/evaluation/history/*.tmp.json
-actions-runner/
-credgcp.json
-
-dags/
-
-# -----------------------------
-# application root
-# -----------------------------
-*.env
-*.log
-flask_err.log
-flask_run.log
-
-# -----------------------------
-# Python cache / bytecode (global)
-# -----------------------------
-__pycache__/
-pycache/
-*.py[cod]
-*.pyc.*
-
-
+web_app/github_app_private_key.pem
+web_app/generated_dags/
 web_app/
+
+# -----------------------------
+# DAG folders
+# -----------------------------
+# ignore local generated DAGs
+airflow/dags/
+web_app/generated_dags/
+
+# ignore repo dags by default, then allow deployment DAG .py files
+dags/
+!dags/
+!dags/*.py
