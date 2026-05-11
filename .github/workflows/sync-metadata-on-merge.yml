@@ -40,9 +40,76 @@ jobs:
             --publish-status merged_to_git \
             --promotion-status submitted
 
+      - name: Log merged metadata transition (before/after)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - << 'PY'
+          import json
+          import subprocess
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          root = Path(".").resolve()
+          changed = subprocess.run(
+              ["git", "diff", "--name-only"],
+              capture_output=True,
+              text=True,
+              check=False,
+          ).stdout.splitlines()
+          meta_files = [p.strip() for p in changed if p.strip().startswith("airflow/web_app_data/metadata/") and p.strip().endswith(".json")]
+          now = datetime.now(timezone.utc).isoformat()
+          for rel in meta_files:
+              path = root / rel
+              payload = json.loads(path.read_text(encoding="utf-8"))
+              before_promo = str(payload.get("promotion_status", "")).strip()
+              before_publish = str(payload.get("publish_status", "")).strip()
+              print(f"{rel} before: promotion_status={before_promo} publish_status={before_publish}")
+              payload["publish_status"] = "merged_to_git"
+              payload["updated_at"] = now
+              payload["merged_at"] = now
+              payload["merge_commit_sha"] = "${{ github.event.pull_request.merge_commit_sha }}"
+              path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+              after_promo = str(payload.get("promotion_status", "")).strip()
+              after_publish = str(payload.get("publish_status", "")).strip()
+              print(f"{rel} after: promotion_status={after_promo} publish_status={after_publish}")
+          PY
+
       - name: Validate metadata JSON after merged update
         run: |
           python scripts/metadata/validate_metadata.py --root .
+
+      - name: Fail if draft persisted after merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - << 'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          root = Path(".").resolve()
+          changed = subprocess.run(
+              ["git", "diff", "--name-only"],
+              capture_output=True,
+              text=True,
+              check=False,
+          ).stdout.splitlines()
+          meta_files = [p.strip() for p in changed if p.strip().startswith("airflow/web_app_data/metadata/") and p.strip().endswith(".json")]
+          for rel in meta_files:
+              payload = json.loads((root / rel).read_text(encoding="utf-8"))
+              if str(payload.get("promotion_status", "")).strip().lower() == "draft":
+                  raise SystemExit("metadata transition failed: draft state persisted after merge")
+          PY
+
+      - name: Show updated metadata files
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in $(git diff --name-only | grep '^airflow/web_app_data/metadata/.*/.*\.json$' || true); do
+            echo "==== $f ===="
+            cat "$f"
+          done
 
       - name: Guard legacy store is unchanged
         shell: bash

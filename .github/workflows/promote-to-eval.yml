@@ -126,6 +126,41 @@ jobs:
           done < /tmp/metadata_files.txt
           "${CMD[@]}"
 
+      - name: Show promoted metadata files
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd eval-worktree
+          if [ ! -s /tmp/metadata_files.txt ]; then
+            exit 0
+          fi
+          while IFS= read -r meta_file; do
+            [ -z "$meta_file" ] && continue
+            echo "==== $meta_file ===="
+            cat "$meta_file"
+          done < /tmp/metadata_files.txt
+
+      - name: Verify eval promotion persisted
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd eval-worktree
+          if [ ! -s /tmp/metadata_files.txt ]; then
+            exit 0
+          fi
+          python - << 'PY'
+          import json
+          from pathlib import Path
+
+          root = Path(".").resolve()
+          files = [line.strip() for line in Path("/tmp/metadata_files.txt").read_text(encoding="utf-8").splitlines() if line.strip()]
+          for rel in files:
+              payload = json.loads((root / rel).read_text(encoding="utf-8"))
+              p = str(payload.get("promotion_status", "")).strip().lower()
+              if p not in {"eval", "challenger", "champion", "archived"}:
+                  raise SystemExit(f"metadata transition failed for {rel}: promotion_status={p}")
+          PY
+
       - name: Guard legacy store is unchanged
         shell: bash
         run: |
@@ -142,7 +177,17 @@ jobs:
           if git diff --quiet -- dags airflow/web_app_data/metadata; then
             echo "No DAG/metadata changes to commit"
           else
-            git add dags airflow/web_app_data/metadata
+            if [ -s /tmp/metadata_files.txt ]; then
+              while IFS= read -r meta_file; do
+                [ -z "$meta_file" ] && continue
+                git add "$meta_file"
+                dag_file=$(python -c "import json,sys;print((json.load(open(sys.argv[1],encoding='utf-8')).get('git_dag_file') or '').strip())" "$meta_file")
+                if [ -n "$dag_file" ]; then
+                  git add -f "$dag_file"
+                fi
+              done < /tmp/metadata_files.txt
+            fi
+            git add airflow/web_app_data/metadata
             git commit -m "Promote merged DAG metadata to eval"
           fi
 

@@ -113,6 +113,31 @@ class MetadataUpdateScriptTests(unittest.TestCase):
         self.assertEqual(data["promotion_status"], "eval")
         self.assertEqual(data["evaluated_branch"], "eval")
 
+    def test_mark_eval_transitions_submitted_to_eval_and_persists(self):
+        self._run(
+            "pr_open",
+            "--pipeline-id",
+            "pipe1",
+            "--version-id",
+            "v2",
+            "--dag-id",
+            "pipe1__v2",
+            "--dag-file",
+            "dags/pipe1_git__v2.py",
+            "--publish-status",
+            "merged_to_git",
+            "--promotion-status",
+            "submitted",
+        )
+        before = self._load_version("pipe1", "v2")
+        self.assertEqual(before["publish_status"], "merged_to_git")
+        self.assertEqual(before["promotion_status"], "submitted")
+        self._run("mark_eval", "--pipeline-id", "pipe1", "--dag-id", "pipe1__v2")
+        after = self._load_version("pipe1", "v2")
+        self.assertEqual(after["publish_status"], "merged_to_git")
+        self.assertEqual(after["promotion_status"], "eval")
+        self.assertEqual(after["evaluated_branch"], "eval")
+
     def test_mark_eval_fails_clearly_when_metadata_file_missing(self):
         result = self._run_capture("mark_eval", "--pipeline-id", "pipe1", "--dag-id", "pipe1__v1")
         self.assertEqual(result.returncode, 1)
