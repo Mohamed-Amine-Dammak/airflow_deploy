@@ -1,14 +1,14 @@
 {
   "pipeline_id": "testops",
-  "version_id": "v5",
-  "dag_version": 5,
-  "airflow_dag_id": "testops__v5",
-  "output_filename": "testops__v5.py",
-  "created_at": "2026-05-11T13:30:03.848344+00:00",
+  "version_id": "v6",
+  "dag_version": 6,
+  "airflow_dag_id": "testops__v6",
+  "output_filename": "testops__v6.py",
+  "created_at": "2026-05-11T13:36:54.369883+00:00",
   "created_by": "admin",
   "status": "active",
   "is_current": true,
-  "source_hash": "4ad96f169a9e4619eaa26d672441259f21d6a7d89f357bc694e0c84c4896ff4b",
+  "source_hash": "47a63f54e6263f19605abff1380fd631e69110ce7aa8e0485143d9f7bb7ce923",
   "source_definition": {
     "pipeline": {
       "dag_id": "testops",
@@ -90,10 +90,20 @@
       },
       {
         "id": "node_7",
+        "type": "timeout_guard",
+        "label": "Timeout Guard 7",
+        "x": 190.99998474121094,
+        "y": 305.99999618530273,
+        "config": {
+          "timeout_minutes": 30
+        }
+      },
+      {
+        "id": "node_8",
         "type": "delay",
-        "label": "Delay 7",
-        "x": 176.4444122314453,
-        "y": 328.4444236755371,
+        "label": "Delay 8",
+        "x": 863.8889007568359,
+        "y": 670.222225189209,
         "config": {
           "delay_minutes": 5
         }
@@ -115,18 +125,22 @@
       {
         "source": "node_7",
         "target": "node_1"
+      },
+      {
+        "source": "node_5",
+        "target": "node_8"
       }
     ],
     "group_boxes": []
   },
-  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testops__v5.py",
-  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testops__v5.py",
+  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testops__v6.py",
+  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testops__v6.py",
   "node_task_map": {
     "node_6": [
       "talend_1_node_6"
     ],
     "node_7": [
-      "delay_2_node_7"
+      "timeout_guard_2_node_7"
     ],
     "node_1": [
       "delay_3_node_1"
@@ -136,14 +150,18 @@
     ],
     "node_5": [
       "sftp_upload_5_node_5"
+    ],
+    "node_8": [
+      "delay_6_node_8"
     ]
   },
   "node_primary_task_map": {
     "node_6": "talend_1_node_6",
-    "node_7": "delay_2_node_7",
+    "node_7": "timeout_guard_2_node_7",
     "node_1": "delay_3_node_1",
     "node_2": "delay_4_node_2",
-    "node_5": "sftp_upload_5_node_5"
+    "node_5": "sftp_upload_5_node_5",
+    "node_8": "delay_6_node_8"
   },
   "base_pipeline_id": "testops",
   "promotion_status": "submitted",
@@ -153,31 +171,31 @@
   "last_eval_run_id": null,
   "promoted_at": null,
   "promoted_by": null,
-  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/17",
-  "github_commit_sha": "ef79991ed296a064a687ab8f5d4ff34b29057711",
-  "local_dag_id": "testops__v5",
-  "git_dag_id": "testops_git__v5",
-  "local_dag_file": "airflow/dags/testops__v5.py",
-  "git_dag_file": "dags/testops_git__v5.py",
-  "dag_id": "testops__v5",
+  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/18",
+  "github_commit_sha": "96283c6d3afdf6e4aa2e174c8bf147bd436b2443",
+  "local_dag_id": "testops__v6",
+  "git_dag_id": "testops_git__v6",
+  "local_dag_file": "airflow/dags/testops__v6.py",
+  "git_dag_file": "dags/testops_git__v6.py",
+  "dag_id": "testops__v6",
   "deployment_target": "git",
-  "updated_at": "2026-05-11T13:31:04.596784+00:00",
+  "updated_at": "2026-05-11T13:38:17.795609+00:00",
   "publish_status": "merged_to_git",
-  "version": "v5",
+  "version": "v6",
   "workflow_name": "testops",
   "workflow_slug": "testops",
-  "repo_file_path": "dags/testops_git__v5.py",
-  "git_branch_name": "feature/workflow/testops-5",
-  "pull_request_number": 17,
-  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/17",
-  "commit_sha": "fb4b755d6aae2672a89c9060a46993e7afa9e297",
-  "github_pr_number": 17,
-  "github_branch": "feature/workflow/testops-5",
+  "repo_file_path": "dags/testops_git__v6.py",
+  "git_branch_name": "feature/workflow/testops-6",
+  "pull_request_number": 18,
+  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/18",
+  "commit_sha": "eb8ba2bc17ef3846adab5548a58359e7dc5e4aa8",
+  "github_pr_number": 18,
+  "github_branch": "feature/workflow/testops-6",
   "requested_by_user_id": "admin",
   "requested_by_email": "",
   "requested_by_display_name": "admin",
   "warnings": [],
   "critical_failures": [],
-  "merged_at": "2026-05-11T13:31:04.596784+00:00",
-  "merge_commit_sha": "ef79991ed296a064a687ab8f5d4ff34b29057711"
+  "merged_at": "2026-05-11T13:38:17.795609+00:00",
+  "merge_commit_sha": "96283c6d3afdf6e4aa2e174c8bf147bd436b2443"
 }
