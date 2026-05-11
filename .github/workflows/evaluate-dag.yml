@@ -17,6 +17,10 @@ on:
         description: "Number of runs for evaluation (default: 1)"
         required: false
         default: "1"
+      airflow_api_version:
+        description: "Airflow API version to use for runtime calls (v1 or v2)"
+        required: false
+        default: "v2"
 
 permissions:
   contents: write
@@ -108,6 +112,25 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install requests
+
+      - name: Select Airflow API path version
+        shell: powershell
+        run: |
+          $version = "${{ github.event.inputs.airflow_api_version }}"
+          if ([string]::IsNullOrWhiteSpace($version)) { $version = "v2" }
+          if ($version -ne "v1" -and $version -ne "v2") {
+            Write-Error "Invalid airflow_api_version: $version (expected v1 or v2)"
+            exit 1
+          }
+          $clientPath = "scripts/evaluation/airflow_client.py"
+          $content = Get-Content -Raw $clientPath
+          if ($version -eq "v2") {
+            $content = $content.Replace("/api/v1/dags/", "/api/v2/dags/")
+          } else {
+            $content = $content.Replace("/api/v2/dags/", "/api/v1/dags/")
+          }
+          Set-Content -Path $clientPath -Value $content -Encoding UTF8
+          Write-Output "Using Airflow API version: $version"
 
       - name: Run DAG runtime evaluation
         shell: powershell
