@@ -47,30 +47,28 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyyaml requests
 
-      - name: Run DAG evaluation
+      - name: Run DAG runtime evaluation
+        shell: powershell
         run: |
-          python scripts/evaluation/evaluate_dag.py \
-            --root . \
-            --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
-            --dag-id "${{ github.event.inputs.dag_id }}" \
-            --evaluation-mode "${{ github.event.inputs.evaluation_mode }}" \
+          python scripts/evaluation/evaluate_dag.py `
+            --root . `
+            --pipeline-id "${{ github.event.inputs.pipeline_id }}" `
+            --dag-id "${{ github.event.inputs.dag_id }}" `
+            --evaluation-mode "${{ github.event.inputs.evaluation_mode }}" `
             --run-count "${{ github.event.inputs.run_count }}"
-        env:
-          AIRFLOW_API_BASE_URL: ${{ secrets.AIRFLOW_API_BASE_URL }}
-          AIRFLOW_API_USERNAME: ${{ secrets.AIRFLOW_API_USERNAME }}
-          AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
 
       - name: Validate metadata after scoring update
         run: |
           python scripts/metadata/validate_metadata.py --root .
 
       - name: Guard legacy store is unchanged
-        shell: bash
+        shell: powershell
         run: |
-          if git diff --name-only | grep -x "airflow/web_app_data/pipeline_versions_store.json" >/dev/null; then
-            echo "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
+          $changed = git diff --name-only
+          if ($changed -contains "airflow/web_app_data/pipeline_versions_store.json") {
+            Write-Error "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
             exit 1
-          fi
+          }
 
       - name: Persist evaluation metadata updates
         run: |
