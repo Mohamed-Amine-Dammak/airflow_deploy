@@ -50,6 +50,10 @@ jobs:
       - name: Run DAG runtime evaluation
         shell: powershell
         run: python scripts/evaluation/evaluate_dag.py --root . --pipeline-id "${{ github.event.inputs.pipeline_id }}" --dag-id "${{ github.event.inputs.dag_id }}" --evaluation-mode "${{ github.event.inputs.evaluation_mode }}" --run-count "${{ github.event.inputs.run_count }}"
+        env:
+          AIRFLOW_API_BASE_URL: ${{ secrets.AIRFLOW_API_BASE_URL }}
+          AIRFLOW_API_USERNAME: ${{ secrets.AIRFLOW_API_USERNAME }}
+          AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
 
       - name: Validate metadata after scoring update
         run: |
