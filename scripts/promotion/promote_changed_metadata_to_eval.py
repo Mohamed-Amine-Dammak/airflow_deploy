@@ -63,6 +63,7 @@ def process_metadata_file(root: Path, rel_path: str) -> tuple[bool, str]:
     print(f"version_id={version_id}")
     print(f"git_dag_id={git_dag_id}")
     print(f"git_dag_file={git_dag_file}")
+    print(f"Before update: promotion_status={promotion_status}, publish_status={publish_status}")
 
     if _is_skippable_status(promotion_status):
         return False, f"skipped {rel_path}: promotion_status={promotion_status}"
@@ -78,6 +79,11 @@ def process_metadata_file(root: Path, rel_path: str) -> tuple[bool, str]:
     payload["evaluated_branch"] = "eval"
     payload["updated_at"] = _now_iso()
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(
+        "After update: "
+        f"promotion_status={str(payload.get('promotion_status', '')).strip().lower()}, "
+        f"publish_status={str(payload.get('publish_status', '')).strip().lower()}"
+    )
     return True, f"updated {rel_path}"
 
 
