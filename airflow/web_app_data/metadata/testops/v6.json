@@ -164,7 +164,7 @@
     "node_8": "delay_6_node_8"
   },
   "base_pipeline_id": "testops",
-  "promotion_status": "submitted",
+  "promotion_status": "eval",
   "score": null,
   "score_type": null,
   "score_breakdown": {},
@@ -179,7 +179,7 @@
   "git_dag_file": "dags/testops_git__v6.py",
   "dag_id": "testops__v6",
   "deployment_target": "git",
-  "updated_at": "2026-05-11T13:38:17.795609+00:00",
+  "updated_at": "2026-05-11T13:38:22.624887+00:00",
   "publish_status": "merged_to_git",
   "version": "v6",
   "workflow_name": "testops",
@@ -197,5 +197,6 @@
   "warnings": [],
   "critical_failures": [],
   "merged_at": "2026-05-11T13:38:17.795609+00:00",
-  "merge_commit_sha": "96283c6d3afdf6e4aa2e174c8bf147bd436b2443"
+  "merge_commit_sha": "96283c6d3afdf6e4aa2e174c8bf147bd436b2443",
+  "evaluated_branch": "eval"
 }
