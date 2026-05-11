@@ -221,6 +221,38 @@ def cmd_mark_eval(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_mark_eval_file(args: argparse.Namespace) -> int:
+    root = args.root.resolve()
+    rel = str(args.metadata_file or "").strip().replace("\\", "/")
+    if not rel:
+        print("metadata_file is required")
+        return 1
+    path = (root / rel).resolve()
+    if not path.exists():
+        print(f"metadata file not found: {rel}")
+        return 1
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"invalid metadata json for {rel}: {exc}")
+        return 1
+    if not isinstance(payload, dict):
+        print(f"invalid metadata payload for {rel}: expected object")
+        return 1
+    pipeline_id = str(payload.get("pipeline_id", "")).strip()
+    version_id = str(payload.get("version_id", "")).strip()
+    if not pipeline_id or not version_id:
+        print(f"metadata file missing pipeline_id/version_id: {rel}")
+        return 1
+    version = dict(payload)
+    version["promotion_status"] = "eval"
+    version["evaluated_branch"] = "eval"
+    version["updated_at"] = _now_iso()
+    save_version_metadata(root, pipeline_id, version_id, version)
+    print(f"Updated 1 version(s): {pipeline_id}/{version_id}")
+    return 0
+
+
 def cmd_scored(args: argparse.Namespace) -> int:
     root = args.root.resolve()
     item = find_version_metadata(root, args.pipeline_id, args.dag_id or args.version_id or "")
@@ -306,7 +338,7 @@ def cmd_migrate(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Update version metadata files")
-    parser.add_argument("command", choices=["pr_open", "merged", "mark_eval", "scored", "promote", "rollback", "migrate"])
+    parser.add_argument("command", choices=["pr_open", "merged", "mark_eval", "mark_eval_file", "scored", "promote", "rollback", "migrate"])
     parser.add_argument("--root", type=Path, default=Path("."), help="Repository root")
     parser.add_argument("--pipeline-id", type=str, default="")
     parser.add_argument("--version-id", type=str, default="")
@@ -319,6 +351,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--score-json", type=str, default="")
     parser.add_argument("--promotion-status", type=str, default="")
     parser.add_argument("--publish-status", type=str, default="")
+    parser.add_argument("--metadata-file", type=str, default="")
     return parser
 
 
@@ -329,6 +362,7 @@ def main() -> int:
         "pr_open": cmd_pr_open,
         "merged": cmd_merged,
         "mark_eval": cmd_mark_eval,
+        "mark_eval_file": cmd_mark_eval_file,
         "scored": cmd_scored,
         "promote": cmd_promote,
         "rollback": cmd_rollback,

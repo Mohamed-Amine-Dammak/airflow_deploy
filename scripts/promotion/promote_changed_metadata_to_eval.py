@@ -33,11 +33,15 @@ def discover_changed_metadata_files(root: Path) -> list[str]:
 
 
 def _is_skippable_status(promotion_status: str) -> bool:
-    return promotion_status in {"eval", "challenger", "champion", "archived"}
+    return promotion_status in {"champion", "archived"}
 
 
 def _is_eligible(publish_status: str, promotion_status: str) -> bool:
     if publish_status == "merged_to_git":
+        return True
+    if publish_status == "pr_open":
+        return True
+    if promotion_status == "draft" and publish_status in {"pr_open", "merged_to_git"}:
         return True
     return promotion_status == "submitted"
 
@@ -75,10 +79,19 @@ def process_metadata_file(root: Path, rel_path: str) -> tuple[bool, str]:
     if git_dag_file and not (root / git_dag_file).exists():
         return False, f"missing DAG file for metadata: {git_dag_file}"
 
-    payload["promotion_status"] = "eval"
-    payload["evaluated_branch"] = "eval"
-    payload["updated_at"] = _now_iso()
-    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    mark_cmd = [
+        sys.executable,
+        str(METADATA_DIR / "update_pipeline_metadata.py"),
+        "mark_eval_file",
+        "--root",
+        str(root),
+        "--metadata-file",
+        rel_path,
+    ]
+    proc = subprocess.run(mark_cmd, check=False, capture_output=True, text=True)
+    if proc.returncode != 0:
+        return False, f"failed to update {rel_path}: {proc.stdout}{proc.stderr}"
+    payload = json.loads(path.read_text(encoding="utf-8"))
     print(
         "After update: "
         f"promotion_status={str(payload.get('promotion_status', '')).strip().lower()}, "
@@ -113,11 +126,17 @@ def main() -> int:
         print(f"- {rel}")
 
     updated = 0
+    failures = 0
     for rel in metadata_files:
         changed, message = process_metadata_file(root, rel)
         print(message)
+        if message.startswith("failed to update"):
+            failures += 1
         if changed:
             updated += 1
+
+    if failures:
+        return 1
 
     validate_cmd = [
         sys.executable,

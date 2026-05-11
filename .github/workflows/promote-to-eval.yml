@@ -157,7 +157,7 @@ jobs:
           for rel in files:
               payload = json.loads((root / rel).read_text(encoding="utf-8"))
               p = str(payload.get("promotion_status", "")).strip().lower()
-              if p not in {"eval", "challenger", "champion", "archived"}:
+              if p != "eval":
                   raise SystemExit(f"metadata transition failed for {rel}: promotion_status={p}")
           PY
 
