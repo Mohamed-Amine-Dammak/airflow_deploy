@@ -64,6 +64,14 @@ jobs:
         run: |
           python scripts/metadata/validate_metadata.py --root .
 
+      - name: Guard legacy store is unchanged
+        shell: bash
+        run: |
+          if git diff --name-only | grep -x "airflow/web_app_data/pipeline_versions_store.json" >/dev/null; then
+            echo "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
+            exit 1
+          fi
+
       - name: Persist evaluation metadata updates
         run: |
           git config user.email "airflow-bot@example.com"
@@ -121,6 +129,14 @@ jobs:
       - name: Validate metadata after scoring update
         run: |
           python scripts/metadata/validate_metadata.py --root .
+
+      - name: Guard legacy store is unchanged
+        shell: bash
+        run: |
+          if git diff --name-only | grep -x "airflow/web_app_data/pipeline_versions_store.json" >/dev/null; then
+            echo "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
+            exit 1
+          fi
 
       - name: Persist evaluation metadata updates
         run: |

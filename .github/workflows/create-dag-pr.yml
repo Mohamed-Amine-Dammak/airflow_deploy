@@ -77,6 +77,14 @@ jobs:
         run: |
           python scripts/metadata/validate_metadata.py --root .
 
+      - name: Guard legacy store is unchanged
+        shell: bash
+        run: |
+          if git diff --name-only | grep -x "airflow/web_app_data/pipeline_versions_store.json" >/dev/null; then
+            echo "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
+            exit 1
+          fi
+
       - name: Show metadata before PR creation
         run: |
           cat airflow/web_app_data/metadata/${{ github.event.inputs.pipeline_id }}/${{ github.event.inputs.version_id }}.json
@@ -117,6 +125,15 @@ jobs:
         if: steps.cpr.outputs.pull-request-number != ''
         run: |
           python scripts/metadata/validate_metadata.py --root .
+
+      - name: Guard legacy store is unchanged after enrichment
+        if: steps.cpr.outputs.pull-request-number != ''
+        shell: bash
+        run: |
+          if git diff --name-only | grep -x "airflow/web_app_data/pipeline_versions_store.json" >/dev/null; then
+            echo "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
+            exit 1
+          fi
 
       - name: Commit metadata enrichment to PR branch
         if: steps.cpr.outputs.pull-request-number != ''

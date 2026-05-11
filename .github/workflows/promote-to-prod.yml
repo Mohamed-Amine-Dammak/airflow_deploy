@@ -102,6 +102,16 @@ jobs:
         run: |
           python eval-src/scripts/metadata/validate_metadata.py --root prod-worktree
 
+      - name: Guard legacy store is unchanged
+        if: steps.eligibility.outcome == 'success'
+        shell: bash
+        run: |
+          cd prod-worktree
+          if git diff --name-only | grep -x "airflow/web_app_data/pipeline_versions_store.json" >/dev/null; then
+            echo "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
+            exit 1
+          fi
+
       - name: Commit prod metadata updates
         if: steps.eligibility.outcome == 'success'
         run: |
