@@ -986,7 +986,7 @@
       ]
     },
     "testops": {
-      "current_version_id": "v4",
+      "current_version_id": "v5",
       "versions": [
         {
           "pipeline_id": "testops",
@@ -1362,8 +1362,8 @@
           "output_filename": "testops__v4.py",
           "created_at": "2026-05-11T13:24:02.425608+00:00",
           "created_by": "admin",
-          "status": "active",
-          "is_current": true,
+          "status": "archived",
+          "is_current": false,
           "source_hash": "486eb5cbe044590b5cba0d87dd2b10adf3c7365231a1b62c6ae73adc244174fa",
           "source_definition": {
             "pipeline": {
@@ -1525,6 +1525,164 @@
           "promoted_by": null,
           "github_pr_url": null,
           "github_commit_sha": null
+        },
+        {
+          "pipeline_id": "testops",
+          "version_id": "v5",
+          "dag_version": 5,
+          "airflow_dag_id": "testops__v5",
+          "output_filename": "testops__v5.py",
+          "created_at": "2026-05-11T13:30:03.848344+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "4ad96f169a9e4619eaa26d672441259f21d6a7d89f357bc694e0c84c4896ff4b",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "testops",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "testops.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "delay",
+                "label": "Delay 1",
+                "x": 500.99998474121094,
+                "y": 347.99999618530273,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_2",
+                "type": "delay",
+                "label": "Delay 2",
+                "x": 787.9999847412109,
+                "y": 331.99999618530273,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_5",
+                "type": "sftp_upload",
+                "label": "SFTP 5",
+                "x": 1060.999984741211,
+                "y": 479.99999618530273,
+                "config": {
+                  "action": "upload",
+                  "conn_name": "sftp",
+                  "delete_file_name": "",
+                  "delete_mode": "single",
+                  "delete_prefix": "",
+                  "download_mode": "single",
+                  "file_prefix": "",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "local_directory_path": "",
+                  "local_file_path": "ij",
+                  "local_file_paths": [],
+                  "remote_dir": "/uploads",
+                  "remote_file_name": "",
+                  "remote_file_prefix": "",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_6",
+                "type": "talend",
+                "label": "Talend 6",
+                "x": 8,
+                "y": 67.1110954284668,
+                "config": {
+                  "job_name": "ij"
+                }
+              },
+              {
+                "id": "node_7",
+                "type": "delay",
+                "label": "Delay 7",
+                "x": 176.4444122314453,
+                "y": 328.4444236755371,
+                "config": {
+                  "delay_minutes": 5
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_1",
+                "target": "node_2"
+              },
+              {
+                "source": "node_2",
+                "target": "node_5"
+              },
+              {
+                "source": "node_6",
+                "target": "node_7"
+              },
+              {
+                "source": "node_7",
+                "target": "node_1"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testops__v5.py",
+          "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testops__v5.py",
+          "node_task_map": {
+            "node_6": [
+              "talend_1_node_6"
+            ],
+            "node_7": [
+              "delay_2_node_7"
+            ],
+            "node_1": [
+              "delay_3_node_1"
+            ],
+            "node_2": [
+              "delay_4_node_2"
+            ],
+            "node_5": [
+              "sftp_upload_5_node_5"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_6": "talend_1_node_6",
+            "node_7": "delay_2_node_7",
+            "node_1": "delay_3_node_1",
+            "node_2": "delay_4_node_2",
+            "node_5": "sftp_upload_5_node_5"
+          },
+          "base_pipeline_id": "testops",
+          "promotion_status": "draft",
+          "score": null,
+          "score_type": null,
+          "score_breakdown": {},
+          "last_eval_run_id": null,
+          "promoted_at": null,
+          "promoted_by": null,
+          "github_pr_url": null,
+          "github_commit_sha": null
         }
       ],
       "switch_events": [
@@ -1559,6 +1717,14 @@
           "to_version_id": "v4",
           "actor": "admin",
           "at": "2026-05-11T13:24:02.425608+00:00"
+        },
+        {
+          "event_id": "abe2e0ec-ae73-4bc4-b4b8-41e2ad35958e",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v4",
+          "to_version_id": "v5",
+          "actor": "admin",
+          "at": "2026-05-11T13:30:03.848344+00:00"
         }
       ]
     }

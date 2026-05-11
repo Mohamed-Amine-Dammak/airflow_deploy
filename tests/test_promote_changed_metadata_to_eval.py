@@ -55,8 +55,16 @@ class PromoteChangedMetadataToEvalTests(unittest.TestCase):
         self.assertEqual(updated["promotion_status"], "eval")
         self.assertEqual(updated["evaluated_branch"], "eval")
 
-    def test_skips_when_already_non_submitted_state(self):
-        for status in ("eval", "challenger", "champion"):
+    def test_marks_eval_for_draft_pr_open(self):
+        path = self._write_metadata("draft", "pr_open")
+        result = self._run(path)
+        self.assertEqual(result.returncode, 0, msg=result.stdout + result.stderr)
+        updated = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(updated["promotion_status"], "eval")
+        self.assertEqual(updated["evaluated_branch"], "eval")
+
+    def test_skips_when_champion_or_archived(self):
+        for status in ("champion", "archived"):
             path = self._write_metadata(status, "merged_to_git")
             result = self._run(path)
             self.assertEqual(result.returncode, 0, msg=f"{status}: {result.stdout}{result.stderr}")

@@ -143,6 +143,28 @@ class MetadataUpdateScriptTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("metadata file not found for pipeline_id=pipe1, dag_id=pipe1__v1", result.stdout)
 
+    def test_mark_eval_file_updates_exact_metadata_file(self):
+        self._run(
+            "pr_open",
+            "--pipeline-id",
+            "pipe1",
+            "--version-id",
+            "v3",
+            "--dag-id",
+            "pipe1__v3",
+            "--dag-file",
+            "dags/pipe1_git__v3.py",
+            "--publish-status",
+            "pr_open",
+            "--promotion-status",
+            "draft",
+        )
+        rel = "airflow/web_app_data/metadata/pipe1/v3.json"
+        self._run("mark_eval_file", "--metadata-file", rel)
+        data = self._load_version("pipe1", "v3")
+        self.assertEqual(data["promotion_status"], "eval")
+        self.assertEqual(data["evaluated_branch"], "eval")
+
 
 if __name__ == "__main__":
     unittest.main()
