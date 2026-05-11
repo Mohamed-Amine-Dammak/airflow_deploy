@@ -986,7 +986,7 @@
       ]
     },
     "testops": {
-      "current_version_id": "v2",
+      "current_version_id": "v4",
       "versions": [
         {
           "pipeline_id": "testops",
@@ -1086,8 +1086,8 @@
           "output_filename": "testops__v2.py",
           "created_at": "2026-05-11T12:58:01.287184+00:00",
           "created_by": "admin",
-          "status": "active",
-          "is_current": true,
+          "status": "archived",
+          "is_current": false,
           "source_hash": "fce152290bc2885cd3c4b8aafbff3c9fe778505634e81de7bed3c4139ff31eff",
           "source_definition": {
             "pipeline": {
@@ -1199,6 +1199,332 @@
           "promoted_by": null,
           "github_pr_url": null,
           "github_commit_sha": null
+        },
+        {
+          "pipeline_id": "testops",
+          "version_id": "v3",
+          "dag_version": 3,
+          "airflow_dag_id": "testops__v3",
+          "output_filename": "testops__v3.py",
+          "created_at": "2026-05-11T13:22:36.100402+00:00",
+          "created_by": "admin",
+          "status": "archived",
+          "is_current": false,
+          "source_hash": "f15e1af5101f2469006128a782e231ecdfc590734443a5194489e27486165d44",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "testops",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "testops.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "delay",
+                "label": "Delay 1",
+                "x": 500.99998474121094,
+                "y": 347.99999618530273,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_2",
+                "type": "delay",
+                "label": "Delay 2",
+                "x": 787.9999847412109,
+                "y": 331.99999618530273,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_4",
+                "type": "sftp_upload",
+                "label": "SFTP 4",
+                "x": 8,
+                "y": 409.6666831970215,
+                "config": {
+                  "action": "upload",
+                  "conn_name": "sftp",
+                  "delete_file_name": "",
+                  "delete_mode": "single",
+                  "delete_prefix": "",
+                  "download_mode": "single",
+                  "file_prefix": "",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "local_directory_path": "",
+                  "local_file_path": "ok",
+                  "local_file_paths": [],
+                  "remote_dir": "/uploads",
+                  "remote_file_name": "",
+                  "remote_file_prefix": "",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_5",
+                "type": "sftp_upload",
+                "label": "SFTP 5",
+                "x": 1060.999984741211,
+                "y": 479.99999618530273,
+                "config": {
+                  "conn_name": "sftp",
+                  "action": "upload",
+                  "remote_dir": "/uploads",
+                  "upload_mode": "single",
+                  "local_file_path": "ij",
+                  "local_file_paths": [],
+                  "local_directory_path": "",
+                  "file_prefix": "",
+                  "download_mode": "single",
+                  "remote_file_name": "",
+                  "remote_file_prefix": "",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "delete_mode": "single",
+                  "delete_file_name": "",
+                  "delete_prefix": ""
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_1",
+                "target": "node_2"
+              },
+              {
+                "source": "node_4",
+                "target": "node_1"
+              },
+              {
+                "source": "node_2",
+                "target": "node_5"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testops__v3.py",
+          "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testops__v3.py",
+          "node_task_map": {
+            "node_4": [
+              "sftp_upload_1_node_4"
+            ],
+            "node_1": [
+              "delay_2_node_1"
+            ],
+            "node_2": [
+              "delay_3_node_2"
+            ],
+            "node_5": [
+              "sftp_upload_4_node_5"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_4": "sftp_upload_1_node_4",
+            "node_1": "delay_2_node_1",
+            "node_2": "delay_3_node_2",
+            "node_5": "sftp_upload_4_node_5"
+          },
+          "base_pipeline_id": "testops",
+          "promotion_status": "draft",
+          "score": null,
+          "score_type": null,
+          "score_breakdown": {},
+          "last_eval_run_id": null,
+          "promoted_at": null,
+          "promoted_by": null,
+          "github_pr_url": null,
+          "github_commit_sha": null
+        },
+        {
+          "pipeline_id": "testops",
+          "version_id": "v4",
+          "dag_version": 4,
+          "airflow_dag_id": "testops__v4",
+          "output_filename": "testops__v4.py",
+          "created_at": "2026-05-11T13:24:02.425608+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "486eb5cbe044590b5cba0d87dd2b10adf3c7365231a1b62c6ae73adc244174fa",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "testops",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 3,
+              "retry_delay_minutes": 5,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "testops.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "delay",
+                "label": "Delay 1",
+                "x": 500.99998474121094,
+                "y": 347.99999618530273,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_2",
+                "type": "delay",
+                "label": "Delay 2",
+                "x": 787.9999847412109,
+                "y": 331.99999618530273,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_4",
+                "type": "sftp_upload",
+                "label": "SFTP 4",
+                "x": 8,
+                "y": 409.6666831970215,
+                "config": {
+                  "action": "upload",
+                  "conn_name": "sftp",
+                  "delete_file_name": "",
+                  "delete_mode": "single",
+                  "delete_prefix": "",
+                  "download_mode": "single",
+                  "file_prefix": "",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "local_directory_path": "",
+                  "local_file_path": "ok",
+                  "local_file_paths": [],
+                  "remote_dir": "/uploads",
+                  "remote_file_name": "",
+                  "remote_file_prefix": "",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_5",
+                "type": "sftp_upload",
+                "label": "SFTP 5",
+                "x": 1060.999984741211,
+                "y": 479.99999618530273,
+                "config": {
+                  "action": "upload",
+                  "conn_name": "sftp",
+                  "delete_file_name": "",
+                  "delete_mode": "single",
+                  "delete_prefix": "",
+                  "download_mode": "single",
+                  "file_prefix": "",
+                  "local_dir_download": "/opt/airflow/local_downloads/sftp",
+                  "local_directory_path": "",
+                  "local_file_path": "ij",
+                  "local_file_paths": [],
+                  "remote_dir": "/uploads",
+                  "remote_file_name": "",
+                  "remote_file_prefix": "",
+                  "upload_mode": "single"
+                }
+              },
+              {
+                "id": "node_6",
+                "type": "talend",
+                "label": "Talend 6",
+                "x": 8,
+                "y": 67.1110954284668,
+                "config": {
+                  "job_name": "ij"
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_1",
+                "target": "node_2"
+              },
+              {
+                "source": "node_4",
+                "target": "node_1"
+              },
+              {
+                "source": "node_2",
+                "target": "node_5"
+              },
+              {
+                "source": "node_6",
+                "target": "node_4"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testops__v4.py",
+          "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testops__v4.py",
+          "node_task_map": {
+            "node_6": [
+              "talend_1_node_6"
+            ],
+            "node_4": [
+              "sftp_upload_2_node_4"
+            ],
+            "node_1": [
+              "delay_3_node_1"
+            ],
+            "node_2": [
+              "delay_4_node_2"
+            ],
+            "node_5": [
+              "sftp_upload_5_node_5"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_6": "talend_1_node_6",
+            "node_4": "sftp_upload_2_node_4",
+            "node_1": "delay_3_node_1",
+            "node_2": "delay_4_node_2",
+            "node_5": "sftp_upload_5_node_5"
+          },
+          "base_pipeline_id": "testops",
+          "promotion_status": "draft",
+          "score": null,
+          "score_type": null,
+          "score_breakdown": {},
+          "last_eval_run_id": null,
+          "promoted_at": null,
+          "promoted_by": null,
+          "github_pr_url": null,
+          "github_commit_sha": null
         }
       ],
       "switch_events": [
@@ -1217,6 +1543,22 @@
           "to_version_id": "v2",
           "actor": "admin",
           "at": "2026-05-11T12:58:01.287184+00:00"
+        },
+        {
+          "event_id": "2113a319-d186-4d97-9be5-5d59ddd69434",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v2",
+          "to_version_id": "v3",
+          "actor": "admin",
+          "at": "2026-05-11T13:22:36.100402+00:00"
+        },
+        {
+          "event_id": "875fb81e-b38f-43d3-85fb-d686342e17ac",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v3",
+          "to_version_id": "v4",
+          "actor": "admin",
+          "at": "2026-05-11T13:24:02.425608+00:00"
         }
       ]
     }

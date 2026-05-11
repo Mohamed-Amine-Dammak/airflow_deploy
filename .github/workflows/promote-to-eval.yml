@@ -177,7 +177,17 @@ jobs:
           if git diff --quiet -- dags airflow/web_app_data/metadata; then
             echo "No DAG/metadata changes to commit"
           else
-            git add dags airflow/web_app_data/metadata
+            if [ -s /tmp/metadata_files.txt ]; then
+              while IFS= read -r meta_file; do
+                [ -z "$meta_file" ] && continue
+                git add "$meta_file"
+                dag_file=$(python -c "import json,sys;print((json.load(open(sys.argv[1],encoding='utf-8')).get('git_dag_file') or '').strip())" "$meta_file")
+                if [ -n "$dag_file" ]; then
+                  git add -f "$dag_file"
+                fi
+              done < /tmp/metadata_files.txt
+            fi
+            git add airflow/web_app_data/metadata
             git commit -m "Promote merged DAG metadata to eval"
           fi
 
