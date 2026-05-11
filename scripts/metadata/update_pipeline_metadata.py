@@ -207,22 +207,17 @@ def cmd_merged(args: argparse.Namespace) -> int:
 
 def cmd_mark_eval(args: argparse.Namespace) -> int:
     root = args.root.resolve()
-    updated = 0
-    rows = list_pipeline_versions(root, args.pipeline_id) if args.pipeline_id else list_all_versions(root)
-    for item in rows:
-        if args.version_id and str(item.get("version_id")) != args.version_id:
-            continue
-        version = _load_or_create(root, str(item["pipeline_id"]), str(item["version_id"]))
-        status = str(version.get("promotion_status", "")).strip().lower()
-        if status in {"champion", "archived"}:
-            continue
-        version["promotion_status"] = "eval"
-        version["deployment_target"] = "git"
-        if args.branch:
-            version["github_branch"] = args.branch
-        _write(root, version)
-        updated += 1
-    print(f"Updated {updated} version(s)")
+    lookup_key = args.dag_id or args.version_id or ""
+    item = find_version_metadata(root, args.pipeline_id, lookup_key)
+    if not item:
+        print(f"metadata file not found for pipeline_id={args.pipeline_id}, dag_id={args.dag_id}")
+        return 1
+    version = dict(item)
+    version["promotion_status"] = "eval"
+    version["evaluated_branch"] = "eval"
+    version["updated_at"] = _now_iso()
+    save_version_metadata(root, str(version["pipeline_id"]), str(version["version_id"]), version)
+    print(f"Updated 1 version(s): {version['pipeline_id']}/{version['version_id']}")
     return 0
 
 
