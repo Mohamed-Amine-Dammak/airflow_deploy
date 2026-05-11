@@ -11,8 +11,8 @@ on:
       pipeline_id:
         description: "Base pipeline ID (optional; if omitted, all changed DAGs are promoted)"
         required: false
-      version_id:
-        description: "Specific version ID to promote"
+      dag_id:
+        description: "DAG ID to mark as eval (e.g. pipeline__v4)"
         required: false
 
 permissions:
@@ -70,8 +70,7 @@ jobs:
           python scripts/metadata/update_pipeline_metadata.py mark_eval \
             --root . \
             --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
-            --version-id "${{ github.event.inputs.version_id }}" \
-            --branch eval
+            --dag-id "${{ github.event.inputs.dag_id }}"
 
       - name: Validate metadata JSON after eval update
         run: |
@@ -79,11 +78,7 @@ jobs:
 
       - name: Commit eval metadata updates
         run: |
-          if [ -n "${{ github.event.inputs.pipeline_id }}" ] && [ -n "${{ github.event.inputs.version_id }}" ]; then
-            TARGET="airflow/web_app_data/metadata/${{ github.event.inputs.pipeline_id }}/${{ github.event.inputs.version_id }}.json"
-          else
-            TARGET="airflow/web_app_data/metadata"
-          fi
+          TARGET="airflow/web_app_data/metadata"
           if git diff --quiet -- "$TARGET"; then
             echo "No metadata changes to commit"
           else

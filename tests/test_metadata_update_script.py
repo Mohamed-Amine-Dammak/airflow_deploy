@@ -19,6 +19,10 @@ class MetadataUpdateScriptTests(unittest.TestCase):
         cmd = [sys.executable, str(self.script), *args, "--root", str(self.root)]
         subprocess.run(cmd, check=True)
 
+    def _run_capture(self, *args: str) -> subprocess.CompletedProcess[str]:
+        cmd = [sys.executable, str(self.script), *args, "--root", str(self.root)]
+        return subprocess.run(cmd, check=False, capture_output=True, text=True)
+
     def _version_path(self, pipeline_id: str, version_id: str) -> Path:
         return self.root / "airflow" / "web_app_data" / "metadata" / pipeline_id / f"{version_id}.json"
 
@@ -98,6 +102,21 @@ class MetadataUpdateScriptTests(unittest.TestCase):
         self.assertEqual(v0["promotion_status"], "archived")
         self.assertEqual(v1["promotion_status"], "champion")
         self.assertTrue(v1.get("promotion_history"))
+
+    def test_mark_eval_uses_per_version_metadata_and_ignores_invalid_legacy_store(self):
+        legacy_store = self.root / "airflow" / "web_app_data" / "pipeline_versions_store.json"
+        legacy_store.parent.mkdir(parents=True, exist_ok=True)
+        legacy_store.write_text("{not-json", encoding="utf-8")
+        self._run("pr_open", "--pipeline-id", "pipe1", "--version-id", "v1", "--dag-id", "pipe1__v1", "--dag-file", "dags/pipe1_git__v1.py")
+        self._run("mark_eval", "--pipeline-id", "pipe1", "--dag-id", "pipe1__v1")
+        data = self._load_version("pipe1", "v1")
+        self.assertEqual(data["promotion_status"], "eval")
+        self.assertEqual(data["evaluated_branch"], "eval")
+
+    def test_mark_eval_fails_clearly_when_metadata_file_missing(self):
+        result = self._run_capture("mark_eval", "--pipeline-id", "pipe1", "--dag-id", "pipe1__v1")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("metadata file not found for pipeline_id=pipe1, dag_id=pipe1__v1", result.stdout)
 
 
 if __name__ == "__main__":
