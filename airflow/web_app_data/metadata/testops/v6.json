@@ -179,7 +179,7 @@
   "git_dag_file": "dags/testops_git__v6.py",
   "dag_id": "testops__v6",
   "deployment_target": "git",
-  "updated_at": "2026-05-11T14:55:17.264241+00:00",
+  "updated_at": "2026-05-11T15:15:30.658426+00:00",
   "publish_status": "merged_to_git",
   "version": "v6",
   "workflow_name": "testops",
