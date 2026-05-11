@@ -94,7 +94,7 @@ jobs:
 
   evaluate-dag-runtime:
     if: ${{ github.event.inputs.evaluation_mode == 'run_once' || github.event.inputs.evaluation_mode == 'run_multiple' }}
-    runs-on: [self-hosted, airflow-local]
+    runs-on: [self-hosted]
 
     steps:
       - name: Checkout repo
