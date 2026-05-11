@@ -1,0 +1,143 @@
+{
+  "pipeline_id": "testops",
+  "version_id": "v2",
+  "dag_version": 2,
+  "airflow_dag_id": "testops__v2",
+  "output_filename": "testops__v2.py",
+  "created_at": "2026-05-11T12:58:01.287184+00:00",
+  "created_by": "admin",
+  "status": "active",
+  "is_current": true,
+  "source_hash": "fce152290bc2885cd3c4b8aafbff3c9fe778505634e81de7bed3c4139ff31eff",
+  "source_definition": {
+    "pipeline": {
+      "dag_id": "testops",
+      "description": "",
+      "start_date": "2026-01-01",
+      "schedule": null,
+      "schedule_mode": "manual",
+      "catchup": false,
+      "schedule_preset": "",
+      "schedule_cron": "",
+      "interval_value": "",
+      "interval_unit": "minutes",
+      "event_source": "",
+      "custom_schedule_text": "",
+      "retries": 3,
+      "retry_delay_minutes": 5,
+      "alert_emails": [],
+      "alert_mode": "both",
+      "tags": [
+        "demo",
+        "orchestration"
+      ],
+      "output_filename": "testops.py"
+    },
+    "nodes": [
+      {
+        "id": "node_1",
+        "type": "delay",
+        "label": "Delay 1",
+        "x": 500.99998474121094,
+        "y": 347.99999618530273,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_2",
+        "type": "delay",
+        "label": "Delay 2",
+        "x": 787.9999847412109,
+        "y": 331.99999618530273,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_4",
+        "type": "sftp_upload",
+        "label": "SFTP 4",
+        "x": 8,
+        "y": 409.6666831970215,
+        "config": {
+          "conn_name": "sftp",
+          "action": "upload",
+          "remote_dir": "/uploads",
+          "upload_mode": "single",
+          "local_file_path": "ok",
+          "local_file_paths": [],
+          "local_directory_path": "",
+          "file_prefix": "",
+          "download_mode": "single",
+          "remote_file_name": "",
+          "remote_file_prefix": "",
+          "local_dir_download": "/opt/airflow/local_downloads/sftp",
+          "delete_mode": "single",
+          "delete_file_name": "",
+          "delete_prefix": ""
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "node_1",
+        "target": "node_2"
+      },
+      {
+        "source": "node_4",
+        "target": "node_1"
+      }
+    ],
+    "group_boxes": []
+  },
+  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testops__v2.py",
+  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testops__v2.py",
+  "node_task_map": {
+    "node_4": [
+      "sftp_upload_1_node_4"
+    ],
+    "node_1": [
+      "delay_2_node_1"
+    ],
+    "node_2": [
+      "delay_3_node_2"
+    ]
+  },
+  "node_primary_task_map": {
+    "node_4": "sftp_upload_1_node_4",
+    "node_1": "delay_2_node_1",
+    "node_2": "delay_3_node_2"
+  },
+  "base_pipeline_id": "testops",
+  "promotion_status": "draft",
+  "score": null,
+  "score_type": null,
+  "score_breakdown": {},
+  "last_eval_run_id": null,
+  "promoted_at": null,
+  "promoted_by": null,
+  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/13",
+  "github_commit_sha": "1ee1b01ae9404437c0fdb2a00b8a75bd9bd34981",
+  "local_dag_id": "testops__v2",
+  "git_dag_id": "testops_git__v2",
+  "local_dag_file": "airflow/dags/testops__v2.py",
+  "git_dag_file": "dags/testops_git__v2.py",
+  "dag_id": "testops__v2",
+  "deployment_target": "git",
+  "updated_at": "2026-05-11T12:58:11.334896+00:00",
+  "publish_status": "pr_open",
+  "version": "v2",
+  "workflow_name": "testops",
+  "workflow_slug": "testops",
+  "repo_file_path": "dags/testops_git__v2.py",
+  "git_branch_name": "feature/workflow/testops-2",
+  "pull_request_number": 13,
+  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/13",
+  "commit_sha": "1ee1b01ae9404437c0fdb2a00b8a75bd9bd34981",
+  "github_pr_number": 13,
+  "github_branch": "feature/workflow/testops-2",
+  "requested_by_user_id": "admin",
+  "requested_by_email": "",
+  "requested_by_display_name": "admin"
+}
