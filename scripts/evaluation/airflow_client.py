@@ -14,9 +14,23 @@ class AirflowClientError(RuntimeError):
     pass
 
 
-def _request_json(method: str, url: str, auth: tuple[str, str], **kwargs) -> dict[str, Any]:
+def _request_json(
+    method: str,
+    url: str,
+    auth: tuple[str, str] | None,
+    token: str = "",
+    **kwargs,
+) -> dict[str, Any]:
+    headers = dict(kwargs.pop("headers", {}) or {})
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    req_kwargs = dict(kwargs)
+    if headers:
+        req_kwargs["headers"] = headers
+    if auth and str(auth[0]).strip():
+        req_kwargs["auth"] = auth
     try:
-        resp = requests.request(method, url, auth=auth, timeout=30, **kwargs)
+        resp = requests.request(method, url, timeout=30, **req_kwargs)
     except requests.RequestException as exc:
         raise AirflowClientError(f"Airflow API unreachable: {exc}") from exc
     if resp.status_code >= 400:
@@ -27,29 +41,42 @@ def _request_json(method: str, url: str, auth: tuple[str, str], **kwargs) -> dic
         raise AirflowClientError(f"Invalid JSON response from Airflow API: {url}") from exc
 
 
-def trigger_dag_run(base_url: str, auth: tuple[str, str], dag_id: str, conf: dict[str, Any] | None = None) -> dict[str, Any]:
+def trigger_dag_run(
+    base_url: str,
+    auth: tuple[str, str] | None,
+    dag_id: str,
+    conf: dict[str, Any] | None = None,
+    token: str = "",
+) -> dict[str, Any]:
     url = f"{base_url.rstrip('/')}/api/v1/dags/{dag_id}/dagRuns"
     payload = {"conf": conf or {}}
-    return _request_json("POST", url, auth, json=payload)
+    return _request_json("POST", url, auth, token=token, json=payload)
 
 
-def get_dag_run(base_url: str, auth: tuple[str, str], dag_id: str, dag_run_id: str) -> dict[str, Any]:
+def get_dag_run(
+    base_url: str,
+    auth: tuple[str, str] | None,
+    dag_id: str,
+    dag_run_id: str,
+    token: str = "",
+) -> dict[str, Any]:
     url = f"{base_url.rstrip('/')}/api/v1/dags/{dag_id}/dagRuns/{dag_run_id}"
-    return _request_json("GET", url, auth)
+    return _request_json("GET", url, auth, token=token)
 
 
 def wait_for_dag_run(
     base_url: str,
-    auth: tuple[str, str],
+    auth: tuple[str, str] | None,
     dag_id: str,
     dag_run_id: str,
+    token: str = "",
     timeout_seconds: int = 1800,
     poll_interval_seconds: int = 5,
 ) -> dict[str, Any]:
     deadline = time.time() + timeout_seconds
     last = {}
     while time.time() < deadline:
-        run = get_dag_run(base_url, auth, dag_id, dag_run_id)
+        run = get_dag_run(base_url, auth, dag_id, dag_run_id, token=token)
         last = run
         state = str(run.get("state", "")).lower()
         if state in {"success", "failed"}:
@@ -58,9 +85,15 @@ def wait_for_dag_run(
     raise AirflowClientError(f"Timed out waiting for DAG run completion: {dag_id}/{dag_run_id}; last_state={last.get('state')}")
 
 
-def get_task_instances(base_url: str, auth: tuple[str, str], dag_id: str, dag_run_id: str) -> list[dict[str, Any]]:
+def get_task_instances(
+    base_url: str,
+    auth: tuple[str, str] | None,
+    dag_id: str,
+    dag_run_id: str,
+    token: str = "",
+) -> list[dict[str, Any]]:
     url = f"{base_url.rstrip('/')}/api/v1/dags/{dag_id}/dagRuns/{dag_run_id}/taskInstances"
-    payload = _request_json("GET", url, auth)
+    payload = _request_json("GET", url, auth, token=token)
     tis = payload.get("task_instances", [])
     return tis if isinstance(tis, list) else []
 

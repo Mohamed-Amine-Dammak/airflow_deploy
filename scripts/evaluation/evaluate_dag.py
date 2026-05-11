@@ -249,9 +249,14 @@ def main() -> None:
         base_url = str(os.getenv("AIRFLOW_API_BASE_URL", "")).strip()
         username = str(os.getenv("AIRFLOW_API_USERNAME", "")).strip()
         password = str(os.getenv("AIRFLOW_API_PASSWORD", "")).strip()
-        if not base_url or not username or not password:
-            print("ERROR: AIRFLOW_API_BASE_URL, AIRFLOW_API_USERNAME, AIRFLOW_API_PASSWORD are required for runtime evaluation")
+        api_token = str(os.getenv("AIRFLOW_API_TOKEN", "")).strip()
+        if not base_url:
+            print("ERROR: AIRFLOW_API_BASE_URL is required for runtime evaluation")
             sys.exit(1)
+        if not api_token and (not username or not password):
+            print("ERROR: provide AIRFLOW_API_TOKEN or AIRFLOW_API_USERNAME/AIRFLOW_API_PASSWORD for runtime evaluation")
+            sys.exit(1)
+        auth = (username, password) if (username and password) else None
         dag_api_id = str(version.get("git_dag_id") or version.get("local_dag_id") or args.dag_id).strip()
         run_total = 1 if evaluation_mode == "run_once" else max(2, int(args.run_count))
         runtime_scores: list[dict[str, Any]] = []
@@ -260,15 +265,16 @@ def main() -> None:
             try:
                 trig = trigger_dag_run(
                     base_url,
-                    (username, password),
+                    auth,
                     dag_api_id,
                     {"source": "github-actions", "pipeline_id": args.pipeline_id, "version_id": version_id, "run_index": idx + 1},
+                    token=api_token,
                 )
                 dag_run_id = str(trig.get("dag_run_id") or trig.get("run_id") or "").strip()
                 if not dag_run_id:
                     raise AirflowClientError("Trigger succeeded but no dag_run_id returned")
-                run = wait_for_dag_run(base_url, (username, password), dag_api_id, dag_run_id)
-                tis = get_task_instances(base_url, (username, password), dag_api_id, dag_run_id)
+                run = wait_for_dag_run(base_url, auth, dag_api_id, dag_run_id, token=api_token)
+                tis = get_task_instances(base_url, auth, dag_api_id, dag_run_id, token=api_token)
                 metrics = collect_runtime_metrics(run, tis)
                 evaluation_runs.append(
                     {
