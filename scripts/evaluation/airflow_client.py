@@ -60,6 +60,27 @@ def build_dag_endpoint(base_url: str, dag_id: str, api_version: str = "v2") -> s
     return f"{base}/api/{version}/dags/{dag_id}"
 
 
+def unpause_dag_if_needed(
+    base_url: str,
+    auth: tuple[str, str] | None,
+    dag_id: str,
+    token: str = "",
+    api_version: str = "v2",
+) -> dict[str, Any]:
+    dag = get_dag(base_url, auth, dag_id, token=token, api_version=api_version)
+    if not bool(dag.get("is_paused")):
+        return dag
+    url = build_dag_endpoint(base_url, dag_id, api_version=api_version)
+    return _request_json(
+        "PATCH",
+        url,
+        auth,
+        token=token,
+        headers={"Content-Type": "application/json"},
+        json={"is_paused": False},
+    )
+
+
 def trigger_dag_run(
     base_url: str,
     auth: tuple[str, str] | None,
@@ -68,6 +89,10 @@ def trigger_dag_run(
     token: str = "",
     api_version: str = "v2",
 ) -> dict[str, Any]:
+    dag = get_dag(base_url, auth, dag_id, token=token, api_version=api_version)
+    if not dag:
+        raise AirflowClientError(f"DAG '{dag_id}' is not registered in Airflow yet.")
+    unpause_dag_if_needed(base_url, auth, dag_id, token=token, api_version=api_version)
     url = f"{build_dag_endpoint(base_url, dag_id, api_version=api_version)}/dagRuns"
     payload = {
         "logical_date": datetime.now(timezone.utc).isoformat(),

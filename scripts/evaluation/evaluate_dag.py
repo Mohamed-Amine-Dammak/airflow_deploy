@@ -264,7 +264,7 @@ def main() -> None:
             print("ERROR: provide AIRFLOW_API_TOKEN or AIRFLOW_API_USERNAME/AIRFLOW_API_PASSWORD for runtime evaluation")
             sys.exit(1)
         auth = (username, password) if (username and password) else None
-        dag_api_id = str(version.get("git_dag_id") or version.get("local_dag_id") or args.dag_id).strip()
+        dag_api_id = str(args.dag_id or version.get("git_dag_id") or version.get("local_dag_id")).strip()
         normalized_base = base_url.rstrip("/")
         for suffix in ("/api/v1", "/api/v2"):
             if normalized_base.lower().endswith(suffix):
