@@ -77,7 +77,9 @@ jobs:
       - name: Detect changed metadata files in eval
         shell: bash
         run: |
+          set -euo pipefail
           : > /tmp/prod_metadata.txt
+          : > /tmp/prod_eval_ready.txt
           if [ -n "${{ github.event.inputs.metadata_file }}" ]; then
             echo "${{ github.event.inputs.metadata_file }}" > /tmp/prod_metadata.txt
           else
@@ -87,6 +89,26 @@ jobs:
           fi
           echo "Detected metadata files:"
           if [ -s /tmp/prod_metadata.txt ]; then sed 's/^/- /' /tmp/prod_metadata.txt; else echo "- <none>"; fi
+          changed_count=0
+          eval_ready_count=0
+          if [ -s /tmp/prod_metadata.txt ]; then
+            while IFS= read -r meta_file; do
+              [ -z "$meta_file" ] && continue
+              changed_count=$((changed_count + 1))
+              promotion_status=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print(str(d.get('promotion_status') or '').strip().lower())" "eval-src/$meta_file")
+              if [ "$promotion_status" = "eval" ]; then
+                echo "$meta_file" >> /tmp/prod_eval_ready.txt
+                eval_ready_count=$((eval_ready_count + 1))
+              fi
+            done < /tmp/prod_metadata.txt
+          fi
+          echo "PROD_CHANGED_COUNT=$changed_count" >> "$GITHUB_ENV"
+          echo "PROD_EVAL_READY_COUNT=$eval_ready_count" >> "$GITHUB_ENV"
+          echo "processed_count=$eval_ready_count"
+          if [ "${{ github.event_name }}" = "push" ] && [ "$changed_count" -gt 0 ] && [ "$eval_ready_count" -eq 0 ]; then
+            echo "No eval metadata ready for prod promotion."
+            exit 1
+          fi
 
       - name: Promote changed challengers
         shell: bash
@@ -113,13 +135,20 @@ jobs:
       - name: Commit prod updates
         shell: bash
         run: |
+          set -euo pipefail
           cd prod-worktree
           if git diff --quiet -- dags airflow/web_app_data/metadata; then
             echo "No prod changes to commit"
+            if [ "${PROD_EVAL_READY_COUNT:-0}" -gt 0 ]; then
+              echo "Eval-ready metadata detected but no prod commit was produced."
+              exit 1
+            fi
+            echo "processed_count=0"
           else
             git add dags airflow/web_app_data/metadata
             git commit -m "Auto-promote eligible challengers to prod champion"
             git push origin prod
+            echo "processed_count=${PROD_EVAL_READY_COUNT:-0}"
           fi
 
       - name: Upload promotion decisions
