@@ -18,8 +18,9 @@ def _normalize_schedule(schedule):
     return schedule
 
 
-_TASK_RESUME_SCOPE_BY_ENTRY = {'timeout_guard_1_node_5': ['timeout_guard_1_node_5', 'timeout_guard_2_node_7'],
- 'timeout_guard_2_node_7': ['timeout_guard_2_node_7']}
+_TASK_RESUME_SCOPE_BY_ENTRY = {'timeout_guard_1_node_5': ['delay_3_node_8', 'timeout_guard_1_node_5', 'timeout_guard_2_node_7'],
+ 'timeout_guard_2_node_7': ['delay_3_node_8', 'timeout_guard_2_node_7'],
+ 'delay_3_node_8': ['delay_3_node_8']}
 
 
 def _resolve_resume_from_task_id(context):
@@ -70,7 +71,7 @@ if _alert_emails and _alert_mode in {"on_retry", "both"}:
 
 
 @dag(
-    dag_id='testpipeline__v6',
+    dag_id='testpipeline__v7',
     start_date=datetime(
         2026,
         1,
@@ -82,7 +83,7 @@ if _alert_emails and _alert_mode in {"on_retry", "both"}:
     tags=['demo', 'orchestration'],
     description='',
 )
-def testpipeline_v6():
+def testpipeline_v7():
     task_node_5 = EmptyOperator(
         task_id='timeout_guard_1_node_5',
         execution_timeout=timedelta(minutes=int(1)),
@@ -93,7 +94,19 @@ def testpipeline_v6():
         execution_timeout=timedelta(minutes=int(1)),
     )
 
+    @task(task_id='delay_3_node_8')
+    def run_node_8():
+        delay_minutes = int(1)
+        if delay_minutes <= 0:
+            raise AirflowException("delay.delay_minutes must be > 0.")
+        time.sleep(delay_minutes * 60)
+        return {"delayed_minutes": delay_minutes, "status": "completed"}
+
+
+    task_node_8 = run_node_8()
+
     task_node_5 >> task_node_7
+    task_node_7 >> task_node_8
 
 
-dag = testpipeline_v6()
+dag = testpipeline_v7()

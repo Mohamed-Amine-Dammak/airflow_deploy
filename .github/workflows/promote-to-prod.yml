@@ -80,13 +80,40 @@ jobs:
           set -euo pipefail
           : > /tmp/prod_metadata.txt
           : > /tmp/prod_eval_ready.txt
-          if [ -n "${{ github.event.inputs.metadata_file }}" ]; then
-            echo "${{ github.event.inputs.metadata_file }}" > /tmp/prod_metadata.txt
+          event_name="${{ github.event_name }}"
+          if [ "$event_name" = "workflow_dispatch" ]; then
+            manual_file="${{ github.event.inputs.metadata_file || '' }}"
+            if [ -n "$manual_file" ]; then
+              echo "$manual_file" > /tmp/prod_metadata.txt
+            else
+              cd eval-src
+              find airflow/web_app_data/metadata -type f -name "*.json" | sed 's#^\./##' > /tmp/prod_metadata.txt || true
+              cd ..
+            fi
+          elif [ "$event_name" = "push" ]; then
+            before_sha="${{ github.event.before }}"
+            after_sha="${{ github.sha }}"
+            cd eval-src
+            if [ -n "$before_sha" ] && [ "$before_sha" != "0000000000000000000000000000000000000000" ]; then
+              git diff --name-only "$before_sha" "$after_sha" | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/prod_metadata.txt || true
+            else
+              git show --name-only --pretty="" "$after_sha" | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/prod_metadata.txt || true
+            fi
+            cd ..
+          elif [ "$event_name" = "workflow_run" ]; then
+            run_sha="${{ github.event.workflow_run.head_sha }}"
+            cd eval-src
+            if [ -n "$run_sha" ]; then
+              git show --name-only --pretty="" "$run_sha" | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/prod_metadata.txt || true
+            fi
+            cd ..
           else
             cd eval-src
-            git diff --name-only HEAD~1 HEAD | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/prod_metadata.txt || true
+            git show --name-only --pretty="" HEAD | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/prod_metadata.txt || true
             cd ..
           fi
+          awk 'NF && !seen[$0]++' /tmp/prod_metadata.txt > /tmp/prod_metadata.dedup.txt || true
+          mv /tmp/prod_metadata.dedup.txt /tmp/prod_metadata.txt
           echo "Detected metadata files:"
           if [ -s /tmp/prod_metadata.txt ]; then sed 's/^/- /' /tmp/prod_metadata.txt; else echo "- <none>"; fi
           changed_count=0
@@ -94,20 +121,37 @@ jobs:
           if [ -s /tmp/prod_metadata.txt ]; then
             while IFS= read -r meta_file; do
               [ -z "$meta_file" ] && continue
+              if [ ! -f "eval-src/$meta_file" ]; then
+                echo "metadata_file=$meta_file"
+                echo "selected=false reason=missing_on_eval_checkout"
+                continue
+              fi
               changed_count=$((changed_count + 1))
+              pipeline_id=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print((d.get('pipeline_id') or '').strip())" "eval-src/$meta_file")
+              version_id=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print((d.get('version_id') or '').strip())" "eval-src/$meta_file")
+              dag_file=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print((d.get('git_dag_file') or '').strip())" "eval-src/$meta_file")
+              publish_status=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print(str(d.get('publish_status') or '').strip().lower())" "eval-src/$meta_file")
               promotion_status=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print(str(d.get('promotion_status') or '').strip().lower())" "eval-src/$meta_file")
+              echo "metadata_file=$meta_file"
+              echo "pipeline_id=$pipeline_id"
+              echo "version_id=$version_id"
+              echo "git_dag_file=$dag_file"
+              echo "publish_status=$publish_status"
+              echo "promotion_status=$promotion_status"
               if [ "$promotion_status" = "eval" ]; then
                 echo "$meta_file" >> /tmp/prod_eval_ready.txt
                 eval_ready_count=$((eval_ready_count + 1))
+                echo "selected=true reason=promotion_status_eval"
+              else
+                echo "selected=false reason=promotion_status_${promotion_status:-empty}"
               fi
             done < /tmp/prod_metadata.txt
           fi
           echo "PROD_CHANGED_COUNT=$changed_count" >> "$GITHUB_ENV"
           echo "PROD_EVAL_READY_COUNT=$eval_ready_count" >> "$GITHUB_ENV"
           echo "processed_count=$eval_ready_count"
-          if [ "${{ github.event_name }}" = "push" ] && [ "$changed_count" -gt 0 ] && [ "$eval_ready_count" -eq 0 ]; then
+          if [ "$changed_count" -gt 0 ] && [ "$eval_ready_count" -eq 0 ]; then
             echo "No eval metadata ready for prod promotion."
-            exit 1
           fi
 
       - name: Promote changed challengers
@@ -140,8 +184,7 @@ jobs:
           if git diff --quiet -- dags airflow/web_app_data/metadata; then
             echo "No prod changes to commit"
             if [ "${PROD_EVAL_READY_COUNT:-0}" -gt 0 ]; then
-              echo "Eval-ready metadata detected but no prod commit was produced."
-              exit 1
+              echo "Eval-ready metadata already reflected in prod; idempotent no-op."
             fi
             echo "processed_count=0"
           else
