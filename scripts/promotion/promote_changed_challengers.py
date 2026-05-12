@@ -28,6 +28,25 @@ def _discover(eval_root: Path, rev_from: str, rev_to: str, metadata_files: list[
     return payload if isinstance(payload, list) else []
 
 
+def _copy_file_from_branch(repo_root: Path, branch: str, rel_path: str) -> tuple[bool, str]:
+    rel = str(rel_path or "").strip().replace("\\", "/")
+    if not rel:
+        return False, "empty path"
+    result = subprocess.run(
+        ["git", "show", f"{branch}:{rel}"],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return False, (result.stderr or result.stdout or "").strip()
+    target = repo_root / rel
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(result.stdout, encoding="utf-8")
+    return True, ""
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Promote changed challengers")
     parser.add_argument("--eval-root", type=Path, required=True)
@@ -70,6 +89,21 @@ def main() -> int:
                     "eligible": False,
                     "reason": "blocked_by_score_policy",
                     "details": (elig.stdout + "\n" + elig.stderr).strip(),
+                    "metadata_file": meta_file,
+                }
+            )
+            continue
+
+        meta_copy_ok, meta_copy_err = _copy_file_from_branch(prod_root, "eval", meta_file)
+        if not meta_copy_ok:
+            decisions.append(
+                {
+                    "pipeline_id": pipeline_id,
+                    "version_id": version_id,
+                    "eligible": True,
+                    "promoted": False,
+                    "reason": "metadata_copy_failed",
+                    "details": meta_copy_err,
                     "metadata_file": meta_file,
                 }
             )
