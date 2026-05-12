@@ -41,6 +41,10 @@ def _copy_file_from_source(source_root: Path, dest_root: Path, rel_path: str) ->
     return True, ""
 
 
+def _canonical_metadata_file(pipeline_id: str, version_id: str) -> str:
+    return f"airflow/web_app_data/metadata/{pipeline_id}/{version_id}.json"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Promote changed challengers")
     parser.add_argument("--eval-root", type=Path, required=True)
@@ -61,7 +65,7 @@ def main() -> int:
             continue
         pipeline_id = str(row.get("pipeline_id", "")).strip()
         version_id = str(row.get("version_id", "")).strip()
-        meta_file = str(row.get("metadata_file", "")).strip()
+        meta_file = _canonical_metadata_file(pipeline_id, version_id)
         if not pipeline_id or not version_id:
             continue
         elig_cmd = [
@@ -157,6 +161,37 @@ def main() -> int:
                     "promoted": False,
                     "reason": "metadata_promote_failed",
                     "details": (prom.stdout + "\n" + prom.stderr).strip(),
+                    "metadata_file": meta_file,
+                }
+            )
+            continue
+
+        promoted_meta = prod_root / meta_file
+        try:
+            payload = json.loads(promoted_meta.read_text(encoding="utf-8"))
+            status = str(payload.get("promotion_status", "")).strip().lower()
+        except Exception as exc:
+            decisions.append(
+                {
+                    "pipeline_id": pipeline_id,
+                    "version_id": version_id,
+                    "eligible": True,
+                    "promoted": False,
+                    "reason": "metadata_verify_failed",
+                    "details": str(exc),
+                    "metadata_file": meta_file,
+                }
+            )
+            continue
+        if status != "champion":
+            decisions.append(
+                {
+                    "pipeline_id": pipeline_id,
+                    "version_id": version_id,
+                    "eligible": True,
+                    "promoted": False,
+                    "reason": "metadata_not_champion_after_promote",
+                    "details": f"promotion_status={status}",
                     "metadata_file": meta_file,
                 }
             )
