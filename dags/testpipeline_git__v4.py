@@ -17,15 +17,10 @@ def _normalize_schedule(schedule):
     return schedule
 
 
-<<<<<<< HEAD
-_TASK_RESUME_SCOPE_BY_ENTRY = {'delay_1_node_3': ['delay_1_node_3', 'delay_2_node_1', 'delay_3_node_2'],
- 'delay_2_node_1': ['delay_2_node_1', 'delay_3_node_2'],
- 'delay_3_node_2': ['delay_3_node_2']}
-=======
-_TASK_RESUME_SCOPE_BY_ENTRY = {'delay_1_node_1': ['delay_1_node_1', 'delay_2_node_2', 'delay_3_node_3'],
- 'delay_2_node_2': ['delay_2_node_2', 'delay_3_node_3'],
- 'delay_3_node_3': ['delay_3_node_3']}
->>>>>>> origin/main
+_TASK_RESUME_SCOPE_BY_ENTRY = {'delay_1_node_1': ['delay_1_node_1', 'delay_2_node_2', 'delay_3_node_3', 'delay_4_node_4'],
+ 'delay_2_node_2': ['delay_2_node_2', 'delay_3_node_3', 'delay_4_node_4'],
+ 'delay_3_node_3': ['delay_3_node_3', 'delay_4_node_4'],
+ 'delay_4_node_4': ['delay_4_node_4']}
 
 
 def _resolve_resume_from_task_id(context):
@@ -76,7 +71,7 @@ if _alert_emails and _alert_mode in {"on_retry", "both"}:
 
 
 @dag(
-    dag_id='testpipeline__v3',
+    dag_id='testpipeline_git__v4',
     start_date=datetime(
         2026,
         1,
@@ -88,23 +83,8 @@ if _alert_emails and _alert_mode in {"on_retry", "both"}:
     tags=['demo', 'orchestration'],
     description='',
 )
-def testpipeline_v3():
-<<<<<<< HEAD
-    @task(task_id='delay_1_node_3')
-    def run_node_3():
-        delay_minutes = int(1)
-        if delay_minutes <= 0:
-            raise AirflowException("delay.delay_minutes must be > 0.")
-        time.sleep(delay_minutes * 60)
-        return {"delayed_minutes": delay_minutes, "status": "completed"}
-
-
-    task_node_3 = run_node_3()
-
-    @task(task_id='delay_2_node_1')
-=======
+def testpipeline_v4():
     @task(task_id='delay_1_node_1')
->>>>>>> origin/main
     def run_node_1():
         delay_minutes = int(1)
         if delay_minutes <= 0:
@@ -115,11 +95,7 @@ def testpipeline_v3():
 
     task_node_1 = run_node_1()
 
-<<<<<<< HEAD
-    @task(task_id='delay_3_node_2')
-=======
     @task(task_id='delay_2_node_2')
->>>>>>> origin/main
     def run_node_2():
         delay_minutes = int(1)
         if delay_minutes <= 0:
@@ -130,10 +106,6 @@ def testpipeline_v3():
 
     task_node_2 = run_node_2()
 
-<<<<<<< HEAD
-    task_node_1 >> task_node_2
-    task_node_3 >> task_node_1
-=======
     @task(task_id='delay_3_node_3')
     def run_node_3():
         delay_minutes = int(1)
@@ -145,9 +117,20 @@ def testpipeline_v3():
 
     task_node_3 = run_node_3()
 
+    @task(task_id='delay_4_node_4')
+    def run_node_4():
+        delay_minutes = int(1)
+        if delay_minutes <= 0:
+            raise AirflowException("delay.delay_minutes must be > 0.")
+        time.sleep(delay_minutes * 60)
+        return {"delayed_minutes": delay_minutes, "status": "completed"}
+
+
+    task_node_4 = run_node_4()
+
     task_node_1 >> task_node_2
     task_node_2 >> task_node_3
->>>>>>> origin/main
+    task_node_3 >> task_node_4
 
 
-dag = testpipeline_v3()
+dag = testpipeline_v4()
