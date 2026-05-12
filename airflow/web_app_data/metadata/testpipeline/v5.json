@@ -1,0 +1,111 @@
+{
+  "pipeline_id": "testpipeline",
+  "version_id": "v5",
+  "dag_version": 5,
+  "airflow_dag_id": "testpipeline__v5",
+  "output_filename": "testpipeline__v5.py",
+  "created_at": "2026-05-12T12:11:27.991075+00:00",
+  "created_by": "admin",
+  "status": "active",
+  "is_current": true,
+  "source_hash": "88c95f31314a2993a7489dd73d4cd6067e5891af35508854afb0b6cb2104850c",
+  "source_definition": {
+    "pipeline": {
+      "dag_id": "testpipeline",
+      "description": "",
+      "start_date": "2026-01-01",
+      "schedule": null,
+      "schedule_mode": "manual",
+      "catchup": false,
+      "schedule_preset": "",
+      "schedule_cron": "",
+      "interval_value": "",
+      "interval_unit": "minutes",
+      "event_source": "",
+      "custom_schedule_text": "",
+      "retries": 1,
+      "retry_delay_minutes": 1,
+      "alert_emails": [],
+      "alert_mode": "both",
+      "tags": [
+        "demo",
+        "orchestration"
+      ],
+      "output_filename": "testpipeline.py"
+    },
+    "nodes": [
+      {
+        "id": "node_1",
+        "type": "delay",
+        "label": "Delay 1",
+        "x": 983.3332977294922,
+        "y": 379.7777976989746,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_5",
+        "type": "timeout_guard",
+        "label": "Timeout Guard 5",
+        "x": 550.5552825927734,
+        "y": 384.66662216186523,
+        "config": {
+          "timeout_minutes": 1
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "node_5",
+        "target": "node_1"
+      }
+    ],
+    "group_boxes": []
+  },
+  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testpipeline__v5.py",
+  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testpipeline__v5.py",
+  "node_task_map": {
+    "node_5": [
+      "timeout_guard_1_node_5"
+    ],
+    "node_1": [
+      "delay_2_node_1"
+    ]
+  },
+  "node_primary_task_map": {
+    "node_5": "timeout_guard_1_node_5",
+    "node_1": "delay_2_node_1"
+  },
+  "base_pipeline_id": "testpipeline",
+  "promotion_status": "draft",
+  "score": null,
+  "score_type": null,
+  "score_breakdown": {},
+  "last_eval_run_id": null,
+  "promoted_at": null,
+  "promoted_by": null,
+  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/35",
+  "github_commit_sha": "0b010426458d81a9b02ab22341bcbe73b813c24c",
+  "local_dag_id": "testpipeline__v5",
+  "git_dag_id": "testpipeline_git__v5",
+  "local_dag_file": "airflow/dags/testpipeline__v5.py",
+  "git_dag_file": "dags/testpipeline_git__v5.py",
+  "dag_id": "testpipeline__v5",
+  "deployment_target": "git",
+  "updated_at": "2026-05-12T12:11:53.805048+00:00",
+  "publish_status": "pr_open",
+  "version": "v5",
+  "workflow_name": "testpipeline",
+  "workflow_slug": "testpipeline",
+  "repo_file_path": "dags/testpipeline_git__v5.py",
+  "git_branch_name": "feature/workflow/testpipeline-5",
+  "pull_request_number": 35,
+  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/35",
+  "commit_sha": "0b010426458d81a9b02ab22341bcbe73b813c24c",
+  "github_pr_number": 35,
+  "github_branch": "feature/workflow/testpipeline-5",
+  "requested_by_user_id": "admin",
+  "requested_by_email": "",
+  "requested_by_display_name": "admin"
+}
