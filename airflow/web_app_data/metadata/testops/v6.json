@@ -164,11 +164,19 @@
     "node_8": "delay_6_node_8"
   },
   "base_pipeline_id": "testops",
-  "promotion_status": "eval",
-  "score": null,
-  "score_type": null,
-  "score_breakdown": {},
-  "last_eval_run_id": null,
+  "promotion_status": "challenger",
+  "score": 81.8,
+  "score_type": "runtime_once",
+  "score_breakdown": {
+    "reliability": 20.8,
+    "runtime_efficiency": 18.7,
+    "retry_behavior": 15.0,
+    "scheduler_behavior": 15.0,
+    "complexity": 9.8,
+    "maintainability": 10.0,
+    "resource_efficiency": 2.5
+  },
+  "last_eval_run_id": "eval-testops-v6-1778578648",
   "promoted_at": null,
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/18",
@@ -195,8 +203,43 @@
   "requested_by_email": "",
   "requested_by_display_name": "admin",
   "warnings": [],
-  "critical_failures": [],
+  "critical_failures": [
+    "1 runtime DAG run(s) failed."
+  ],
   "merged_at": "2026-05-11T13:38:17.795609+00:00",
   "merge_commit_sha": "96283c6d3afdf6e4aa2e174c8bf147bd436b2443",
-  "evaluated_branch": "eval"
+  "evaluated_branch": "eval",
+  "last_evaluated_at": "2026-05-12T09:37:28.008167+00:00",
+  "evaluation_runs": [
+    {
+      "dag_run_id": "manual__2026-05-12T09:36:47.623795+00:00",
+      "dag_id": "testops_git__v6",
+      "state": "failed",
+      "metrics": {
+        "dag_run_state": "failed",
+        "total_runtime_seconds": 38.85,
+        "task_count": 6,
+        "success_task_count": 0,
+        "failed_task_count": 1,
+        "skipped_task_count": 0,
+        "retry_count": 0,
+        "try_number": 0,
+        "queued_duration": 0.0,
+        "scheduler_delay_seconds": 0.0,
+        "start_date": "2026-05-12T09:36:48.516505Z",
+        "end_date": "2026-05-12T09:37:27.366323Z",
+        "duration_per_task": {
+          "talend_1_node_6": 9.788164,
+          "timeout_guard_2_node_7": 0.0,
+          "delay_3_node_1": 0.0,
+          "delay_4_node_2": 0.0,
+          "sftp_upload_5_node_5": 0.0,
+          "delay_6_node_8": 0.0
+        },
+        "task_failure_rate": 0.166667,
+        "sla_misses": 0,
+        "resource_usage_pct": 50.0
+      }
+    }
+  ]
 }
