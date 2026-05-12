@@ -59,7 +59,7 @@
     "node_1": "delay_1_node_1"
   },
   "base_pipeline_id": "testpipeline",
-  "promotion_status": "submitted",
+  "promotion_status": "eval",
   "score": null,
   "score_type": null,
   "score_breakdown": {},
@@ -74,7 +74,7 @@
   "git_dag_file": "dags/testpipeline_git__v1.py",
   "dag_id": "testpipeline__v1",
   "deployment_target": "git",
-  "updated_at": "2026-05-12T10:12:00.204634+00:00",
+  "updated_at": "2026-05-12T10:12:24.348279+00:00",
   "publish_status": "merged_to_git",
   "version": "v1",
   "workflow_name": "testpipeline",
@@ -92,5 +92,6 @@
   "warnings": [],
   "critical_failures": [],
   "merged_at": "2026-05-12T10:12:00.204646+00:00",
-  "merge_commit_sha": "9a141afa575b5ac2ebac2e3c86ebcaaeabb77700"
+  "merge_commit_sha": "9a141afa575b5ac2ebac2e3c86ebcaaeabb77700",
+  "evaluated_branch": "eval"
 }
