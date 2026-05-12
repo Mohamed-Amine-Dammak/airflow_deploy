@@ -97,14 +97,14 @@ jobs:
               pipeline_id=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print((d.get('pipeline_id') or '').strip())" "$meta_file")
               version_id=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print((d.get('version_id') or '').strip())" "$meta_file")
               dag_file=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print((d.get('git_dag_file') or '').strip())" "$meta_file")
-              publish_status=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print(str(d.get('publish_status') or '').strip().lower())" "$meta_file")
+              promotion_status=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print(str(d.get('promotion_status') or '').strip().lower())" "$meta_file")
               echo "metadata_file=$meta_file"
               echo "pipeline_id=$pipeline_id"
               echo "version_id=$version_id"
               echo "git_dag_file=$dag_file"
               echo "source_path_on_main=$meta_file"
               echo "destination_path_on_eval=$meta_file"
-              if [ "$publish_status" = "submitted" ]; then
+              if [ "$promotion_status" = "submitted" ]; then
                 echo "$meta_file" >> /tmp/submitted_metadata_files.txt
                 submitted_count=$((submitted_count + 1))
               fi
