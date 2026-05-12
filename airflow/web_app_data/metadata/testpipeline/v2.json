@@ -93,7 +93,7 @@
   "git_dag_file": "dags/testpipeline_git__v2.py",
   "dag_id": "testpipeline__v2",
   "deployment_target": "git",
-  "updated_at": "2026-05-12T10:22:55.697217+00:00",
+  "updated_at": "2026-05-12T10:23:16.299181+00:00",
   "publish_status": "merged_to_git",
   "version": "v2",
   "workflow_name": "testpipeline",
