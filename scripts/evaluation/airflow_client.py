@@ -137,12 +137,19 @@ def wait_for_dag_run(
     deadline = time.time() + timeout_seconds
     last = {}
     while time.time() < deadline:
-        run = get_dag_run(base_url, auth, dag_id, dag_run_id, token=token, api_version=api_version)
-        last = run
-        state = str(run.get("state", "")).lower()
-        print(f"dag_run_id={dag_run_id} state={state}")
-        if state in {"success", "failed"}:
-            return run
+        try:
+            run = get_dag_run(base_url, auth, dag_id, dag_run_id, token=token, api_version=api_version)
+            last = run
+            state = str(run.get("state", "")).lower()
+            print(f"dag_run_id={dag_run_id} state={state}")
+            if state in {"success", "failed"}:
+                return run
+        except AirflowClientError as exc:
+            msg = str(exc).lower()
+            if "read timed out" in msg or "timed out" in msg:
+                print(f"dag_run_id={dag_run_id} state=unknown (poll timeout, retrying)")
+            else:
+                raise
         time.sleep(max(1, int(poll_interval_seconds)))
     raise AirflowClientError("Timed out waiting for DAG run to finish.")
 
