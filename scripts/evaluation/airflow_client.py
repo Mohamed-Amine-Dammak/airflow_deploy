@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import requests
@@ -56,7 +56,10 @@ def trigger_dag_run(
     token: str = "",
 ) -> dict[str, Any]:
     url = f"{base_url.rstrip('/')}/api/v1/dags/{dag_id}/dagRuns"
-    payload = {"conf": conf or {}}
+    payload = {
+        "logical_date": datetime.now(timezone.utc).isoformat(),
+        "conf": conf or {},
+    }
     return _request_json("POST", url, auth, token=token, json=payload)
 
 
