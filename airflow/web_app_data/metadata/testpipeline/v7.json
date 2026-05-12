@@ -96,7 +96,7 @@
     "node_8": "delay_3_node_8"
   },
   "base_pipeline_id": "testpipeline",
-  "promotion_status": "challenger",
+  "promotion_status": "archived",
   "score": 94.4,
   "score_type": "runtime_once",
   "score_breakdown": {
@@ -109,7 +109,7 @@
     "resource_efficiency": 2.5
   },
   "last_eval_run_id": "eval-testpipeline-v7-1778591581",
-  "promoted_at": null,
+  "promoted_at": "2026-05-12T15:31:02.107467+00:00",
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/38",
   "github_commit_sha": "b4ec2f99dcfc3a3764ead43ee1427556d466bc55",
@@ -119,7 +119,7 @@
   "git_dag_file": "dags/testpipeline_git__v7.py",
   "dag_id": "testpipeline__v7",
   "deployment_target": "git",
-  "updated_at": "2026-05-12T13:10:57.169116+00:00",
+  "updated_at": "2026-05-12T15:31:02.222665+00:00",
   "publish_status": "merged_to_git",
   "version": "v7",
   "workflow_name": "testpipeline",
@@ -168,5 +168,14 @@
         "resource_usage_pct": 50.0
       }
     }
-  ]
+  ],
+  "promotion_history": [
+    {
+      "at": "2026-05-12T15:31:02.107474+00:00",
+      "promoted_version_id": "v7",
+      "base_pipeline_id": "testpipeline",
+      "previous_champion_version_id": "v3"
+    }
+  ],
+  "archived_at": "2026-05-12T15:31:02.222674+00:00"
 }
