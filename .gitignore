@@ -33,10 +33,10 @@ web_app/
 # DAG folders
 # -----------------------------
 # ignore local generated DAGs
-airflow/dags/
+
 web_app/generated_dags/
 
 # ignore repo dags by default, then allow deployment DAG .py files
-dags/
+
 !dags/
 !dags/*.py
