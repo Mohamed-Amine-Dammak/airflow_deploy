@@ -123,12 +123,56 @@ jobs:
           $rows = Get-Content $inFile
           foreach ($m in $rows) {
             if ([string]::IsNullOrWhiteSpace($m)) { continue }
-            if (-not (Test-Path $m)) { continue }
-            $payload = Get-Content $m -Raw | ConvertFrom-Json
+            $rel = "$m".Trim()
+            $candidatePaths = @(
+              $rel,
+              ($rel -replace '^[\.\\/]+', ''),
+              ("./" + ($rel -replace '^[\.\\/]+', ''))
+            )
+            if ($rel -match '^[\\/]?web_app_data\/') {
+              $trimmed = $rel -replace '^[\\/]+', ''
+              $candidatePaths += @("airflow/$trimmed", "./airflow/$trimmed")
+            }
+            $resolved = $null
+            foreach ($p in ($candidatePaths | Select-Object -Unique)) {
+              if (Test-Path $p) { $resolved = $p; break }
+            }
+            if ([string]::IsNullOrWhiteSpace($resolved)) {
+              Write-Output "metadata_file=$rel"
+              Write-Output "selected=false reason=file_not_found_on_eval_branch"
+              continue
+            }
+
+            try {
+              $payload = Get-Content $resolved -Raw | ConvertFrom-Json
+            }
+            catch {
+              Write-Output "metadata_file=$rel"
+              Write-Output "resolved_path=$resolved"
+              Write-Output "selected=false reason=invalid_json"
+              continue
+            }
+
+            $pipelineId = "$($payload.pipeline_id)".Trim()
+            $versionId = "$($payload.version_id)".Trim()
+            $dagFile = "$($payload.git_dag_file)".Trim()
+            $publish = "$($payload.publish_status)".Trim().ToLowerInvariant()
             $promotion = "$($payload.promotion_status)".Trim().ToLowerInvariant()
+            Write-Output "metadata_file=$rel"
+            Write-Output "resolved_path=$resolved"
+            Write-Output "pipeline_id=$pipelineId"
+            Write-Output "version_id=$versionId"
+            Write-Output "git_dag_file=$dagFile"
+            Write-Output "publish_status=$publish"
+            Write-Output "promotion_status=$promotion"
+
             if ($promotion -eq "eval") {
-              $m | Out-File -FilePath $readyFile -Encoding utf8 -Append
+              $resolved | Out-File -FilePath $readyFile -Encoding utf8 -Append
               $processed += 1
+              Write-Output "selected=true reason=promotion_status_eval"
+            }
+            else {
+              Write-Output "selected=false reason=promotion_status_$promotion"
             }
           }
           "EVAL_METADATA_FILE=$readyFile" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
