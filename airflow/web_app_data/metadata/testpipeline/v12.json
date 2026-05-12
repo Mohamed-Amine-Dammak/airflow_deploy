@@ -150,11 +150,19 @@
     "node_13": "delay_6_node_13"
   },
   "base_pipeline_id": "testpipeline",
-  "promotion_status": "eval",
-  "score": null,
-  "score_type": null,
-  "score_breakdown": {},
-  "last_eval_run_id": null,
+  "promotion_status": "challenger",
+  "score": 87.9,
+  "score_type": "runtime_once",
+  "score_breakdown": {
+    "reliability": 25.0,
+    "runtime_efficiency": 10.8,
+    "retry_behavior": 15.0,
+    "scheduler_behavior": 15.0,
+    "complexity": 9.6,
+    "maintainability": 10.0,
+    "resource_efficiency": 2.5
+  },
+  "last_eval_run_id": "eval-testpipeline-v12-1778599831",
   "promoted_at": null,
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/45",
@@ -184,5 +192,38 @@
   "critical_failures": [],
   "merged_at": "2026-05-12T15:17:13.131363+00:00",
   "merge_commit_sha": "daf62fafdc2707176ce0c811c52cb4e79b309e23",
-  "evaluated_branch": "eval"
+  "evaluated_branch": "eval",
+  "last_evaluated_at": "2026-05-12T15:30:31.468018+00:00",
+  "evaluation_runs": [
+    {
+      "dag_run_id": "manual__2026-05-12T15:25:50.226082+00:00",
+      "dag_id": "testpipeline_git__v12",
+      "state": "success",
+      "metrics": {
+        "dag_run_state": "success",
+        "total_runtime_seconds": 275.118,
+        "task_count": 6,
+        "success_task_count": 6,
+        "failed_task_count": 0,
+        "skipped_task_count": 0,
+        "retry_count": 0,
+        "try_number": 0,
+        "queued_duration": 0.0,
+        "scheduler_delay_seconds": 0.0,
+        "start_date": "2026-05-12T15:25:50.488776Z",
+        "end_date": "2026-05-12T15:30:25.606436Z",
+        "duration_per_task": {
+          "delay_1_node_15": 77.245234,
+          "delay_2_node_14": 68.244479,
+          "timeout_guard_3_node_11": 0.0,
+          "delay_4_node_10": 60.241065,
+          "timeout_guard_5_node_12": 0.0,
+          "delay_6_node_13": 64.300183
+        },
+        "task_failure_rate": 0.0,
+        "sla_misses": 0,
+        "resource_usage_pct": 50.0
+      }
+    }
+  ]
 }
