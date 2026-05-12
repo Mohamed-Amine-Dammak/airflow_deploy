@@ -161,7 +161,6 @@ jobs:
           AIRFLOW_API_BASE_URL: ${{ secrets.AIRFLOW_API_BASE_URL }}
           AIRFLOW_API_USERNAME: ${{ secrets.AIRFLOW_API_USERNAME }}
           AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
-          AIRFLOW_API_TOKEN: ${{ env.AIRFLOW_API_TOKEN }}
 
       - name: Validate metadata after scoring update
         run: |
