@@ -116,27 +116,9 @@ jobs:
           mv /tmp/prod_metadata.dedup.txt /tmp/prod_metadata.txt
           if [ "$event_name" = "workflow_run" ] && [ ! -s /tmp/prod_metadata.txt ]; then
             echo "No metadata files detected from workflow_run head_sha; selecting pending evaluated challengers."
-            python - << 'PY'
-            import json
-            from pathlib import Path
-
-            root = Path("eval-src")
-            out = Path("/tmp/prod_metadata.txt")
-            selected = []
-            for path in sorted((root / "airflow" / "web_app_data" / "metadata").glob("*/*.json")):
-              try:
-                payload = json.loads(path.read_text(encoding="utf-8"))
-              except Exception:
-                continue
-              promotion = str(payload.get("promotion_status", "")).strip().lower()
-              publish = str(payload.get("publish_status", "")).strip().lower()
-              evaluated = str(payload.get("last_evaluated_at", "")).strip()
-              rel = str(path.relative_to(root)).replace("\\", "/")
-              if promotion == "challenger" and publish == "merged_to_git" and evaluated:
-                selected.append(rel)
-            out.write_text("\n".join(selected) + ("\n" if selected else ""), encoding="utf-8")
-            print(f"fallback_selected_count={len(selected)}")
-            PY
+            python eval-src/scripts/promotion/select_pending_eval_challengers.py \
+              --eval-root eval-src \
+              --out-file /tmp/prod_metadata.txt
           fi
           echo "Detected metadata files:"
           if [ -s /tmp/prod_metadata.txt ]; then sed 's/^/- /' /tmp/prod_metadata.txt; else echo "- <none>"; fi
@@ -205,40 +187,10 @@ jobs:
             echo "Missing decision file: $decision_file"
             exit 1
           fi
-          python - << 'PY'
-          import json
-          from pathlib import Path
-
-          path = Path("eval-src/evaluation-results/promotion-decisions.json")
-          payload = json.loads(path.read_text(encoding="utf-8"))
-          decisions = payload.get("decisions", [])
-          expected = []
-          failed = []
-          for d in decisions:
-            rel = str(d.get("metadata_file") or "").strip()
-            eligible = bool(d.get("eligible"))
-            promoted = bool(d.get("promoted"))
-            reason = str(d.get("reason") or "").strip()
-            details = str(d.get("details") or "").strip()
-            print(f"decision metadata_file={rel} eligible={eligible} promoted={promoted} reason={reason}")
-            if details:
-              print(f"decision_details metadata_file={rel} details={details}")
-            if rel and promoted:
-              expected.append(rel)
-            if rel and eligible and not promoted:
-              failed.append((rel, reason or "unknown_reason", details))
-
-          out = Path("/tmp/prod_expected_promotions.txt")
-          out.write_text("\n".join(expected) + ("\n" if expected else ""), encoding="utf-8")
-          print(f"expected_promotions_count={len(expected)}")
-          if failed:
-            print("Promotion failures detected for eligible metadata:")
-            for rel, reason, details in failed:
-              print(f"- metadata_file={rel} reason={reason} details={details}")
-            raise SystemExit(1)
-          with Path("/tmp/prod_expected_count.env").open("w", encoding="utf-8") as f:
-            f.write(f"PROD_EXPECTED_PROMOTION_COUNT={len(expected)}\n")
-          PY
+          python eval-src/scripts/promotion/inspect_promotion_decisions.py \
+            --decision-file "$decision_file" \
+            --expected-out /tmp/prod_expected_promotions.txt \
+            --env-out /tmp/prod_expected_count.env
           cat /tmp/prod_expected_count.env >> "$GITHUB_ENV"
 
       - name: Validate prod metadata
