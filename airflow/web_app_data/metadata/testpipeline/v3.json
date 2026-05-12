@@ -111,7 +111,7 @@
   "git_dag_file": "dags/testpipeline_git__v3.py",
   "dag_id": "testpipeline__v3",
   "deployment_target": "git",
-  "updated_at": "2026-05-12T10:35:55.438630+00:00",
+  "updated_at": "2026-05-12T10:36:10.020038+00:00",
   "publish_status": "merged_to_git",
   "version": "v3",
   "workflow_name": "testpipeline",
