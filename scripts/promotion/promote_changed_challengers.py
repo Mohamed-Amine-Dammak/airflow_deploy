@@ -28,22 +28,16 @@ def _discover(eval_root: Path, rev_from: str, rev_to: str, metadata_files: list[
     return payload if isinstance(payload, list) else []
 
 
-def _copy_file_from_branch(repo_root: Path, branch: str, rel_path: str) -> tuple[bool, str]:
+def _copy_file_from_source(source_root: Path, dest_root: Path, rel_path: str) -> tuple[bool, str]:
     rel = str(rel_path or "").strip().replace("\\", "/")
     if not rel:
         return False, "empty path"
-    result = subprocess.run(
-        ["git", "show", f"{branch}:{rel}"],
-        cwd=str(repo_root),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        return False, (result.stderr or result.stdout or "").strip()
-    target = repo_root / rel
+    source = source_root / rel
+    if not source.exists():
+        return False, f"source file not found in eval root: {rel}"
+    target = dest_root / rel
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(result.stdout, encoding="utf-8")
+    target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
     return True, ""
 
 
@@ -94,7 +88,7 @@ def main() -> int:
             )
             continue
 
-        meta_copy_ok, meta_copy_err = _copy_file_from_branch(prod_root, "eval", meta_file)
+        meta_copy_ok, meta_copy_err = _copy_file_from_source(eval_root, prod_root, meta_file)
         if not meta_copy_ok:
             decisions.append(
                 {
@@ -114,6 +108,8 @@ def main() -> int:
             str(eval_root / "scripts" / "promotion" / "copy_dag_to_prod.py"),
             "--root",
             str(prod_root),
+            "--source-root",
+            str(eval_root),
             "--pipeline-id",
             pipeline_id,
             "--version-id",
