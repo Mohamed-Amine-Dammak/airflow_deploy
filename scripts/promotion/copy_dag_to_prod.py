@@ -19,6 +19,7 @@ from version_metadata import load_version_metadata  # type: ignore
 def main() -> int:
     parser = argparse.ArgumentParser(description="Copy DAG to prod branch")
     parser.add_argument("--root", type=str, required=True)
+    parser.add_argument("--source-root", type=str, default="")
     parser.add_argument("--pipeline-id", type=str, required=True)
     parser.add_argument("--version-id", type=str, required=True)
     parser.add_argument("--eval-branch", type=str, default="eval")
@@ -26,26 +27,36 @@ def main() -> int:
     args = parser.parse_args()
 
     root = Path(args.root)
+    source_root = Path(args.source_root).resolve() if str(args.source_root or "").strip() else None
     version = load_version_metadata(root, args.pipeline_id, args.version_id)
     git_dag_file = str(version.get("git_dag_file") or version.get("repo_file_path") or "").strip()
     if not git_dag_file.startswith("dags/"):
         print(f"ERROR: invalid git_dag_file: {git_dag_file}")
         return 1
 
-    result = subprocess.run(
-        ["git", "show", f"{args.eval_branch}:{git_dag_file}"],
-        cwd=str(root),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        print(f"ERROR: could not read {git_dag_file} from {args.eval_branch}: {result.stderr}")
-        return 1
+    content = ""
+    if source_root:
+        src_file = source_root / git_dag_file
+        if not src_file.exists():
+            print(f"ERROR: could not read {git_dag_file} from source root {source_root}")
+            return 1
+        content = src_file.read_text(encoding="utf-8")
+    else:
+        result = subprocess.run(
+            ["git", "show", f"{args.eval_branch}:{git_dag_file}"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            print(f"ERROR: could not read {git_dag_file} from {args.eval_branch}: {result.stderr}")
+            return 1
+        content = result.stdout
 
     target = root / git_dag_file
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(result.stdout, encoding="utf-8")
+    target.write_text(content, encoding="utf-8")
     print(f"Copied {git_dag_file} to prod worktree")
     print(f"selected_dag_file={git_dag_file}")
     return 0
