@@ -22,13 +22,20 @@ def _request_json(
     **kwargs,
 ) -> dict[str, Any]:
     headers = dict(kwargs.pop("headers", {}) or {})
+    req_kwargs = dict(kwargs)
+
+    # Use Bearer token when available; otherwise fall back to Basic auth.
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    req_kwargs = dict(kwargs)
+    elif auth and str(auth[0]).strip():
+        req_kwargs["auth"] = auth
     if headers:
         req_kwargs["headers"] = headers
-    if auth and str(auth[0]).strip():
-        req_kwargs["auth"] = auth
+
+    # Temporary debug logging for auth-mode diagnostics.
+    print("TOKEN_PRESENT =", bool(token))
+    print("AUTH_PRESENT =", bool(auth))
+    print("HEADERS =", headers)
     try:
         resp = requests.request(method, url, timeout=30, **req_kwargs)
     except requests.RequestException as exc:
