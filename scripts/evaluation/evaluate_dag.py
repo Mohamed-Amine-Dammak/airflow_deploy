@@ -12,7 +12,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 METADATA_DIR = SCRIPT_DIR.parent / "metadata"
@@ -22,6 +21,7 @@ if str(METADATA_DIR) not in sys.path:
 from version_metadata import find_version_metadata, load_version_metadata, save_version_metadata  # type: ignore
 from airflow_client import (  # type: ignore
     AirflowClientError,
+    build_dag_endpoint,
     collect_runtime_metrics,
     get_dag,
     get_task_instances,
@@ -208,10 +208,7 @@ def _validate_json_with_tool(path: Path) -> None:
 
 
 def _dag_endpoint_path(base_url: str, dag_id: str) -> str:
-    parsed = urlparse(base_url)
-    base_path = (parsed.path or "").rstrip("/")
-    root = f"{base_path}/dags" if base_path else "/dags"
-    return f"{root}/{dag_id}"
+    return build_dag_endpoint(base_url, dag_id, api_version=str(os.getenv("AIRFLOW_API_VERSION", "v2")).strip().lower() or "v2")
 
 
 def main() -> None:
@@ -268,16 +265,21 @@ def main() -> None:
             sys.exit(1)
         auth = (username, password) if (username and password) else None
         dag_api_id = str(version.get("git_dag_id") or version.get("local_dag_id") or args.dag_id).strip()
-        host = urlparse(base_url).netloc or urlparse(base_url).path
+        normalized_base = base_url.rstrip("/")
+        for suffix in ("/api/v1", "/api/v2"):
+            if normalized_base.lower().endswith(suffix):
+                normalized_base = normalized_base[: -len(suffix)]
+                break
+        host = normalized_base.replace("http://", "").replace("https://", "")
         auth_mode = "bearer_token" if api_token else "basic_auth"
         dag_endpoint = _dag_endpoint_path(base_url, dag_api_id)
         print(f"AIRFLOW_API_BASE_URL_HOST={host}")
         print(f"AIRFLOW_API_VERSION={api_version}")
         print(f"auth_mode={auth_mode}")
         print(f"dag_id={dag_api_id}")
-        print(f"endpoint_path={dag_endpoint}")
+        print(f"full_endpoint_without_query={dag_endpoint}")
         try:
-            get_dag(base_url, auth, dag_api_id, token=api_token)
+            get_dag(base_url, auth, dag_api_id, token=api_token, api_version=api_version)
         except AirflowClientError as exc:
             msg = str(exc)
             print(f"Preflight DAG lookup failed for endpoint {dag_endpoint}")
@@ -301,6 +303,7 @@ def main() -> None:
                     dag_api_id,
                     {"source": "github-actions", "pipeline_id": args.pipeline_id, "version_id": version_id, "run_index": idx + 1},
                     token=api_token,
+                    api_version=api_version,
                 )
                 dag_run_id = str(trig.get("dag_run_id") or trig.get("run_id") or "").strip()
                 if not dag_run_id:
@@ -312,10 +315,11 @@ def main() -> None:
                     dag_api_id,
                     dag_run_id,
                     token=api_token,
+                    api_version=api_version,
                     timeout_seconds=eval_timeout,
                     poll_interval_seconds=10,
                 )
-                tis = get_task_instances(base_url, auth, dag_api_id, dag_run_id, token=api_token)
+                tis = get_task_instances(base_url, auth, dag_api_id, dag_run_id, token=api_token, api_version=api_version)
                 metrics = collect_runtime_metrics(run, tis)
                 evaluation_runs.append(
                     {
