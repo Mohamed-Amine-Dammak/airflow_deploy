@@ -9,7 +9,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: metadata-${{ github.workflow }}-${{ github.ref }}
+  group: pipeline-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -40,6 +40,19 @@ jobs:
             --publish-status merged_to_git \
             --promotion-status submitted
 
+      - name: Detect merged metadata files
+        id: changed
+        shell: bash
+        run: |
+          git show --name-only --pretty="" "${{ github.event.pull_request.merge_commit_sha }}" \
+            | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/merged_metadata.txt || true
+          echo "Merged metadata files:"
+          if [ -s /tmp/merged_metadata.txt ]; then
+            sed 's/^/- /' /tmp/merged_metadata.txt
+          else
+            echo "- <none>"
+          fi
+
       - name: Log merged metadata transition (before/after)
         shell: bash
         run: |
@@ -51,13 +64,11 @@ jobs:
           from pathlib import Path
 
           root = Path(".").resolve()
-          changed = subprocess.run(
-              ["git", "diff", "--name-only"],
-              capture_output=True,
-              text=True,
-              check=False,
-          ).stdout.splitlines()
-          meta_files = [p.strip() for p in changed if p.strip().startswith("airflow/web_app_data/metadata/") and p.strip().endswith(".json")]
+          lines = []
+          p = Path("/tmp/merged_metadata.txt")
+          if p.exists():
+              lines = [x.strip() for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+          meta_files = lines
           now = datetime.now(timezone.utc).isoformat()
           for rel in meta_files:
               path = root / rel
@@ -89,13 +100,11 @@ jobs:
           from pathlib import Path
 
           root = Path(".").resolve()
-          changed = subprocess.run(
-              ["git", "diff", "--name-only"],
-              capture_output=True,
-              text=True,
-              check=False,
-          ).stdout.splitlines()
-          meta_files = [p.strip() for p in changed if p.strip().startswith("airflow/web_app_data/metadata/") and p.strip().endswith(".json")]
+          lines = []
+          p = Path("/tmp/merged_metadata.txt")
+          if p.exists():
+              lines = [x.strip() for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+          meta_files = lines
           for rel in meta_files:
               payload = json.loads((root / rel).read_text(encoding="utf-8"))
               if str(payload.get("promotion_status", "")).strip().lower() == "draft":
@@ -106,7 +115,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for f in $(git diff --name-only | grep '^airflow/web_app_data/metadata/.*/.*\.json$' || true); do
+          for f in $(cat /tmp/merged_metadata.txt 2>/dev/null || true); do
             echo "==== $f ===="
             cat "$f"
           done

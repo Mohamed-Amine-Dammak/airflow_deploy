@@ -1,28 +1,35 @@
 name: Promote DAG to Prod
 
 on:
+  push:
+    branches:
+      - eval
+    paths:
+      - "airflow/web_app_data/metadata/**/*.json"
+      - "dags/**/*.py"
   workflow_dispatch:
     inputs:
-      pipeline_id:
-        description: "Base pipeline ID"
-        required: true
-      version_id:
-        description: "Version ID to promote to prod"
-        required: true
+      metadata_file:
+        description: "Optional metadata file for recovery/debug"
+        required: false
       rollback_retention_enabled:
-        description: "Keep non-champion DAG artifacts for rollback (true/false)"
+        description: "Keep old DAGs for rollback (true/false)"
         required: false
         default: "false"
+  workflow_run:
+    workflows: ["Evaluate DAG"]
+    types: [completed]
 
 permissions:
   contents: write
 
 concurrency:
-  group: promote-prod-${{ github.event.inputs.pipeline_id }}
+  group: promote-prod-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   promote-to-prod:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -42,6 +49,7 @@ jobs:
         continue-on-error: true
 
       - name: Ensure prod worktree exists
+        shell: bash
         run: |
           if [ ! -d "prod-worktree/.git" ]; then
             mkdir -p prod-worktree
@@ -59,114 +67,41 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests
-
       - name: Configure Git
+        shell: bash
         run: |
           cd prod-worktree
           git config user.email "airflow-bot@example.com"
           git config user.name "Airflow Bot"
 
-      - name: Check promotion eligibility from eval source
-        id: eligibility
-        continue-on-error: true
+      - name: Detect changed metadata files in eval
+        shell: bash
         run: |
-          python eval-src/scripts/promotion/check_promotion_eligibility.py \
-            --root eval-src \
-            --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
-            --version-id "${{ github.event.inputs.version_id }}"
-
-      - name: Copy DAG from eval source to prod worktree
-        if: steps.eligibility.outcome == 'success'
-        id: copy_dag
-        run: |
-          cd prod-worktree
-          git fetch origin eval
-          cd ..
-          output=$(python eval-src/scripts/promotion/copy_dag_to_prod.py \
-            --root prod-worktree \
-            --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
-            --version-id "${{ github.event.inputs.version_id }}" \
-            --eval-branch eval \
-            --prod-branch prod)
-          echo "$output"
-          selected=$(echo "$output" | sed -n 's/^selected_dag_file=//p' | tail -n 1)
-          if [ -z "$selected" ]; then
-            echo "ERROR: selected_dag_file not reported by copy_dag_to_prod.py"
-            exit 1
+          : > /tmp/prod_metadata.txt
+          if [ -n "${{ github.event.inputs.metadata_file }}" ]; then
+            echo "${{ github.event.inputs.metadata_file }}" > /tmp/prod_metadata.txt
+          else
+            cd eval-src
+            git diff --name-only HEAD~1 HEAD | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/prod_metadata.txt || true
+            cd ..
           fi
-          echo "selected_dag_file=$selected" >> "$GITHUB_OUTPUT"
+          echo "Detected metadata files:"
+          if [ -s /tmp/prod_metadata.txt ]; then sed 's/^/- /' /tmp/prod_metadata.txt; else echo "- <none>"; fi
 
-      - name: Update metadata for promoted DAG
-        if: steps.eligibility.outcome == 'success'
+      - name: Promote changed challengers
+        shell: bash
         run: |
-          python eval-src/scripts/metadata/update_pipeline_metadata.py promote \
-            --root prod-worktree \
-            --pipeline-id "${{ github.event.inputs.pipeline_id }}" \
-            --version-id "${{ github.event.inputs.version_id }}" \
-            --promotion-status champion
+          python eval-src/scripts/promotion/promote_changed_challengers.py \
+            --eval-root eval-src \
+            --prod-root prod-worktree \
+            --decision-file evaluation-results/promotion-decisions.json \
+            --rollback-retention-enabled "${{ github.event.inputs.rollback_retention_enabled }}"
 
-      - name: Validate metadata after promote update
-        if: steps.eligibility.outcome == 'success'
+      - name: Validate prod metadata
         run: |
           python eval-src/scripts/metadata/validate_metadata.py --root prod-worktree
 
-      - name: Cleanup non-champion DAGs for same base pipeline
-        if: steps.eligibility.outcome == 'success' && github.event.inputs.rollback_retention_enabled != 'true'
-        shell: bash
-        run: |
-          python - << 'PY'
-          import json
-          from pathlib import Path
-
-          root = Path("prod-worktree").resolve()
-          pipeline_id = "${{ github.event.inputs.pipeline_id }}"
-          version_id = "${{ github.event.inputs.version_id }}"
-          target = root / "airflow" / "web_app_data" / "metadata" / pipeline_id / f"{version_id}.json"
-          data = json.loads(target.read_text(encoding="utf-8"))
-          base_id = str(data.get("base_pipeline_id") or pipeline_id).strip()
-          selected = str(data.get("git_dag_file") or "").strip()
-          if not selected:
-              raise SystemExit("ERROR: selected champion metadata missing git_dag_file")
-
-          meta_root = root / "airflow" / "web_app_data" / "metadata"
-          for meta in meta_root.glob("*/*.json"):
-              row = json.loads(meta.read_text(encoding="utf-8"))
-              if str(row.get("base_pipeline_id") or "").strip() != base_id:
-                  continue
-              dag_file = str(row.get("git_dag_file") or "").strip()
-              if not dag_file or dag_file == selected:
-                  continue
-              dag_path = root / dag_file
-              if dag_path.exists():
-                  dag_path.unlink()
-                  print(f"Removed non-champion DAG artifact: {dag_file}")
-          PY
-
-      - name: Guard only selected DAG is staged
-        if: steps.eligibility.outcome == 'success'
-        shell: bash
-        run: |
-          cd prod-worktree
-          selected="${{ steps.copy_dag.outputs.selected_dag_file }}"
-          changed_dags=$(git diff --name-only -- dags | tr -d '\r' || true)
-          if [ -z "$changed_dags" ]; then
-            echo "No DAG file changes detected."
-          else
-            while IFS= read -r f; do
-              [ -z "$f" ] && continue
-              if [ "$f" != "$selected" ]; then
-                echo "ERROR: unexpected DAG change detected: $f (selected=$selected)"
-                exit 1
-              fi
-            done <<< "$changed_dags"
-          fi
-
       - name: Guard legacy store is unchanged
-        if: steps.eligibility.outcome == 'success'
         shell: bash
         run: |
           cd prod-worktree
@@ -175,39 +110,22 @@ jobs:
             exit 1
           fi
 
-      - name: Commit prod metadata updates
-        if: steps.eligibility.outcome == 'success'
+      - name: Commit prod updates
+        shell: bash
         run: |
           cd prod-worktree
-          if git diff --quiet -- .; then
-            echo "No metadata changes to commit"
+          if git diff --quiet -- dags airflow/web_app_data/metadata; then
+            echo "No prod changes to commit"
           else
-            git add "${{ steps.copy_dag.outputs.selected_dag_file }}" airflow/web_app_data/metadata/
-            git commit -m "Promote ${{ github.event.inputs.pipeline_id }}/${{ github.event.inputs.version_id }} metadata to champion"
+            git add dags airflow/web_app_data/metadata
+            git commit -m "Auto-promote eligible challengers to prod champion"
+            git push origin prod
           fi
 
-      - name: Push prod branch
-        if: steps.eligibility.outcome == 'success'
-        run: |
-          cd prod-worktree
-          git push origin prod
-
-      - name: Write eligibility decision artifact
-        if: steps.eligibility.outcome != 'success'
-        run: |
-          mkdir -p evaluation-results
-          cat > evaluation-results/promotion-eligibility.json << 'EOF'
-          {
-            "pipeline_id": "${{ github.event.inputs.pipeline_id }}",
-            "version_id": "${{ github.event.inputs.version_id }}",
-            "eligible": false,
-            "reason": "blocked_by_score_policy"
-          }
-          EOF
-
-      - name: Upload eligibility artifact
-        if: steps.eligibility.outcome != 'success'
+      - name: Upload promotion decisions
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: promotion-eligibility-${{ github.event.inputs.pipeline_id }}-${{ github.event.inputs.version_id }}
-          path: evaluation-results/promotion-eligibility.json
+          name: promotion-decisions
+          path: eval-src/evaluation-results/promotion-decisions.json
+          retention-days: 30

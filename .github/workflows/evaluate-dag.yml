@@ -1,104 +1,44 @@
 name: Evaluate DAG
 
 on:
+  push:
+    branches:
+      - eval
+    paths:
+      - "airflow/web_app_data/metadata/**/*.json"
+      - "dags/**/*.py"
   workflow_dispatch:
     inputs:
-      pipeline_id:
-        description: "Base pipeline ID"
-        required: true
-      dag_id:
-        description: "DAG ID to evaluate"
-        required: true
+      metadata_file:
+        description: "Optional metadata file for manual recovery"
+        required: false
       evaluation_mode:
-        description: "Evaluation mode (static_only, run_once, run_multiple)"
-        required: true
-        default: "static_only"
+        description: "Optional mode override (default run_once)"
+        required: false
       run_count:
-        description: "Number of runs for evaluation (default: 1)"
+        description: "Optional run count override (default 1)"
         required: false
-        default: "1"
       airflow_api_version:
-        description: "Airflow API version to use for runtime calls (v1 or v2)"
+        description: "Optional API version override (default v2)"
         required: false
-        default: "v2"
+  workflow_run:
+    workflows: ["Promote Changed Metadata to Eval"]
+    types: [completed]
 
 permissions:
   contents: write
 
 concurrency:
-  group: metadata-${{ github.workflow }}-${{ github.ref }}
+  group: pipeline-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  evaluate-dag-static:
-    if: ${{ github.event.inputs.evaluation_mode == 'static_only' }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          ref: eval
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyyaml requests
-
-      - name: Run DAG runtime evaluation
-        shell: powershell
-        run: python scripts/evaluation/evaluate_dag.py --root . --pipeline-id "${{ github.event.inputs.pipeline_id }}" --dag-id "${{ github.event.inputs.dag_id }}" --evaluation-mode "${{ github.event.inputs.evaluation_mode }}" --run-count "${{ github.event.inputs.run_count }}"
-        env:
-          AIRFLOW_API_BASE_URL: ${{ secrets.AIRFLOW_API_BASE_URL }}
-          AIRFLOW_API_USERNAME: ${{ secrets.AIRFLOW_API_USERNAME }}
-          AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
-          AIRFLOW_API_VERSION: ${{ github.event.inputs.airflow_api_version }}
-
-      - name: Validate metadata after scoring update
-        run: |
-          python scripts/metadata/validate_metadata.py --root .
-
-      - name: Guard legacy store is unchanged
-        shell: powershell
-        run: |
-          $changed = git diff --name-only
-          if ($changed -contains "airflow/web_app_data/pipeline_versions_store.json") {
-            Write-Error "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
-            exit 1
-          }
-
-      - name: Persist evaluation metadata updates
-        run: |
-          git config user.email "airflow-bot@example.com"
-          git config user.name "Airflow Bot"
-          if git diff --quiet -- airflow/web_app_data/metadata; then
-            echo "No metadata changes to commit"
-          else
-            git add airflow/web_app_data/metadata
-            git commit -m "Update evaluation score for ${{ github.event.inputs.pipeline_id }} / ${{ github.event.inputs.dag_id }}"
-            git push origin eval
-          fi
-
-      - name: Upload evaluation results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: evaluation-results-${{ github.event.inputs.dag_id }}
-          path: evaluation-results/
-          retention-days: 30
-
   evaluate-dag-runtime:
-    if: ${{ github.event.inputs.evaluation_mode == 'run_once' || github.event.inputs.evaluation_mode == 'run_multiple' }}
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: [self-hosted]
 
     steps:
-      - name: Checkout repo
+      - name: Checkout eval
         uses: actions/checkout@v4
         with:
           ref: eval
@@ -114,27 +54,30 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      - name: Select Airflow API path version
-        shell: powershell
+      - name: Resolve evaluation settings
+        shell: bash
         run: |
-          $version = "${{ github.event.inputs.airflow_api_version }}"
-          if ([string]::IsNullOrWhiteSpace($version)) { $version = "v2" }
-          if ($version -ne "v1" -and $version -ne "v2") {
-            Write-Error "Invalid airflow_api_version: $version (expected v1 or v2)"
-            exit 1
-          }
-          $clientPath = "scripts/evaluation/airflow_client.py"
-          $content = Get-Content -Raw $clientPath
-          if ($version -eq "v2") {
-            $content = $content.Replace("/api/v1/dags/", "/api/v2/dags/")
-          } else {
-            $content = $content.Replace("/api/v2/dags/", "/api/v1/dags/")
-          }
-          Set-Content -Path $clientPath -Value $content -Encoding UTF8
-          Write-Output "Using Airflow API version: $version"
+          echo "EVAL_MODE=${{ github.event.inputs.evaluation_mode }}" >> $GITHUB_ENV
+          echo "EVAL_COUNT=${{ github.event.inputs.run_count }}" >> $GITHUB_ENV
+          echo "API_VERSION=${{ github.event.inputs.airflow_api_version }}" >> $GITHUB_ENV
+          if [ -z "${{ github.event.inputs.evaluation_mode }}" ]; then echo "EVAL_MODE=run_once" >> $GITHUB_ENV; fi
+          if [ -z "${{ github.event.inputs.run_count }}" ]; then echo "EVAL_COUNT=1" >> $GITHUB_ENV; fi
+          if [ -z "${{ github.event.inputs.airflow_api_version }}" ]; then echo "API_VERSION=v2" >> $GITHUB_ENV; fi
+
+      - name: Detect changed metadata rows
+        shell: bash
+        run: |
+          : > /tmp/eval_metadata.txt
+          if [ -n "${{ github.event.inputs.metadata_file }}" ]; then
+            echo "${{ github.event.inputs.metadata_file }}" > /tmp/eval_metadata.txt
+          else
+            git diff --name-only HEAD~1 HEAD | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/eval_metadata.txt || true
+          fi
+          echo "Detected metadata files:"
+          if [ -s /tmp/eval_metadata.txt ]; then sed 's/^/- /' /tmp/eval_metadata.txt; else echo "- <none>"; fi
 
       - name: Get Airflow JWT token for API v2
-        if: ${{ github.event.inputs.airflow_api_version == 'v2' || github.event.inputs.airflow_api_version == '' }}
+        if: ${{ env.API_VERSION == 'v2' }}
         shell: powershell
         env:
           AIRFLOW_API_BASE_URL: ${{ secrets.AIRFLOW_API_BASE_URL }}
@@ -142,77 +85,78 @@ jobs:
           AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
         run: |
           $base = "$env:AIRFLOW_API_BASE_URL".TrimEnd('/')
-          if ([string]::IsNullOrWhiteSpace($base)) { throw "AIRFLOW_API_BASE_URL is empty" }
           $payload = @{ username = "$env:AIRFLOW_API_USERNAME"; password = "$env:AIRFLOW_API_PASSWORD" } | ConvertTo-Json -Compress
-          try {
-            $resp = Invoke-RestMethod -Method Post -Uri "$base/auth/token" -ContentType "application/json" -Body $payload
-          } catch {
-            throw "Failed to obtain JWT from $base/auth/token : $($_.Exception.Message)"
-          }
+          $resp = Invoke-RestMethod -Method Post -Uri "$base/auth/token" -ContentType "application/json" -Body $payload
           $token = "$($resp.access_token)".Trim()
           if ([string]::IsNullOrWhiteSpace($token)) { throw "JWT access_token missing in /auth/token response" }
           Write-Output "::add-mask::$token"
           "AIRFLOW_API_TOKEN=$token" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Debug Airflow DAG endpoint (v2 token)
-        if: ${{ github.event.inputs.airflow_api_version == 'v2' || github.event.inputs.airflow_api_version == '' }}
+      - name: Debug Airflow DAG endpoint before evaluation
+        if: ${{ env.API_VERSION == 'v2' }}
         shell: powershell
         env:
           AIRFLOW_API_BASE_URL: ${{ secrets.AIRFLOW_API_BASE_URL }}
           AIRFLOW_API_TOKEN: ${{ env.AIRFLOW_API_TOKEN }}
         run: |
-          $base = "$env:AIRFLOW_API_BASE_URL".TrimEnd('/')
-          $dag = "${{ github.event.inputs.dag_id }}"
-          if ([string]::IsNullOrWhiteSpace($env:AIRFLOW_API_TOKEN)) { throw "Missing AIRFLOW_API_TOKEN before runtime evaluation." }
-          try {
-            Invoke-RestMethod "$base/api/v2/dags/$dag" -Headers @{ Authorization = "Bearer $env:AIRFLOW_API_TOKEN" } | Out-Null
+          if (-not (Test-Path /tmp/eval_metadata.txt)) { exit 0 }
+          $rows = Get-Content /tmp/eval_metadata.txt
+          foreach ($m in $rows) {
+            if ([string]::IsNullOrWhiteSpace($m)) { continue }
+            $payload = Get-Content $m -Raw | ConvertFrom-Json
+            $dag = "$($payload.git_dag_id)"
+            if ([string]::IsNullOrWhiteSpace($dag)) { continue }
+            Invoke-RestMethod "$env:AIRFLOW_API_BASE_URL/api/v2/dags/$dag" -Headers @{Authorization="Bearer $env:AIRFLOW_API_TOKEN"} | Out-Null
             Write-Output "Airflow DAG preflight OK for $dag"
-          } catch {
-            throw "Airflow preflight failed for /api/v2/dags/$dag : $($_.Exception.Message)"
           }
 
-      - name: Run DAG runtime evaluation
-        shell: powershell
-        run: python scripts/evaluation/evaluate_dag.py --root . --pipeline-id "${{ github.event.inputs.pipeline_id }}" --dag-id "${{ github.event.inputs.dag_id }}" --evaluation-mode "${{ github.event.inputs.evaluation_mode }}" --run-count "${{ github.event.inputs.run_count }}"
+      - name: Run runtime evaluation for changed metadata
+        shell: bash
         env:
           AIRFLOW_API_BASE_URL: ${{ secrets.AIRFLOW_API_BASE_URL }}
           AIRFLOW_API_USERNAME: ${{ secrets.AIRFLOW_API_USERNAME }}
           AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
           AIRFLOW_API_TOKEN: ${{ env.AIRFLOW_API_TOKEN }}
-          AIRFLOW_API_VERSION: ${{ github.event.inputs.airflow_api_version }}
+          AIRFLOW_API_VERSION: ${{ env.API_VERSION }}
           AIRFLOW_EVAL_TIMEOUT_SECONDS: "600"
+        run: |
+          CMD=(python scripts/evaluation/evaluate_changed_metadata.py --root . --evaluation-mode "$EVAL_MODE" --run-count "$EVAL_COUNT")
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            CMD+=(--metadata-file "$f")
+          done < /tmp/eval_metadata.txt
+          "${CMD[@]}"
 
-      - name: Validate metadata after scoring update
+      - name: Validate metadata after evaluation
         run: |
           python scripts/metadata/validate_metadata.py --root .
 
       - name: Guard legacy store is unchanged
-        shell: powershell
+        shell: bash
         run: |
-          $changed = git diff --name-only
-          if ($changed -contains "airflow/web_app_data/pipeline_versions_store.json") {
-            Write-Error "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
+          if git diff --name-only | grep -x "airflow/web_app_data/pipeline_versions_store.json" >/dev/null; then
+            echo "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
             exit 1
-          }
+          fi
 
-      - name: Persist evaluation metadata updates
-        shell: powershell
+      - name: Commit eval metadata updates
+        shell: bash
         run: |
-          git config user.email "airflow-bot@example.com"
-          git config user.name "Airflow Bot"
-          git diff --quiet -- airflow/web_app_data/metadata
-          if ($LASTEXITCODE -eq 0) {
-            Write-Output "No metadata changes to commit"
-          } else {
-            git add airflow/web_app_data/metadata
-            git commit -m "Update runtime evaluation score for ${{ github.event.inputs.pipeline_id }} / ${{ github.event.inputs.dag_id }}"
+          if git diff --quiet -- airflow/web_app_data/metadata evaluation-results; then
+            echo "No eval metadata changes to commit"
+          else
+            git config user.email "airflow-bot@example.com"
+            git config user.name "Airflow Bot"
+            git add airflow/web_app_data/metadata evaluation-results
+            git commit -m "Auto-evaluate changed DAG metadata"
             git push origin eval
-          }
+          fi
 
       - name: Upload evaluation results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: evaluation-results-${{ github.event.inputs.dag_id }}
+          name: evaluation-results-auto
           path: evaluation-results/
           retention-days: 30
+

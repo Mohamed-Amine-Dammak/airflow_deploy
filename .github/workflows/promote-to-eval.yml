@@ -12,16 +12,20 @@ on:
       metadata_file:
         description: "Optional metadata file for manual recovery (e.g. airflow/web_app_data/metadata/testops/v2.json)"
         required: false
+  workflow_run:
+    workflows: ["Sync Metadata On Merge"]
+    types: [completed]
 
 permissions:
   contents: write
 
 concurrency:
-  group: metadata-${{ github.workflow }}-${{ github.ref }}
+  group: pipeline-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   promote-to-eval:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
