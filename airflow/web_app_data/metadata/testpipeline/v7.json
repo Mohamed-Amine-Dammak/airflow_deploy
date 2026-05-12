@@ -96,11 +96,19 @@
     "node_8": "delay_3_node_8"
   },
   "base_pipeline_id": "testpipeline",
-  "promotion_status": "submitted",
-  "score": null,
-  "score_type": null,
-  "score_breakdown": {},
-  "last_eval_run_id": null,
+  "promotion_status": "challenger",
+  "score": 94.4,
+  "score_type": "runtime_once",
+  "score_breakdown": {
+    "reliability": 25.0,
+    "runtime_efficiency": 17.3,
+    "retry_behavior": 15.0,
+    "scheduler_behavior": 15.0,
+    "complexity": 9.6,
+    "maintainability": 10.0,
+    "resource_efficiency": 2.5
+  },
+  "last_eval_run_id": "eval-testpipeline-v7-1778591581",
   "promoted_at": null,
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/38",
@@ -111,7 +119,7 @@
   "git_dag_file": "dags/testpipeline_git__v7.py",
   "dag_id": "testpipeline__v7",
   "deployment_target": "git",
-  "updated_at": "2026-05-12T12:56:46.749385+00:00",
+  "updated_at": "2026-05-12T13:10:57.169116+00:00",
   "publish_status": "merged_to_git",
   "version": "v7",
   "workflow_name": "testpipeline",
@@ -129,5 +137,36 @@
   "warnings": [],
   "critical_failures": [],
   "merged_at": "2026-05-12T12:56:46.749401+00:00",
-  "merge_commit_sha": "b4ec2f99dcfc3a3764ead43ee1427556d466bc55"
+  "merge_commit_sha": "b4ec2f99dcfc3a3764ead43ee1427556d466bc55",
+  "evaluated_branch": "eval",
+  "last_evaluated_at": "2026-05-12T13:13:01.474404+00:00",
+  "evaluation_runs": [
+    {
+      "dag_run_id": "manual__2026-05-12T13:11:30.725173+00:00",
+      "dag_id": "testpipeline_git__v7",
+      "state": "success",
+      "metrics": {
+        "dag_run_state": "success",
+        "total_runtime_seconds": 80.364,
+        "task_count": 3,
+        "success_task_count": 3,
+        "failed_task_count": 0,
+        "skipped_task_count": 0,
+        "retry_count": 0,
+        "try_number": 0,
+        "queued_duration": 0.0,
+        "scheduler_delay_seconds": 0.0,
+        "start_date": "2026-05-12T13:11:31.222576Z",
+        "end_date": "2026-05-12T13:12:51.586647Z",
+        "duration_per_task": {
+          "timeout_guard_1_node_5": 0.0,
+          "timeout_guard_2_node_7": 0.0,
+          "delay_3_node_8": 78.32418
+        },
+        "task_failure_rate": 0.0,
+        "sla_misses": 0,
+        "resource_usage_pct": 50.0
+      }
+    }
+  ]
 }
