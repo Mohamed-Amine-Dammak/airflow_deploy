@@ -1,0 +1,147 @@
+{
+  "pipeline_id": "testpipeline",
+  "version_id": "v8",
+  "dag_version": 8,
+  "airflow_dag_id": "testpipeline__v8",
+  "output_filename": "testpipeline__v8.py",
+  "created_at": "2026-05-12T13:11:26.723408+00:00",
+  "created_by": "admin",
+  "status": "active",
+  "is_current": true,
+  "source_hash": "e3f06ac900c582049ffc67c7f860e499b2af3b199c7324f65ccc972a46e58940",
+  "source_definition": {
+    "pipeline": {
+      "dag_id": "testpipeline",
+      "description": "",
+      "start_date": "2026-01-01",
+      "schedule": null,
+      "schedule_mode": "manual",
+      "catchup": false,
+      "schedule_preset": "",
+      "schedule_cron": "",
+      "interval_value": "",
+      "interval_unit": "minutes",
+      "event_source": "",
+      "custom_schedule_text": "",
+      "retries": 1,
+      "retry_delay_minutes": 1,
+      "alert_emails": [],
+      "alert_mode": "both",
+      "tags": [
+        "demo",
+        "orchestration"
+      ],
+      "output_filename": "testpipeline.py"
+    },
+    "nodes": [
+      {
+        "id": "node_5",
+        "type": "timeout_guard",
+        "label": "Timeout Guard 5",
+        "x": 550.5552825927734,
+        "y": 384.66662216186523,
+        "config": {
+          "timeout_minutes": 1
+        }
+      },
+      {
+        "id": "node_7",
+        "type": "timeout_guard",
+        "label": "Timeout Guard 7",
+        "x": 845.2219085693359,
+        "y": 382.7777671813965,
+        "config": {
+          "timeout_minutes": 1
+        }
+      },
+      {
+        "id": "node_8",
+        "type": "delay",
+        "label": "Delay 8",
+        "x": 1101.5552825927734,
+        "y": 377.8888816833496,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_9",
+        "type": "delay",
+        "label": "Delay 9",
+        "x": 130.55528259277344,
+        "y": 426.8888816833496,
+        "config": {
+          "delay_minutes": 1
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "node_5",
+        "target": "node_7"
+      },
+      {
+        "source": "node_7",
+        "target": "node_8"
+      },
+      {
+        "source": "node_9",
+        "target": "node_5"
+      }
+    ],
+    "group_boxes": []
+  },
+  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testpipeline__v8.py",
+  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testpipeline__v8.py",
+  "node_task_map": {
+    "node_9": [
+      "delay_1_node_9"
+    ],
+    "node_5": [
+      "timeout_guard_2_node_5"
+    ],
+    "node_7": [
+      "timeout_guard_3_node_7"
+    ],
+    "node_8": [
+      "delay_4_node_8"
+    ]
+  },
+  "node_primary_task_map": {
+    "node_9": "delay_1_node_9",
+    "node_5": "timeout_guard_2_node_5",
+    "node_7": "timeout_guard_3_node_7",
+    "node_8": "delay_4_node_8"
+  },
+  "base_pipeline_id": "testpipeline",
+  "promotion_status": "draft",
+  "score": null,
+  "score_type": null,
+  "score_breakdown": {},
+  "last_eval_run_id": null,
+  "promoted_at": null,
+  "promoted_by": null,
+  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/39",
+  "github_commit_sha": "e7ed7d5c09073b39f0586453af6d40ac6f5df017",
+  "local_dag_id": "testpipeline__v8",
+  "git_dag_id": "testpipeline_git__v8",
+  "local_dag_file": "airflow/dags/testpipeline__v8.py",
+  "git_dag_file": "dags/testpipeline_git__v8.py",
+  "dag_id": "testpipeline__v8",
+  "deployment_target": "git",
+  "updated_at": "2026-05-12T13:11:42.912652+00:00",
+  "publish_status": "pr_open",
+  "version": "v8",
+  "workflow_name": "testpipeline",
+  "workflow_slug": "testpipeline",
+  "repo_file_path": "dags/testpipeline_git__v8.py",
+  "git_branch_name": "feature/workflow/testpipeline-8",
+  "pull_request_number": 39,
+  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/39",
+  "commit_sha": "e7ed7d5c09073b39f0586453af6d40ac6f5df017",
+  "github_pr_number": 39,
+  "github_branch": "feature/workflow/testpipeline-8",
+  "requested_by_user_id": "admin",
+  "requested_by_email": "",
+  "requested_by_display_name": "admin"
+}
