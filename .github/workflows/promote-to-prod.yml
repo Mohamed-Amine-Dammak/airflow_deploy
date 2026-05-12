@@ -114,6 +114,30 @@ jobs:
           fi
           awk 'NF && !seen[$0]++' /tmp/prod_metadata.txt > /tmp/prod_metadata.dedup.txt || true
           mv /tmp/prod_metadata.dedup.txt /tmp/prod_metadata.txt
+          if [ "$event_name" = "workflow_run" ] && [ ! -s /tmp/prod_metadata.txt ]; then
+            echo "No metadata files detected from workflow_run head_sha; selecting pending evaluated challengers."
+            python - << 'PY'
+            import json
+            from pathlib import Path
+
+            root = Path("eval-src")
+            out = Path("/tmp/prod_metadata.txt")
+            selected = []
+            for path in sorted((root / "airflow" / "web_app_data" / "metadata").glob("*/*.json")):
+              try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+              except Exception:
+                continue
+              promotion = str(payload.get("promotion_status", "")).strip().lower()
+              publish = str(payload.get("publish_status", "")).strip().lower()
+              evaluated = str(payload.get("last_evaluated_at", "")).strip()
+              rel = str(path.relative_to(root)).replace("\\", "/")
+              if promotion == "challenger" and publish == "merged_to_git" and evaluated:
+                selected.append(rel)
+            out.write_text("\n".join(selected) + ("\n" if selected else ""), encoding="utf-8")
+            print(f"fallback_selected_count={len(selected)}")
+            PY
+          fi
           echo "Detected metadata files:"
           if [ -s /tmp/prod_metadata.txt ]; then sed 's/^/- /' /tmp/prod_metadata.txt; else echo "- <none>"; fi
           changed_count=0
