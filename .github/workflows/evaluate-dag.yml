@@ -53,6 +53,55 @@ jobs:
           ref: eval
           fetch-depth: 0
 
+      - name: Bootstrap eval metadata from main for manual run
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.metadata_file != '' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $metaRel = "${{ github.event.inputs.metadata_file }}".Trim().Replace('\','/')
+          if ([string]::IsNullOrWhiteSpace($metaRel)) { exit 0 }
+
+          if ($metaRel -like "web_app_data/*") {
+            $metaRel = "airflow/$metaRel"
+          }
+
+          if (Test-Path $metaRel) {
+            Write-Output "Metadata already exists on eval: $metaRel"
+            exit 0
+          }
+
+          Write-Output "Metadata missing on eval; copying from main: $metaRel"
+          git fetch origin main
+
+          New-Item -ItemType Directory -Force -Path (Split-Path -Parent $metaRel) | Out-Null
+          $metaContent = git show "origin/main:$metaRel"
+          if ($LASTEXITCODE -ne 0) { throw "Could not read metadata from origin/main: $metaRel" }
+          Set-Content -Path $metaRel -Value $metaContent -Encoding utf8
+
+          $payload = Get-Content $metaRel -Raw | ConvertFrom-Json
+          $dagRel = "$($payload.git_dag_file)".Trim().Replace('\','/')
+          if (-not [string]::IsNullOrWhiteSpace($dagRel)) {
+            if (-not (Test-Path $dagRel)) {
+              New-Item -ItemType Directory -Force -Path (Split-Path -Parent $dagRel) | Out-Null
+              $dagContent = git show "origin/main:$dagRel"
+              if ($LASTEXITCODE -ne 0) { throw "Could not read DAG from origin/main: $dagRel" }
+              Set-Content -Path $dagRel -Value $dagContent -Encoding utf8
+            }
+          }
+
+          # Make bootstrap metadata immediately eligible for eval runtime checks.
+          $payload.promotion_status = "eval"
+          $payload.evaluated_branch = "eval"
+          $payload.updated_at = (Get-Date).ToUniversalTime().ToString("o")
+          $payload | ConvertTo-Json -Depth 100 | Set-Content -Path $metaRel -Encoding utf8
+
+          git config user.email "airflow-bot@example.com"
+          git config user.name "Airflow Bot"
+          git add $metaRel
+          if (-not [string]::IsNullOrWhiteSpace($dagRel)) { git add -f $dagRel }
+          git commit -m "Bootstrap eval metadata from main for manual evaluation"
+          git push origin eval
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
