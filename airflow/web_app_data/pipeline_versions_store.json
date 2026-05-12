@@ -1,7 +1,7 @@
 {
   "pipelines": {
     "testpipeline": {
-      "current_version_id": "v1",
+      "current_version_id": "v2",
       "versions": [
         {
           "pipeline_id": "testpipeline",
@@ -11,8 +11,8 @@
           "output_filename": "testpipeline__v1.py",
           "created_at": "2026-05-12T10:10:46.218092+00:00",
           "created_by": "admin",
-          "status": "active",
-          "is_current": true,
+          "status": "archived",
+          "is_current": false,
           "source_hash": "0d58a2a4e9de6a4594dc3c537ff5834f09a6819c14d35134095fba8a226ae654",
           "source_definition": {
             "pipeline": {
@@ -73,6 +73,96 @@
           "promoted_by": null,
           "github_pr_url": null,
           "github_commit_sha": null
+        },
+        {
+          "pipeline_id": "testpipeline",
+          "version_id": "v2",
+          "dag_version": 2,
+          "airflow_dag_id": "testpipeline__v2",
+          "output_filename": "testpipeline__v2.py",
+          "created_at": "2026-05-12T10:21:43.538212+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "c43e30748d93dfcce58d2212eb1f0582496ce32d8bf9a657e096b4327378d549",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "testpipeline",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 1,
+              "retry_delay_minutes": 1,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "testpipeline.py"
+            },
+            "nodes": [
+              {
+                "id": "node_1",
+                "type": "delay",
+                "label": "Delay 1",
+                "x": 619.9999847412109,
+                "y": 351.99999618530273,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_2",
+                "type": "delay",
+                "label": "Delay 2",
+                "x": 928.7776947021484,
+                "y": 355.11111068725586,
+                "config": {
+                  "delay_minutes": 1
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_1",
+                "target": "node_2"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testpipeline__v2.py",
+          "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testpipeline__v2.py",
+          "node_task_map": {
+            "node_1": [
+              "delay_1_node_1"
+            ],
+            "node_2": [
+              "delay_2_node_2"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_1": "delay_1_node_1",
+            "node_2": "delay_2_node_2"
+          },
+          "base_pipeline_id": "testpipeline",
+          "promotion_status": "draft",
+          "score": null,
+          "score_type": null,
+          "score_breakdown": {},
+          "last_eval_run_id": null,
+          "promoted_at": null,
+          "promoted_by": null,
+          "github_pr_url": null,
+          "github_commit_sha": null
         }
       ],
       "switch_events": [
@@ -83,6 +173,14 @@
           "to_version_id": "v1",
           "actor": "admin",
           "at": "2026-05-12T10:10:46.218092+00:00"
+        },
+        {
+          "event_id": "a225554e-306c-4d23-9845-ff2e603d39e1",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v1",
+          "to_version_id": "v2",
+          "actor": "admin",
+          "at": "2026-05-12T10:21:43.538212+00:00"
         }
       ]
     }

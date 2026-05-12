@@ -43,6 +43,7 @@ jobs:
     steps:
       - name: Debug runner shell
         run: |
+          $ErrorActionPreference = "Stop"
           Write-Output "Runner OS: $env:RUNNER_OS"
           Write-Output "Shell: PowerShell"
 
@@ -64,6 +65,7 @@ jobs:
 
       - name: Resolve evaluation settings
         run: |
+          $ErrorActionPreference = "Stop"
           $evalMode = "${{ github.event.inputs.evaluation_mode }}"
           $evalCount = "${{ github.event.inputs.run_count }}"
           $apiVersion = "${{ github.event.inputs.airflow_api_version }}"
@@ -76,34 +78,35 @@ jobs:
           $metaFile = Join-Path $env:RUNNER_TEMP "eval_metadata.txt"
           "EVAL_METADATA_FILE=$metaFile" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Detect changed metadata rows
+      - name: Detect changed metadata
+        shell: powershell
         run: |
-          $metaFile = "$env:EVAL_METADATA_FILE"
-          if (Test-Path $metaFile) { Remove-Item $metaFile -Force }
+          $ErrorActionPreference = "Stop"
+
           $manual = "${{ github.event.inputs.metadata_file }}"
+          $outFile = "$env:EVAL_METADATA_FILE"
+          if ([string]::IsNullOrWhiteSpace($outFile)) { $outFile = "changed_metadata_files.txt" }
+
           if (-not [string]::IsNullOrWhiteSpace($manual)) {
-            Set-Content -Path $metaFile -Value $manual -Encoding utf8
-          else
-            $changed = git diff --name-only HEAD~1 HEAD
-            $rows = @()
-            foreach ($line in $changed) {
-              $p = "$line".Trim().Replace("\", "/")
-              if ($p -match '^airflow/web_app_data/metadata/.*/.*\.json$') { $rows += $p }
-            }
-            if ($rows.Count -gt 0) {
-              Set-Content -Path $metaFile -Value $rows -Encoding utf8
-            } else {
-              New-Item -ItemType File -Path $metaFile -Force | Out-Null
-            }
-          fi
-          Write-Output "Detected metadata files:"
-          $rows = @()
-          if (Test-Path $metaFile) { $rows = Get-Content $metaFile }
-          if ($rows.Count -eq 0) {
-            Write-Output "- <none>"
-          } else {
-            foreach ($m in $rows) { if (-not [string]::IsNullOrWhiteSpace($m)) { Write-Output "- $m" } }
+            Write-Output "Manual metadata file: $manual"
+            $manual | Out-File -FilePath $outFile -Encoding utf8
           }
+          else {
+            Write-Output "Detecting changed metadata files from git diff..."
+            $files = git diff --name-only HEAD~1 HEAD |
+              Where-Object { $_ -like "airflow/web_app_data/metadata/*.json" -or $_ -like "airflow/web_app_data/metadata/*/*.json" }
+
+            if ($null -eq $files -or $files.Count -eq 0) {
+              Write-Output "No changed metadata files found."
+              "" | Out-File -FilePath $outFile -Encoding utf8
+            }
+            else {
+              $files | Out-File -FilePath $outFile -Encoding utf8
+            }
+          }
+
+          Write-Output "Detected metadata files:"
+          Get-Content $outFile
 
       - name: Get Airflow JWT token for API v2
         if: ${{ env.API_VERSION == 'v2' }}
@@ -113,6 +116,7 @@ jobs:
           AIRFLOW_API_USERNAME: ${{ secrets.AIRFLOW_API_USERNAME }}
           AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
         run: |
+          $ErrorActionPreference = "Stop"
           $base = "$env:AIRFLOW_API_BASE_URL".TrimEnd('/')
           $payload = @{ username = "$env:AIRFLOW_API_USERNAME"; password = "$env:AIRFLOW_API_PASSWORD" } | ConvertTo-Json -Compress
           $resp = Invoke-RestMethod -Method Post -Uri "$base/auth/token" -ContentType "application/json" -Body $payload
@@ -127,6 +131,7 @@ jobs:
           AIRFLOW_API_BASE_URL: ${{ secrets.AIRFLOW_API_BASE_URL }}
           AIRFLOW_API_TOKEN: ${{ env.AIRFLOW_API_TOKEN }}
         run: |
+          $ErrorActionPreference = "Stop"
           $metaFile = "$env:EVAL_METADATA_FILE"
           if (-not (Test-Path $metaFile)) { exit 0 }
           $rows = Get-Content $metaFile
@@ -148,6 +153,7 @@ jobs:
           AIRFLOW_API_VERSION: ${{ env.API_VERSION }}
           AIRFLOW_EVAL_TIMEOUT_SECONDS: "600"
         run: |
+          $ErrorActionPreference = "Stop"
           $cmd = @("python", "scripts/evaluation/evaluate_changed_metadata.py", "--root", ".", "--evaluation-mode", "$env:EVAL_MODE", "--run-count", "$env:EVAL_COUNT")
           if (Test-Path "$env:EVAL_METADATA_FILE") {
             $rows = Get-Content "$env:EVAL_METADATA_FILE"
@@ -161,10 +167,12 @@ jobs:
 
       - name: Validate metadata after evaluation
         run: |
+          $ErrorActionPreference = "Stop"
           python scripts/metadata/validate_metadata.py --root .
 
       - name: Guard legacy store is unchanged
         run: |
+          $ErrorActionPreference = "Stop"
           $changed = git diff --name-only
           if ($changed -contains "airflow/web_app_data/pipeline_versions_store.json") {
             Write-Error "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
@@ -173,6 +181,7 @@ jobs:
 
       - name: Commit eval metadata updates
         run: |
+          $ErrorActionPreference = "Stop"
           git diff --quiet -- airflow/web_app_data/metadata evaluation-results
           if ($LASTEXITCODE -eq 0) {
             Write-Output "No eval metadata changes to commit"
