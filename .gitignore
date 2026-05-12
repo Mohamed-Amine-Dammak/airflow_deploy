@@ -40,3 +40,5 @@ web_app/generated_dags/
 
 !dags/
 !dags/*.py
+!dags/utils/
+!dags/utils/**
