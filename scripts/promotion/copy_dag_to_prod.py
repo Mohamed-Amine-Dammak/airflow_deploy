@@ -46,9 +46,8 @@ def main() -> int:
     target = root / git_dag_file
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(result.stdout, encoding="utf-8")
-    subprocess.run(["git", "add", git_dag_file], cwd=str(root), check=True)
-    subprocess.run(["git", "commit", "-m", f"Promote {args.version_id} DAG artifact"], cwd=str(root), check=False)
     print(f"Copied {git_dag_file} to prod worktree")
+    print(f"selected_dag_file={git_dag_file}")
     return 0
 
 

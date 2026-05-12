@@ -335,6 +335,17 @@ def main() -> None:
                     failed_runs += 1
             except AirflowClientError as exc:
                 print(f"ERROR: Runtime evaluation failed: {exc}")
+                failure_fields = {
+                    "promotion_status": "challenger",
+                    "deployment_target": "git",
+                    "last_evaluated_at": _now_iso(),
+                    "critical_failures": [str(exc)],
+                    "warnings": warnings,
+                }
+                if has_version_file:
+                    current = load_version_metadata(root, args.pipeline_id, version_id)
+                    current.update(failure_fields)
+                    save_version_metadata(root, args.pipeline_id, version_id, current)
                 sys.exit(1)
         # Aggregate runtime scores by average, preserving core schema.
         if not runtime_scores:
