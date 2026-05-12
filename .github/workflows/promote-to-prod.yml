@@ -79,7 +79,7 @@ jobs:
         run: |
           set -euo pipefail
           : > /tmp/prod_metadata.txt
-          : > /tmp/prod_eval_ready.txt
+          : > /tmp/prod_promotable.txt
           event_name="${{ github.event_name }}"
           if [ "$event_name" = "workflow_dispatch" ]; then
             manual_file="${{ github.event.inputs.metadata_file || '' }}"
@@ -117,7 +117,7 @@ jobs:
           echo "Detected metadata files:"
           if [ -s /tmp/prod_metadata.txt ]; then sed 's/^/- /' /tmp/prod_metadata.txt; else echo "- <none>"; fi
           changed_count=0
-          eval_ready_count=0
+          promotable_count=0
           if [ -s /tmp/prod_metadata.txt ]; then
             while IFS= read -r meta_file; do
               [ -z "$meta_file" ] && continue
@@ -138,30 +138,73 @@ jobs:
               echo "git_dag_file=$dag_file"
               echo "publish_status=$publish_status"
               echo "promotion_status=$promotion_status"
-              if [ "$promotion_status" = "eval" ]; then
-                echo "$meta_file" >> /tmp/prod_eval_ready.txt
-                eval_ready_count=$((eval_ready_count + 1))
-                echo "selected=true reason=promotion_status_eval"
+              if [ "$promotion_status" = "challenger" ]; then
+                echo "$meta_file" >> /tmp/prod_promotable.txt
+                promotable_count=$((promotable_count + 1))
+                echo "selected=true reason=promotion_status_challenger"
               else
                 echo "selected=false reason=promotion_status_${promotion_status:-empty}"
               fi
             done < /tmp/prod_metadata.txt
           fi
           echo "PROD_CHANGED_COUNT=$changed_count" >> "$GITHUB_ENV"
-          echo "PROD_EVAL_READY_COUNT=$eval_ready_count" >> "$GITHUB_ENV"
-          echo "processed_count=$eval_ready_count"
-          if [ "$changed_count" -gt 0 ] && [ "$eval_ready_count" -eq 0 ]; then
-            echo "No eval metadata ready for prod promotion."
+          echo "PROD_PROMOTABLE_COUNT=$promotable_count" >> "$GITHUB_ENV"
+          echo "processed_count=$promotable_count"
+          if [ "$changed_count" -gt 0 ] && [ "$promotable_count" -eq 0 ]; then
+            echo "No challenger metadata ready for prod promotion."
           fi
 
       - name: Promote changed challengers
         shell: bash
         run: |
-          python eval-src/scripts/promotion/promote_changed_challengers.py \
-            --eval-root eval-src \
-            --prod-root prod-worktree \
-            --decision-file evaluation-results/promotion-decisions.json \
-            --rollback-retention-enabled "${{ github.event.inputs.rollback_retention_enabled }}"
+          set -euo pipefail
+          rollback_retention="${{ github.event.inputs.rollback_retention_enabled || 'false' }}"
+          CMD=(python eval-src/scripts/promotion/promote_changed_challengers.py
+            --eval-root eval-src
+            --prod-root prod-worktree
+            --decision-file evaluation-results/promotion-decisions.json
+            --rollback-retention-enabled "$rollback_retention")
+          if [ -s /tmp/prod_promotable.txt ]; then
+            while IFS= read -r meta_file; do
+              [ -z "$meta_file" ] && continue
+              CMD+=(--metadata-file "$meta_file")
+            done < /tmp/prod_promotable.txt
+          fi
+          "${CMD[@]}"
+
+      - name: Inspect promotion decisions and compute expected promotions
+        shell: bash
+        run: |
+          set -euo pipefail
+          decision_file="eval-src/evaluation-results/promotion-decisions.json"
+          if [ ! -f "$decision_file" ]; then
+            echo "Missing decision file: $decision_file"
+            exit 1
+          fi
+          python - << 'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("eval-src/evaluation-results/promotion-decisions.json")
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          decisions = payload.get("decisions", [])
+          expected = []
+          for d in decisions:
+            rel = str(d.get("metadata_file") or "").strip()
+            eligible = bool(d.get("eligible"))
+            promoted = bool(d.get("promoted"))
+            reason = str(d.get("reason") or "").strip()
+            print(f"decision metadata_file={rel} eligible={eligible} promoted={promoted} reason={reason}")
+            if rel and eligible:
+              expected.append(rel)
+
+          out = Path("/tmp/prod_expected_promotions.txt")
+          out.write_text("\n".join(expected) + ("\n" if expected else ""), encoding="utf-8")
+          print(f"expected_promotions_count={len(expected)}")
+          with Path("/tmp/prod_expected_count.env").open("w", encoding="utf-8") as f:
+            f.write(f"PROD_EXPECTED_PROMOTION_COUNT={len(expected)}\n")
+          PY
+          cat /tmp/prod_expected_count.env >> "$GITHUB_ENV"
 
       - name: Validate prod metadata
         run: |
@@ -183,16 +226,57 @@ jobs:
           cd prod-worktree
           if git diff --quiet -- dags airflow/web_app_data/metadata; then
             echo "No prod changes to commit"
-            if [ "${PROD_EVAL_READY_COUNT:-0}" -gt 0 ]; then
-              echo "Eval-ready metadata already reflected in prod; idempotent no-op."
+            if [ "${PROD_EXPECTED_PROMOTION_COUNT:-0}" -gt 0 ]; then
+              unresolved=0
+              while IFS= read -r meta_file; do
+                [ -z "$meta_file" ] && continue
+                if [ ! -f "$meta_file" ]; then
+                  echo "Missing expected metadata in prod worktree: $meta_file"
+                  unresolved=1
+                  continue
+                fi
+                status=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print(str(d.get('promotion_status') or '').strip().lower())" "$meta_file")
+                echo "post-check metadata_file=$meta_file promotion_status=$status"
+                if [ "$status" != "champion" ]; then
+                  unresolved=1
+                fi
+              done < /tmp/prod_expected_promotions.txt
+              if [ "$unresolved" -ne 0 ]; then
+                echo "Promotable metadata detected but no prod commit was produced."
+                exit 1
+              fi
+              echo "Promotable metadata already reflected in prod; idempotent no-op."
             fi
             echo "processed_count=0"
           else
             git add dags airflow/web_app_data/metadata
             git commit -m "Auto-promote eligible challengers to prod champion"
             git push origin prod
-            echo "processed_count=${PROD_EVAL_READY_COUNT:-0}"
+            echo "processed_count=${PROD_EXPECTED_PROMOTION_COUNT:-0}"
           fi
+
+      - name: Verify promoted metadata on origin/prod
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${PROD_EXPECTED_PROMOTION_COUNT:-0}" -eq 0 ]; then
+            exit 0
+          fi
+          cd prod-worktree
+          git fetch origin prod
+          while IFS= read -r meta_file; do
+            [ -z "$meta_file" ] && continue
+            if ! git show "origin/prod:$meta_file" >/tmp/prod_meta.json 2>/dev/null; then
+              echo "Missing expected promoted metadata on origin/prod: $meta_file"
+              exit 1
+            fi
+            status=$(python -c "import json,sys;print(str(json.load(sys.stdin).get('promotion_status') or '').strip().lower())" < /tmp/prod_meta.json)
+            echo "origin/prod metadata_file=$meta_file promotion_status=$status"
+            if [ "$status" != "champion" ]; then
+              echo "origin/prod verification failed for $meta_file"
+              exit 1
+            fi
+          done < /tmp/prod_expected_promotions.txt
 
       - name: Upload promotion decisions
         if: always()
