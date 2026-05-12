@@ -1,7 +1,7 @@
 {
   "pipelines": {
     "testpipeline": {
-      "current_version_id": "v11",
+      "current_version_id": "v12",
       "versions": [
         {
           "pipeline_id": "testpipeline",
@@ -1054,8 +1054,8 @@
           "output_filename": "testpipeline__v11.py",
           "created_at": "2026-05-12T14:54:08.862683+00:00",
           "created_by": "admin",
-          "status": "active",
-          "is_current": true,
+          "status": "archived",
+          "is_current": false,
           "source_hash": "12ca460141d3c0282abc5e1ba1663c852637c7d245f7ab40d9c0b8809caf7e89",
           "source_definition": {
             "pipeline": {
@@ -1189,6 +1189,168 @@
           "promoted_by": null,
           "github_pr_url": null,
           "github_commit_sha": null
+        },
+        {
+          "pipeline_id": "testpipeline",
+          "version_id": "v12",
+          "dag_version": 12,
+          "airflow_dag_id": "testpipeline__v12",
+          "output_filename": "testpipeline__v12.py",
+          "created_at": "2026-05-12T15:15:57.650861+00:00",
+          "created_by": "admin",
+          "status": "active",
+          "is_current": true,
+          "source_hash": "a9979f01588e59521719e7bd3fd15d96fac74eec08dd5a270308864c10bc0de6",
+          "source_definition": {
+            "pipeline": {
+              "dag_id": "testpipeline",
+              "description": "",
+              "start_date": "2026-01-01",
+              "schedule": null,
+              "schedule_mode": "manual",
+              "catchup": false,
+              "schedule_preset": "",
+              "schedule_cron": "",
+              "interval_value": "",
+              "interval_unit": "minutes",
+              "event_source": "",
+              "custom_schedule_text": "",
+              "retries": 1,
+              "retry_delay_minutes": 1,
+              "alert_emails": [],
+              "alert_mode": "both",
+              "tags": [
+                "demo",
+                "orchestration"
+              ],
+              "output_filename": "testpipeline.py"
+            },
+            "nodes": [
+              {
+                "id": "node_10",
+                "type": "delay",
+                "label": "Delay 10",
+                "x": 763.5552825927734,
+                "y": 451.8888816833496,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_11",
+                "type": "timeout_guard",
+                "label": "Timeout Guard 11",
+                "x": 337.55528259277344,
+                "y": 455.8888816833496,
+                "config": {
+                  "timeout_minutes": 1
+                }
+              },
+              {
+                "id": "node_12",
+                "type": "timeout_guard",
+                "label": "Timeout Guard 12",
+                "x": 1098.5552825927734,
+                "y": 414.8888816833496,
+                "config": {
+                  "timeout_minutes": 1
+                }
+              },
+              {
+                "id": "node_13",
+                "type": "delay",
+                "label": "Delay 13",
+                "x": 1450.5552825927734,
+                "y": 427.8888816833496,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_14",
+                "type": "delay",
+                "label": "Delay 14",
+                "x": 8,
+                "y": 422.7777671813965,
+                "config": {
+                  "delay_minutes": 1
+                }
+              },
+              {
+                "id": "node_15",
+                "type": "delay",
+                "label": "Delay 15",
+                "x": 8,
+                "y": 187.3333396911621,
+                "config": {
+                  "delay_minutes": 1
+                }
+              }
+            ],
+            "edges": [
+              {
+                "source": "node_10",
+                "target": "node_12"
+              },
+              {
+                "source": "node_11",
+                "target": "node_10"
+              },
+              {
+                "source": "node_12",
+                "target": "node_13"
+              },
+              {
+                "source": "node_14",
+                "target": "node_11"
+              },
+              {
+                "source": "node_15",
+                "target": "node_14"
+              }
+            ],
+            "group_boxes": []
+          },
+          "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testpipeline__v12.py",
+          "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testpipeline__v12.py",
+          "node_task_map": {
+            "node_15": [
+              "delay_1_node_15"
+            ],
+            "node_14": [
+              "delay_2_node_14"
+            ],
+            "node_11": [
+              "timeout_guard_3_node_11"
+            ],
+            "node_10": [
+              "delay_4_node_10"
+            ],
+            "node_12": [
+              "timeout_guard_5_node_12"
+            ],
+            "node_13": [
+              "delay_6_node_13"
+            ]
+          },
+          "node_primary_task_map": {
+            "node_15": "delay_1_node_15",
+            "node_14": "delay_2_node_14",
+            "node_11": "timeout_guard_3_node_11",
+            "node_10": "delay_4_node_10",
+            "node_12": "timeout_guard_5_node_12",
+            "node_13": "delay_6_node_13"
+          },
+          "base_pipeline_id": "testpipeline",
+          "promotion_status": "draft",
+          "score": null,
+          "score_type": null,
+          "score_breakdown": {},
+          "last_eval_run_id": null,
+          "promoted_at": null,
+          "promoted_by": null,
+          "github_pr_url": null,
+          "github_commit_sha": null
         }
       ],
       "switch_events": [
@@ -1279,6 +1441,14 @@
           "to_version_id": "v11",
           "actor": "admin",
           "at": "2026-05-12T14:54:08.862683+00:00"
+        },
+        {
+          "event_id": "02f1835b-8a56-4269-afd7-a1c135910388",
+          "event_type": "create_and_set_current",
+          "from_version_id": "v11",
+          "to_version_id": "v12",
+          "actor": "admin",
+          "at": "2026-05-12T15:15:57.650861+00:00"
         }
       ]
     }
