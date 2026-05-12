@@ -1,11 +1,7 @@
 {
   "pipelines": {
     "testpipeline": {
-<<<<<<< HEAD
-      "current_version_id": "v3",
-=======
       "current_version_id": "v5",
->>>>>>> origin/main
       "versions": [
         {
           "pipeline_id": "testpipeline",
@@ -174,19 +170,11 @@
           "dag_version": 3,
           "airflow_dag_id": "testpipeline__v3",
           "output_filename": "testpipeline__v3.py",
-<<<<<<< HEAD
-          "created_at": "2026-05-12T10:34:00.140075+00:00",
-          "created_by": "admin",
-          "status": "active",
-          "is_current": true,
-          "source_hash": "9faeb66b6f5bdaa05dbce831cca3ea8b7167891c957098922eb286ab616c36d5",
-=======
           "created_at": "2026-05-12T10:53:28.456813+00:00",
           "created_by": "admin",
           "status": "archived",
           "is_current": false,
           "source_hash": "ca0b33636ee71f5f82320b51b77ec02bc2e6f88e0b6b2b4397ba1a5ce88746b0",
->>>>>>> origin/main
           "source_definition": {
             "pipeline": {
               "dag_id": "testpipeline",
@@ -236,13 +224,8 @@
                 "id": "node_3",
                 "type": "delay",
                 "label": "Delay 3",
-<<<<<<< HEAD
-                "x": 144.99998474121094,
-                "y": 364.99999618530273,
-=======
                 "x": 1217.7776947021484,
                 "y": 319.99999618530273,
->>>>>>> origin/main
                 "config": {
                   "delay_minutes": 1
                 }
@@ -254,13 +237,8 @@
                 "target": "node_2"
               },
               {
-<<<<<<< HEAD
-                "source": "node_3",
-                "target": "node_1"
-=======
                 "source": "node_2",
                 "target": "node_3"
->>>>>>> origin/main
               }
             ],
             "group_boxes": []
@@ -268,22 +246,6 @@
           "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testpipeline__v3.py",
           "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testpipeline__v3.py",
           "node_task_map": {
-<<<<<<< HEAD
-            "node_3": [
-              "delay_1_node_3"
-            ],
-            "node_1": [
-              "delay_2_node_1"
-            ],
-            "node_2": [
-              "delay_3_node_2"
-            ]
-          },
-          "node_primary_task_map": {
-            "node_3": "delay_1_node_3",
-            "node_1": "delay_2_node_1",
-            "node_2": "delay_3_node_2"
-=======
             "node_1": [
               "delay_1_node_1"
             ],
@@ -514,7 +476,6 @@
           "node_primary_task_map": {
             "node_5": "timeout_guard_1_node_5",
             "node_1": "delay_2_node_1"
->>>>>>> origin/main
           },
           "base_pipeline_id": "testpipeline",
           "promotion_status": "draft",
@@ -546,18 +507,11 @@
           "at": "2026-05-12T10:21:43.538212+00:00"
         },
         {
-<<<<<<< HEAD
-          "event_id": "2c55ccdd-5bdb-48e5-8093-5c489156587c",
-=======
           "event_id": "8756a28c-6d53-4230-861e-e04b2373de10",
->>>>>>> origin/main
           "event_type": "create_and_set_current",
           "from_version_id": "v2",
           "to_version_id": "v3",
           "actor": "admin",
-<<<<<<< HEAD
-          "at": "2026-05-12T10:34:00.140075+00:00"
-=======
           "at": "2026-05-12T10:53:28.456813+00:00"
         },
         {
@@ -575,7 +529,6 @@
           "to_version_id": "v5",
           "actor": "admin",
           "at": "2026-05-12T12:11:27.991075+00:00"
->>>>>>> origin/main
         }
       ]
     }
