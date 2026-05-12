@@ -1,0 +1,147 @@
+{
+  "pipeline_id": "testpipeline",
+  "version_id": "v4",
+  "dag_version": 4,
+  "airflow_dag_id": "testpipeline__v4",
+  "output_filename": "testpipeline__v4.py",
+  "created_at": "2026-05-12T10:55:46.319462+00:00",
+  "created_by": "admin",
+  "status": "active",
+  "is_current": true,
+  "source_hash": "10b249e0aed1b39d86fb7bd1574ec7c6063fe3aeeb80913329f6e43b96f2f6bd",
+  "source_definition": {
+    "pipeline": {
+      "dag_id": "testpipeline",
+      "description": "",
+      "start_date": "2026-01-01",
+      "schedule": null,
+      "schedule_mode": "manual",
+      "catchup": false,
+      "schedule_preset": "",
+      "schedule_cron": "",
+      "interval_value": "",
+      "interval_unit": "minutes",
+      "event_source": "",
+      "custom_schedule_text": "",
+      "retries": 1,
+      "retry_delay_minutes": 1,
+      "alert_emails": [],
+      "alert_mode": "both",
+      "tags": [
+        "demo",
+        "orchestration"
+      ],
+      "output_filename": "testpipeline.py"
+    },
+    "nodes": [
+      {
+        "id": "node_1",
+        "type": "delay",
+        "label": "Delay 1",
+        "x": 619.9999847412109,
+        "y": 351.99999618530273,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_2",
+        "type": "delay",
+        "label": "Delay 2",
+        "x": 928.7776947021484,
+        "y": 355.11111068725586,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_3",
+        "type": "delay",
+        "label": "Delay 3",
+        "x": 1217.7776947021484,
+        "y": 319.99999618530273,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_4",
+        "type": "delay",
+        "label": "Delay 4",
+        "x": 1468.5552825927734,
+        "y": 583.6666221618652,
+        "config": {
+          "delay_minutes": 1
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "node_1",
+        "target": "node_2"
+      },
+      {
+        "source": "node_2",
+        "target": "node_3"
+      },
+      {
+        "source": "node_3",
+        "target": "node_4"
+      }
+    ],
+    "group_boxes": []
+  },
+  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testpipeline__v4.py",
+  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testpipeline__v4.py",
+  "node_task_map": {
+    "node_1": [
+      "delay_1_node_1"
+    ],
+    "node_2": [
+      "delay_2_node_2"
+    ],
+    "node_3": [
+      "delay_3_node_3"
+    ],
+    "node_4": [
+      "delay_4_node_4"
+    ]
+  },
+  "node_primary_task_map": {
+    "node_1": "delay_1_node_1",
+    "node_2": "delay_2_node_2",
+    "node_3": "delay_3_node_3",
+    "node_4": "delay_4_node_4"
+  },
+  "base_pipeline_id": "testpipeline",
+  "promotion_status": "draft",
+  "score": null,
+  "score_type": null,
+  "score_breakdown": {},
+  "last_eval_run_id": null,
+  "promoted_at": null,
+  "promoted_by": null,
+  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/34",
+  "github_commit_sha": "29b2ea75d5103b62a004a1bc7c0ab20f96342227",
+  "local_dag_id": "testpipeline__v4",
+  "git_dag_id": "testpipeline_git__v4",
+  "local_dag_file": "airflow/dags/testpipeline__v4.py",
+  "git_dag_file": "dags/testpipeline_git__v4.py",
+  "dag_id": "testpipeline__v4",
+  "deployment_target": "git",
+  "updated_at": "2026-05-12T10:55:56.653198+00:00",
+  "publish_status": "pr_open",
+  "version": "v4",
+  "workflow_name": "testpipeline",
+  "workflow_slug": "testpipeline",
+  "repo_file_path": "dags/testpipeline_git__v4.py",
+  "git_branch_name": "feature/workflow/testpipeline-4",
+  "pull_request_number": 34,
+  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/34",
+  "commit_sha": "29b2ea75d5103b62a004a1bc7c0ab20f96342227",
+  "github_pr_number": 34,
+  "github_branch": "feature/workflow/testpipeline-4",
+  "requested_by_user_id": "admin",
+  "requested_by_email": "",
+  "requested_by_display_name": "admin"
+}
