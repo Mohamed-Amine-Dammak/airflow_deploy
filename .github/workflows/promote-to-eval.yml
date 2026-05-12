@@ -255,6 +255,7 @@ jobs:
         run: |
           set -euo pipefail
           cd eval-worktree
+          : > /tmp/eval_committed_metadata_files.txt
           git restore --staged airflow/web_app_data/pipeline_versions_store.json || true
           git restore --source=HEAD --worktree airflow/web_app_data/pipeline_versions_store.json || true
           echo "---- git status --short ----"
@@ -302,6 +303,7 @@ jobs:
                 if [ -n "$dag_file" ]; then
                   git add -f "$dag_file"
                 fi
+                echo "$meta_file" >> /tmp/eval_committed_metadata_files.txt
                 processed_count=$((processed_count + 1))
               done < /tmp/submitted_metadata_files.txt
               echo "PROCESSED_COUNT=$processed_count" >> "$GITHUB_ENV"
@@ -329,7 +331,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -s /tmp/submitted_metadata_files.txt ]; then
+          if [ "${PROCESSED_COUNT:-0}" -eq 0 ]; then
+            echo "No eval commit produced in this run; skipping origin/eval file verification."
+            exit 0
+          fi
+          if [ ! -s /tmp/eval_committed_metadata_files.txt ]; then
+            echo "No committed metadata file list found; skipping origin/eval file verification."
             exit 0
           fi
           cd eval-worktree
@@ -337,10 +344,13 @@ jobs:
           while IFS= read -r meta_file; do
             [ -z "$meta_file" ] && continue
             echo "Verifying origin/eval:$meta_file"
-            git show "origin/eval:$meta_file"
+            if ! git cat-file -e "origin/eval:$meta_file" 2>/dev/null; then
+              echo "origin/eval is missing expected promoted metadata: $meta_file"
+              exit 1
+            fi
             promotion_status=$(git show "origin/eval:$meta_file" | python -c "import json,sys;print(str(json.load(sys.stdin).get('promotion_status') or '').strip().lower())")
             if [ "$promotion_status" != "eval" ]; then
               echo "origin/eval verification failed for $meta_file: promotion_status=$promotion_status"
               exit 1
             fi
-          done < /tmp/submitted_metadata_files.txt
+          done < /tmp/eval_committed_metadata_files.txt
