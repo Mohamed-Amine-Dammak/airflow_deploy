@@ -1,0 +1,96 @@
+{
+  "pipeline_id": "testpipeline",
+  "version_id": "v1",
+  "dag_version": 1,
+  "airflow_dag_id": "testpipeline__v1",
+  "output_filename": "testpipeline__v1.py",
+  "created_at": "2026-05-12T10:10:46.218092+00:00",
+  "created_by": "admin",
+  "status": "active",
+  "is_current": true,
+  "source_hash": "0d58a2a4e9de6a4594dc3c537ff5834f09a6819c14d35134095fba8a226ae654",
+  "source_definition": {
+    "pipeline": {
+      "dag_id": "testpipeline",
+      "description": "",
+      "start_date": "2026-01-01",
+      "schedule": null,
+      "schedule_mode": "manual",
+      "catchup": false,
+      "schedule_preset": "",
+      "schedule_cron": "",
+      "interval_value": "",
+      "interval_unit": "minutes",
+      "event_source": "",
+      "custom_schedule_text": "",
+      "retries": 1,
+      "retry_delay_minutes": 1,
+      "alert_emails": [],
+      "alert_mode": "both",
+      "tags": [
+        "demo",
+        "orchestration"
+      ],
+      "output_filename": "testpipeline.py"
+    },
+    "nodes": [
+      {
+        "id": "node_1",
+        "type": "delay",
+        "label": "Delay 1",
+        "x": 619.9999847412109,
+        "y": 351.99999618530273,
+        "config": {
+          "delay_minutes": 1
+        }
+      }
+    ],
+    "edges": [],
+    "group_boxes": []
+  },
+  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testpipeline__v1.py",
+  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testpipeline__v1.py",
+  "node_task_map": {
+    "node_1": [
+      "delay_1_node_1"
+    ]
+  },
+  "node_primary_task_map": {
+    "node_1": "delay_1_node_1"
+  },
+  "base_pipeline_id": "testpipeline",
+  "promotion_status": "submitted",
+  "score": null,
+  "score_type": null,
+  "score_breakdown": {},
+  "last_eval_run_id": null,
+  "promoted_at": null,
+  "promoted_by": null,
+  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/31",
+  "github_commit_sha": "9a141afa575b5ac2ebac2e3c86ebcaaeabb77700",
+  "local_dag_id": "testpipeline__v1",
+  "git_dag_id": "testpipeline_git__v1",
+  "local_dag_file": "airflow/dags/testpipeline__v1.py",
+  "git_dag_file": "dags/testpipeline_git__v1.py",
+  "dag_id": "testpipeline__v1",
+  "deployment_target": "git",
+  "updated_at": "2026-05-12T10:12:00.204634+00:00",
+  "publish_status": "merged_to_git",
+  "version": "v1",
+  "workflow_name": "testpipeline",
+  "workflow_slug": "testpipeline",
+  "repo_file_path": "dags/testpipeline_git__v1.py",
+  "git_branch_name": "feature/workflow/testpipeline",
+  "pull_request_number": 31,
+  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/31",
+  "commit_sha": "be909bcf3aebba38f3ba049864a3c5c5ac01c0f8",
+  "github_pr_number": 31,
+  "github_branch": "feature/workflow/testpipeline",
+  "requested_by_user_id": "admin",
+  "requested_by_email": "",
+  "requested_by_display_name": "admin",
+  "warnings": [],
+  "critical_failures": [],
+  "merged_at": "2026-05-12T10:12:00.204646+00:00",
+  "merge_commit_sha": "9a141afa575b5ac2ebac2e3c86ebcaaeabb77700"
+}

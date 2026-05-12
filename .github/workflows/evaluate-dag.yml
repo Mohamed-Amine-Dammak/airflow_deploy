@@ -36,8 +36,16 @@ jobs:
   evaluate-dag-runtime:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: [self-hosted]
+    defaults:
+      run:
+        shell: powershell
 
     steps:
+      - name: Debug runner shell
+        run: |
+          Write-Output "Runner OS: $env:RUNNER_OS"
+          Write-Output "Shell: PowerShell"
+
       - name: Checkout eval
         uses: actions/checkout@v4
         with:
@@ -55,26 +63,47 @@ jobs:
           pip install requests
 
       - name: Resolve evaluation settings
-        shell: bash
         run: |
-          echo "EVAL_MODE=${{ github.event.inputs.evaluation_mode }}" >> $GITHUB_ENV
-          echo "EVAL_COUNT=${{ github.event.inputs.run_count }}" >> $GITHUB_ENV
-          echo "API_VERSION=${{ github.event.inputs.airflow_api_version }}" >> $GITHUB_ENV
-          if [ -z "${{ github.event.inputs.evaluation_mode }}" ]; then echo "EVAL_MODE=run_once" >> $GITHUB_ENV; fi
-          if [ -z "${{ github.event.inputs.run_count }}" ]; then echo "EVAL_COUNT=1" >> $GITHUB_ENV; fi
-          if [ -z "${{ github.event.inputs.airflow_api_version }}" ]; then echo "API_VERSION=v2" >> $GITHUB_ENV; fi
+          $evalMode = "${{ github.event.inputs.evaluation_mode }}"
+          $evalCount = "${{ github.event.inputs.run_count }}"
+          $apiVersion = "${{ github.event.inputs.airflow_api_version }}"
+          if ([string]::IsNullOrWhiteSpace($evalMode)) { $evalMode = "run_once" }
+          if ([string]::IsNullOrWhiteSpace($evalCount)) { $evalCount = "1" }
+          if ([string]::IsNullOrWhiteSpace($apiVersion)) { $apiVersion = "v2" }
+          "EVAL_MODE=$evalMode" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "EVAL_COUNT=$evalCount" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "API_VERSION=$apiVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          $metaFile = Join-Path $env:RUNNER_TEMP "eval_metadata.txt"
+          "EVAL_METADATA_FILE=$metaFile" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Detect changed metadata rows
-        shell: bash
         run: |
-          : > /tmp/eval_metadata.txt
-          if [ -n "${{ github.event.inputs.metadata_file }}" ]; then
-            echo "${{ github.event.inputs.metadata_file }}" > /tmp/eval_metadata.txt
+          $metaFile = "$env:EVAL_METADATA_FILE"
+          if (Test-Path $metaFile) { Remove-Item $metaFile -Force }
+          $manual = "${{ github.event.inputs.metadata_file }}"
+          if (-not [string]::IsNullOrWhiteSpace($manual)) {
+            Set-Content -Path $metaFile -Value $manual -Encoding utf8
           else
-            git diff --name-only HEAD~1 HEAD | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/eval_metadata.txt || true
+            $changed = git diff --name-only HEAD~1 HEAD
+            $rows = @()
+            foreach ($line in $changed) {
+              $p = "$line".Trim().Replace("\", "/")
+              if ($p -match '^airflow/web_app_data/metadata/.*/.*\.json$') { $rows += $p }
+            }
+            if ($rows.Count -gt 0) {
+              Set-Content -Path $metaFile -Value $rows -Encoding utf8
+            } else {
+              New-Item -ItemType File -Path $metaFile -Force | Out-Null
+            }
           fi
-          echo "Detected metadata files:"
-          if [ -s /tmp/eval_metadata.txt ]; then sed 's/^/- /' /tmp/eval_metadata.txt; else echo "- <none>"; fi
+          Write-Output "Detected metadata files:"
+          $rows = @()
+          if (Test-Path $metaFile) { $rows = Get-Content $metaFile }
+          if ($rows.Count -eq 0) {
+            Write-Output "- <none>"
+          } else {
+            foreach ($m in $rows) { if (-not [string]::IsNullOrWhiteSpace($m)) { Write-Output "- $m" } }
+          }
 
       - name: Get Airflow JWT token for API v2
         if: ${{ env.API_VERSION == 'v2' }}
@@ -94,13 +123,13 @@ jobs:
 
       - name: Debug Airflow DAG endpoint before evaluation
         if: ${{ env.API_VERSION == 'v2' }}
-        shell: powershell
         env:
           AIRFLOW_API_BASE_URL: ${{ secrets.AIRFLOW_API_BASE_URL }}
           AIRFLOW_API_TOKEN: ${{ env.AIRFLOW_API_TOKEN }}
         run: |
-          if (-not (Test-Path /tmp/eval_metadata.txt)) { exit 0 }
-          $rows = Get-Content /tmp/eval_metadata.txt
+          $metaFile = "$env:EVAL_METADATA_FILE"
+          if (-not (Test-Path $metaFile)) { exit 0 }
+          $rows = Get-Content $metaFile
           foreach ($m in $rows) {
             if ([string]::IsNullOrWhiteSpace($m)) { continue }
             $payload = Get-Content $m -Raw | ConvertFrom-Json
@@ -111,7 +140,6 @@ jobs:
           }
 
       - name: Run runtime evaluation for changed metadata
-        shell: bash
         env:
           AIRFLOW_API_BASE_URL: ${{ secrets.AIRFLOW_API_BASE_URL }}
           AIRFLOW_API_USERNAME: ${{ secrets.AIRFLOW_API_USERNAME }}
@@ -120,37 +148,41 @@ jobs:
           AIRFLOW_API_VERSION: ${{ env.API_VERSION }}
           AIRFLOW_EVAL_TIMEOUT_SECONDS: "600"
         run: |
-          CMD=(python scripts/evaluation/evaluate_changed_metadata.py --root . --evaluation-mode "$EVAL_MODE" --run-count "$EVAL_COUNT")
-          while IFS= read -r f; do
-            [ -z "$f" ] && continue
-            CMD+=(--metadata-file "$f")
-          done < /tmp/eval_metadata.txt
-          "${CMD[@]}"
+          $cmd = @("python", "scripts/evaluation/evaluate_changed_metadata.py", "--root", ".", "--evaluation-mode", "$env:EVAL_MODE", "--run-count", "$env:EVAL_COUNT")
+          if (Test-Path "$env:EVAL_METADATA_FILE") {
+            $rows = Get-Content "$env:EVAL_METADATA_FILE"
+            foreach ($f in $rows) {
+              if ([string]::IsNullOrWhiteSpace($f)) { continue }
+              $cmd += @("--metadata-file", "$f")
+            }
+          }
+          & $cmd[0] $cmd[1..($cmd.Length-1)]
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Validate metadata after evaluation
         run: |
           python scripts/metadata/validate_metadata.py --root .
 
       - name: Guard legacy store is unchanged
-        shell: bash
         run: |
-          if git diff --name-only | grep -x "airflow/web_app_data/pipeline_versions_store.json" >/dev/null; then
-            echo "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
+          $changed = git diff --name-only
+          if ($changed -contains "airflow/web_app_data/pipeline_versions_store.json") {
+            Write-Error "ERROR: legacy store must not be modified: airflow/web_app_data/pipeline_versions_store.json"
             exit 1
-          fi
+          }
 
       - name: Commit eval metadata updates
-        shell: bash
         run: |
-          if git diff --quiet -- airflow/web_app_data/metadata evaluation-results; then
-            echo "No eval metadata changes to commit"
-          else
+          git diff --quiet -- airflow/web_app_data/metadata evaluation-results
+          if ($LASTEXITCODE -eq 0) {
+            Write-Output "No eval metadata changes to commit"
+          } else {
             git config user.email "airflow-bot@example.com"
             git config user.name "Airflow Bot"
             git add airflow/web_app_data/metadata evaluation-results
             git commit -m "Auto-evaluate changed DAG metadata"
             git push origin eval
-          fi
+          }
 
       - name: Upload evaluation results
         if: always()
