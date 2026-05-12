@@ -108,6 +108,36 @@ jobs:
           Write-Output "Detected metadata files:"
           Get-Content $outFile
 
+      - name: Filter eval-ready metadata and enforce processed_count
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $inFile = "$env:EVAL_METADATA_FILE"
+          if (-not (Test-Path $inFile)) {
+            Write-Output "No eval metadata to evaluate."
+            exit 1
+          }
+          $readyFile = Join-Path $env:RUNNER_TEMP "eval_ready_metadata.txt"
+          if (Test-Path $readyFile) { Remove-Item $readyFile -Force }
+          $processed = 0
+          $rows = Get-Content $inFile
+          foreach ($m in $rows) {
+            if ([string]::IsNullOrWhiteSpace($m)) { continue }
+            if (-not (Test-Path $m)) { continue }
+            $payload = Get-Content $m -Raw | ConvertFrom-Json
+            $promotion = "$($payload.promotion_status)".Trim().ToLowerInvariant()
+            if ($promotion -eq "eval") {
+              $m | Out-File -FilePath $readyFile -Encoding utf8 -Append
+              $processed += 1
+            }
+          }
+          "EVAL_METADATA_FILE=$readyFile" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Output "processed_count=$processed"
+          if ($processed -eq 0) {
+            Write-Output "No eval metadata to evaluate."
+            exit 1
+          }
+
       - name: Get Airflow JWT token for API v2
         if: ${{ env.API_VERSION == 'v2' }}
         shell: powershell

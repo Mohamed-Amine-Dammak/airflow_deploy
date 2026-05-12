@@ -76,6 +76,7 @@ jobs:
           set -euo pipefail
           cd main-src
           : > /tmp/metadata_files.txt
+          : > /tmp/submitted_metadata_files.txt
           if [ -n "${{ github.event.inputs.metadata_file }}" ]; then
             echo "${{ github.event.inputs.metadata_file }}" > /tmp/metadata_files.txt
           else
@@ -87,12 +88,37 @@ jobs:
           else
             echo "- <none>"
           fi
+          changed_count=0
+          submitted_count=0
+          if [ -s /tmp/metadata_files.txt ]; then
+            while IFS= read -r meta_file; do
+              [ -z "$meta_file" ] && continue
+              changed_count=$((changed_count + 1))
+              pipeline_id=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print((d.get('pipeline_id') or '').strip())" "$meta_file")
+              version_id=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print((d.get('version_id') or '').strip())" "$meta_file")
+              dag_file=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print((d.get('git_dag_file') or '').strip())" "$meta_file")
+              promotion_status=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print(str(d.get('promotion_status') or '').strip().lower())" "$meta_file")
+              echo "metadata_file=$meta_file"
+              echo "pipeline_id=$pipeline_id"
+              echo "version_id=$version_id"
+              echo "git_dag_file=$dag_file"
+              echo "source_path_on_main=$meta_file"
+              echo "destination_path_on_eval=$meta_file"
+              if [ "$promotion_status" = "submitted" ]; then
+                echo "$meta_file" >> /tmp/submitted_metadata_files.txt
+                submitted_count=$((submitted_count + 1))
+              fi
+            done < /tmp/metadata_files.txt
+          fi
+          echo "CHANGED_COUNT=$changed_count" >> "$GITHUB_ENV"
+          echo "SUBMITTED_COUNT=$submitted_count" >> "$GITHUB_ENV"
+          echo "processed_count=$submitted_count"
 
       - name: Copy selected metadata and DAG files from main to eval
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -s /tmp/metadata_files.txt ]; then
+          if [ ! -s /tmp/submitted_metadata_files.txt ]; then
             exit 0
           fi
           cd eval-worktree
@@ -105,22 +131,48 @@ jobs:
               mkdir -p "$(dirname "$dag_file")"
               git --git-dir=../main-src/.git show origin/main:"$dag_file" > "$dag_file"
             fi
-          done < /tmp/metadata_files.txt
+          done < /tmp/submitted_metadata_files.txt
+
+      - name: Assert copied metadata and DAG files exist in eval
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -s /tmp/submitted_metadata_files.txt ]; then
+            exit 0
+          fi
+          cd eval-worktree
+          while IFS= read -r meta_file; do
+            [ -z "$meta_file" ] && continue
+            if [ ! -f "$meta_file" ]; then
+              echo "Missing copied metadata on eval: $meta_file"
+              exit 1
+            fi
+            dag_file=$(python -c "import json,sys;print((json.load(open(sys.argv[1],encoding='utf-8')).get('git_dag_file') or '').strip())" "$meta_file")
+            if [ -n "$dag_file" ] && [ ! -f "$dag_file" ]; then
+              echo "Missing copied DAG on eval: $dag_file"
+              exit 1
+            fi
+          done < /tmp/submitted_metadata_files.txt
 
       - name: Promote changed metadata files to eval
         shell: bash
         run: |
           set -euo pipefail
           cd eval-worktree
-          if [ ! -s /tmp/metadata_files.txt ]; then
-            echo "No changed metadata files detected; skipping promotion."
+          if [ ! -s /tmp/submitted_metadata_files.txt ]; then
+            echo "No submitted metadata files detected; skipping promotion."
+            if [ "${{ github.event_name }}" = "push" ] && [ "${CHANGED_COUNT:-0}" -gt 0 ]; then
+              echo "processed_count=0"
+              echo "Submitted metadata detected but no eval commit was produced."
+              exit 1
+            fi
             exit 0
           fi
           CMD=(python scripts/promotion/promote_changed_metadata_to_eval.py --root .)
           while IFS= read -r meta_file; do
             [ -z "$meta_file" ] && continue
             CMD+=(--metadata-file "$meta_file")
-          done < /tmp/metadata_files.txt
+          done < /tmp/submitted_metadata_files.txt
           "${CMD[@]}"
 
       - name: Show promoted metadata files
@@ -128,21 +180,21 @@ jobs:
         run: |
           set -euo pipefail
           cd eval-worktree
-          if [ ! -s /tmp/metadata_files.txt ]; then
+          if [ ! -s /tmp/submitted_metadata_files.txt ]; then
             exit 0
           fi
           while IFS= read -r meta_file; do
             [ -z "$meta_file" ] && continue
             echo "==== $meta_file ===="
             cat "$meta_file"
-          done < /tmp/metadata_files.txt
+          done < /tmp/submitted_metadata_files.txt
 
       - name: Verify eval promotion persisted
         shell: bash
         run: |
           set -euo pipefail
           cd eval-worktree
-          if [ ! -s /tmp/metadata_files.txt ]; then
+          if [ ! -s /tmp/submitted_metadata_files.txt ]; then
             exit 0
           fi
           python - << 'PY'
@@ -150,7 +202,7 @@ jobs:
           from pathlib import Path
 
           root = Path(".").resolve()
-          files = [line.strip() for line in Path("/tmp/metadata_files.txt").read_text(encoding="utf-8").splitlines() if line.strip()]
+          files = [line.strip() for line in Path("/tmp/submitted_metadata_files.txt").read_text(encoding="utf-8").splitlines() if line.strip()]
           for rel in files:
               payload = json.loads((root / rel).read_text(encoding="utf-8"))
               p = str(payload.get("promotion_status", "")).strip().lower()
@@ -177,10 +229,20 @@ jobs:
           cd eval-worktree
           git restore --staged airflow/web_app_data/pipeline_versions_store.json || true
           git restore --source=HEAD --worktree airflow/web_app_data/pipeline_versions_store.json || true
+          echo "---- git status --short ----"
+          git status --short || true
+          echo "---- git diff --name-only HEAD ----"
+          git diff --name-only HEAD || true
           if git diff --quiet -- dags airflow/web_app_data/metadata; then
             echo "No DAG/metadata changes to commit"
+            if [ "${SUBMITTED_COUNT:-0}" -gt 0 ]; then
+              echo "Submitted metadata detected but no eval commit was produced."
+              exit 1
+            fi
+            echo "PROCESSED_COUNT=0" >> "$GITHUB_ENV"
           else
-            if [ -s /tmp/metadata_files.txt ]; then
+            if [ -s /tmp/submitted_metadata_files.txt ]; then
+              processed_count=0
               while IFS= read -r meta_file; do
                 [ -z "$meta_file" ] && continue
                 git add "$meta_file"
@@ -188,7 +250,10 @@ jobs:
                 if [ -n "$dag_file" ]; then
                   git add -f "$dag_file"
                 fi
-              done < /tmp/metadata_files.txt
+                processed_count=$((processed_count + 1))
+              done < /tmp/submitted_metadata_files.txt
+              echo "PROCESSED_COUNT=$processed_count" >> "$GITHUB_ENV"
+              echo "processed_count=$processed_count"
             fi
             git commit -m "Promote merged DAG metadata to eval"
           fi
@@ -197,4 +262,28 @@ jobs:
         shell: bash
         run: |
           cd eval-worktree
+          if [ "${SUBMITTED_COUNT:-0}" -gt 0 ] && [ "${PROCESSED_COUNT:-0}" -eq 0 ]; then
+            echo "Submitted metadata detected but no eval commit was produced."
+            exit 1
+          fi
           git push origin eval
+
+      - name: Post-promotion verify metadata on origin/eval
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -s /tmp/submitted_metadata_files.txt ]; then
+            exit 0
+          fi
+          cd eval-worktree
+          git fetch origin eval
+          while IFS= read -r meta_file; do
+            [ -z "$meta_file" ] && continue
+            echo "Verifying origin/eval:$meta_file"
+            git show "origin/eval:$meta_file"
+            promotion_status=$(git show "origin/eval:$meta_file" | python -c "import json,sys;print(str(json.load(sys.stdin).get('promotion_status') or '').strip().lower())")
+            if [ "$promotion_status" != "eval" ]; then
+              echo "origin/eval verification failed for $meta_file: promotion_status=$promotion_status"
+              exit 1
+            fi
+          done < /tmp/submitted_metadata_files.txt
