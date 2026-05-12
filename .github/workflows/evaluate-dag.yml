@@ -102,6 +102,65 @@ jobs:
           git commit -m "Bootstrap eval metadata from main for manual evaluation"
           git push origin eval
 
+      - name: Bootstrap latest submitted metadata from main when input is empty
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.metadata_file == '' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          git fetch origin main
+
+          $candidates = git ls-tree -r --name-only origin/main airflow/web_app_data/metadata |
+            Where-Object { $_ -like "*.json" }
+          if ($null -eq $candidates -or $candidates.Count -eq 0) {
+            Write-Output "No metadata files found on origin/main."
+            exit 0
+          }
+
+          $selectedMeta = $null
+          foreach ($rel in $candidates) {
+            $jsonRaw = git show "origin/main:$rel" 2>$null
+            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($jsonRaw)) { continue }
+            try { $payload = $jsonRaw | ConvertFrom-Json } catch { continue }
+            $publish = "$($payload.publish_status)".Trim().ToLowerInvariant()
+            $promo = "$($payload.promotion_status)".Trim().ToLowerInvariant()
+            if ($publish -eq "merged_to_git" -and ($promo -eq "submitted" -or $promo -eq "draft")) {
+              $selectedMeta = $rel
+            }
+          }
+
+          if ([string]::IsNullOrWhiteSpace($selectedMeta)) {
+            Write-Output "No submitted metadata candidates found on origin/main."
+            exit 0
+          }
+
+          Write-Output "Auto-selected metadata from main: $selectedMeta"
+          New-Item -ItemType Directory -Force -Path (Split-Path -Parent $selectedMeta) | Out-Null
+          $metaContent = git show "origin/main:$selectedMeta"
+          Set-Content -Path $selectedMeta -Value $metaContent -Encoding utf8
+
+          $payload = Get-Content $selectedMeta -Raw | ConvertFrom-Json
+          $dagRel = "$($payload.git_dag_file)".Trim().Replace('\','/')
+          if (-not [string]::IsNullOrWhiteSpace($dagRel)) {
+            if (-not (Test-Path $dagRel)) {
+              New-Item -ItemType Directory -Force -Path (Split-Path -Parent $dagRel) | Out-Null
+              $dagContent = git show "origin/main:$dagRel"
+              if ($LASTEXITCODE -ne 0) { throw "Could not read DAG from origin/main: $dagRel" }
+              Set-Content -Path $dagRel -Value $dagContent -Encoding utf8
+            }
+          }
+
+          $payload.promotion_status = "eval"
+          $payload.evaluated_branch = "eval"
+          $payload.updated_at = (Get-Date).ToUniversalTime().ToString("o")
+          $payload | ConvertTo-Json -Depth 100 | Set-Content -Path $selectedMeta -Encoding utf8
+
+          git config user.email "airflow-bot@example.com"
+          git config user.name "Airflow Bot"
+          git add $selectedMeta
+          if (-not [string]::IsNullOrWhiteSpace($dagRel)) { git add -f $dagRel }
+          git commit -m "Bootstrap latest submitted metadata from main for manual evaluation"
+          git push origin eval
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
