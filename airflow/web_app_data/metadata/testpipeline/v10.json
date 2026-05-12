@@ -114,11 +114,19 @@
     "node_13": "delay_4_node_13"
   },
   "base_pipeline_id": "testpipeline",
-  "promotion_status": "eval",
-  "score": null,
-  "score_type": null,
-  "score_breakdown": {},
-  "last_eval_run_id": null,
+  "promotion_status": "challenger",
+  "score": 91.9,
+  "score_type": "runtime_once",
+  "score_breakdown": {
+    "reliability": 25.0,
+    "runtime_efficiency": 14.8,
+    "retry_behavior": 15.0,
+    "scheduler_behavior": 15.0,
+    "complexity": 9.6,
+    "maintainability": 10.0,
+    "resource_efficiency": 2.5
+  },
+  "last_eval_run_id": "eval-testpipeline-v10-1778595788",
   "promoted_at": null,
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/43",
@@ -148,5 +156,36 @@
   "critical_failures": [],
   "merged_at": "2026-05-12T14:07:40.592248+00:00",
   "merge_commit_sha": "c2b359a4ba4651128f05a09cacb130f7ef7d35cd",
-  "evaluated_branch": "eval"
+  "evaluated_branch": "eval",
+  "last_evaluated_at": "2026-05-12T14:23:08.691019+00:00",
+  "evaluation_runs": [
+    {
+      "dag_run_id": "manual__2026-05-12T14:20:27.987809+00:00",
+      "dag_id": "testpipeline_git__v10",
+      "state": "success",
+      "metrics": {
+        "dag_run_state": "success",
+        "total_runtime_seconds": 156.985,
+        "task_count": 4,
+        "success_task_count": 4,
+        "failed_task_count": 0,
+        "skipped_task_count": 0,
+        "retry_count": 0,
+        "try_number": 0,
+        "queued_duration": 0.0,
+        "scheduler_delay_seconds": 0.0,
+        "start_date": "2026-05-12T14:20:28.198607Z",
+        "end_date": "2026-05-12T14:23:05.183145Z",
+        "duration_per_task": {
+          "timeout_guard_1_node_11": 0.0,
+          "delay_2_node_10": 77.47996,
+          "timeout_guard_3_node_12": 0.0,
+          "delay_4_node_13": 76.183304
+        },
+        "task_failure_rate": 0.0,
+        "sla_misses": 0,
+        "resource_usage_pct": 50.0
+      }
+    }
+  ]
 }
