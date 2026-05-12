@@ -1,0 +1,133 @@
+{
+  "pipeline_id": "testpipeline",
+  "version_id": "v3",
+  "dag_version": 3,
+  "airflow_dag_id": "testpipeline__v3",
+  "output_filename": "testpipeline__v3.py",
+  "created_at": "2026-05-12T10:34:00.140075+00:00",
+  "created_by": "admin",
+  "status": "active",
+  "is_current": true,
+  "source_hash": "9faeb66b6f5bdaa05dbce831cca3ea8b7167891c957098922eb286ab616c36d5",
+  "source_definition": {
+    "pipeline": {
+      "dag_id": "testpipeline",
+      "description": "",
+      "start_date": "2026-01-01",
+      "schedule": null,
+      "schedule_mode": "manual",
+      "catchup": false,
+      "schedule_preset": "",
+      "schedule_cron": "",
+      "interval_value": "",
+      "interval_unit": "minutes",
+      "event_source": "",
+      "custom_schedule_text": "",
+      "retries": 1,
+      "retry_delay_minutes": 1,
+      "alert_emails": [],
+      "alert_mode": "both",
+      "tags": [
+        "demo",
+        "orchestration"
+      ],
+      "output_filename": "testpipeline.py"
+    },
+    "nodes": [
+      {
+        "id": "node_1",
+        "type": "delay",
+        "label": "Delay 1",
+        "x": 619.9999847412109,
+        "y": 351.99999618530273,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_2",
+        "type": "delay",
+        "label": "Delay 2",
+        "x": 928.7776947021484,
+        "y": 355.11111068725586,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_3",
+        "type": "delay",
+        "label": "Delay 3",
+        "x": 144.99998474121094,
+        "y": 364.99999618530273,
+        "config": {
+          "delay_minutes": 1
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "node_1",
+        "target": "node_2"
+      },
+      {
+        "source": "node_3",
+        "target": "node_1"
+      }
+    ],
+    "group_boxes": []
+  },
+  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testpipeline__v3.py",
+  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testpipeline__v3.py",
+  "node_task_map": {
+    "node_3": [
+      "delay_1_node_3"
+    ],
+    "node_1": [
+      "delay_2_node_1"
+    ],
+    "node_2": [
+      "delay_3_node_2"
+    ]
+  },
+  "node_primary_task_map": {
+    "node_3": "delay_1_node_3",
+    "node_1": "delay_2_node_1",
+    "node_2": "delay_3_node_2"
+  },
+  "base_pipeline_id": "testpipeline",
+  "promotion_status": "submitted",
+  "score": null,
+  "score_type": null,
+  "score_breakdown": {},
+  "last_eval_run_id": null,
+  "promoted_at": null,
+  "promoted_by": null,
+  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/33",
+  "github_commit_sha": "d840da10a1901a36f862d89f72556ef3402f41a3",
+  "local_dag_id": "testpipeline__v3",
+  "git_dag_id": "testpipeline_git__v3",
+  "local_dag_file": "airflow/dags/testpipeline__v3.py",
+  "git_dag_file": "dags/testpipeline_git__v3.py",
+  "dag_id": "testpipeline__v3",
+  "deployment_target": "git",
+  "updated_at": "2026-05-12T10:35:46.759474+00:00",
+  "publish_status": "merged_to_git",
+  "version": "v3",
+  "workflow_name": "testpipeline",
+  "workflow_slug": "testpipeline",
+  "repo_file_path": "dags/testpipeline_git__v3.py",
+  "git_branch_name": "feature/workflow/testpipeline-3",
+  "pull_request_number": 33,
+  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/33",
+  "commit_sha": "9e22d346404ba79c17300ba43c1a3de03a166463",
+  "github_pr_number": 33,
+  "github_branch": "feature/workflow/testpipeline-3",
+  "requested_by_user_id": "admin",
+  "requested_by_email": "",
+  "requested_by_display_name": "admin",
+  "warnings": [],
+  "critical_failures": [],
+  "merged_at": "2026-05-12T10:35:46.759490+00:00",
+  "merge_commit_sha": "d840da10a1901a36f862d89f72556ef3402f41a3"
+}
