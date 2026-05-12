@@ -12,6 +12,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 METADATA_DIR = SCRIPT_DIR.parent / "metadata"
@@ -22,6 +23,7 @@ from version_metadata import find_version_metadata, load_version_metadata, save_
 from airflow_client import (  # type: ignore
     AirflowClientError,
     collect_runtime_metrics,
+    get_dag,
     get_task_instances,
     trigger_dag_run,
     wait_for_dag_run,
@@ -205,6 +207,13 @@ def _validate_json_with_tool(path: Path) -> None:
     subprocess.run([sys.executable, "-m", "json.tool", str(path)], check=True, stdout=subprocess.DEVNULL)
 
 
+def _dag_endpoint_path(base_url: str, dag_id: str) -> str:
+    parsed = urlparse(base_url)
+    base_path = (parsed.path or "").rstrip("/")
+    root = f"{base_path}/dags" if base_path else "/dags"
+    return f"{root}/{dag_id}"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate a DAG version")
     parser.add_argument("--root", type=str, required=True, help="Repository root directory")
@@ -247,6 +256,7 @@ def main() -> None:
         score_type = "static_only"
     else:
         base_url = str(os.getenv("AIRFLOW_API_BASE_URL", "")).strip()
+        api_version = str(os.getenv("AIRFLOW_API_VERSION", "v2")).strip().lower() or "v2"
         username = str(os.getenv("AIRFLOW_API_USERNAME", "")).strip()
         password = str(os.getenv("AIRFLOW_API_PASSWORD", "")).strip()
         api_token = str(os.getenv("AIRFLOW_API_TOKEN", "")).strip()
@@ -258,11 +268,33 @@ def main() -> None:
             sys.exit(1)
         auth = (username, password) if (username and password) else None
         dag_api_id = str(version.get("git_dag_id") or version.get("local_dag_id") or args.dag_id).strip()
+        host = urlparse(base_url).netloc or urlparse(base_url).path
+        auth_mode = "bearer_token" if api_token else "basic_auth"
+        dag_endpoint = _dag_endpoint_path(base_url, dag_api_id)
+        print(f"AIRFLOW_API_BASE_URL_HOST={host}")
+        print(f"AIRFLOW_API_VERSION={api_version}")
+        print(f"auth_mode={auth_mode}")
+        print(f"dag_id={dag_api_id}")
+        print(f"endpoint_path={dag_endpoint}")
+        try:
+            get_dag(base_url, auth, dag_api_id, token=api_token)
+        except AirflowClientError as exc:
+            msg = str(exc)
+            print(f"Preflight DAG lookup failed for endpoint {dag_endpoint}")
+            print(msg)
+            if "error 404" in msg.lower():
+                print(
+                    f"DAG not found in Airflow: {dag_api_id}. "
+                    "Make sure eval/prod DAG file is copied into the Airflow DAG folder and parsed."
+                )
+            sys.exit(1)
         run_total = 1 if evaluation_mode == "run_once" else max(2, int(args.run_count))
+        eval_timeout = int(os.getenv("AIRFLOW_EVAL_TIMEOUT_SECONDS", "600"))
         runtime_scores: list[dict[str, Any]] = []
         failed_runs = 0
         for idx in range(run_total):
             try:
+                print(f"Triggering DAG run for {dag_api_id}...")
                 trig = trigger_dag_run(
                     base_url,
                     auth,
@@ -273,7 +305,16 @@ def main() -> None:
                 dag_run_id = str(trig.get("dag_run_id") or trig.get("run_id") or "").strip()
                 if not dag_run_id:
                     raise AirflowClientError("Trigger succeeded but no dag_run_id returned")
-                run = wait_for_dag_run(base_url, auth, dag_api_id, dag_run_id, token=api_token)
+                print(f"dag_run_id={dag_run_id}")
+                run = wait_for_dag_run(
+                    base_url,
+                    auth,
+                    dag_api_id,
+                    dag_run_id,
+                    token=api_token,
+                    timeout_seconds=eval_timeout,
+                    poll_interval_seconds=10,
+                )
                 tis = get_task_instances(base_url, auth, dag_api_id, dag_run_id, token=api_token)
                 metrics = collect_runtime_metrics(run, tis)
                 evaluation_runs.append(
