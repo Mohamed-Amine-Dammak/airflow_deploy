@@ -1,0 +1,53 @@
+{
+  "dag_id": "testpipeline_git__v3",
+  "pipeline_id": "testpipeline",
+  "version_id": "v3",
+  "evaluation_mode": "run_once",
+  "run_count": 1,
+  "status": "completed",
+  "score": 89.7,
+  "score_type": "runtime_once",
+  "breakdown": {
+    "reliability": 25.0,
+    "runtime_efficiency": 12.2,
+    "retry_behavior": 15.0,
+    "scheduler_behavior": 15.0,
+    "complexity": 10.0,
+    "maintainability": 10.0,
+    "resource_efficiency": 2.5
+  },
+  "warnings": [],
+  "critical_failures": [],
+  "last_eval_run_id": "eval-testpipeline-v3-1778582428",
+  "updated_store": "D:\\dataops\\APACHE-AIRFLOW\\actions-runner\\_work\\airflow_deploy\\airflow_deploy\\airflow\\web_app_data\\metadata\\testpipeline\\v3.json",
+  "dag_file_used": "D:\\dataops\\APACHE-AIRFLOW\\actions-runner\\_work\\airflow_deploy\\airflow_deploy\\dags\\testpipeline_git__v3.py",
+  "evaluation_runs": [
+    {
+      "dag_run_id": "manual__2026-05-12T10:36:27.363744+00:00",
+      "dag_id": "testpipeline_git__v3",
+      "state": "success",
+      "metrics": {
+        "dag_run_state": "success",
+        "total_runtime_seconds": 234.382,
+        "task_count": 3,
+        "success_task_count": 3,
+        "failed_task_count": 0,
+        "skipped_task_count": 0,
+        "retry_count": 0,
+        "try_number": 0,
+        "queued_duration": 0.0,
+        "scheduler_delay_seconds": 0.0,
+        "start_date": "2026-05-12T10:36:28.009965Z",
+        "end_date": "2026-05-12T10:40:22.392407Z",
+        "duration_per_task": {
+          "delay_1_node_3": 78.068773,
+          "delay_2_node_1": 76.206664,
+          "delay_3_node_2": 76.220622
+        },
+        "task_failure_rate": 0.0,
+        "sla_misses": 0,
+        "resource_usage_pct": 50.0
+      }
+    }
+  ]
+}
