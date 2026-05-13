@@ -1,0 +1,165 @@
+{
+  "pipeline_id": "testpipelinev1",
+  "version_id": "v5",
+  "dag_version": 5,
+  "airflow_dag_id": "testpipelinev1__v5",
+  "output_filename": "testpipelinev1__v5.py",
+  "created_at": "2026-05-13T16:18:40.848307+00:00",
+  "created_by": "admin",
+  "status": "active",
+  "is_current": true,
+  "source_hash": "4965a3c58e9b6f7d8dc93c47e0cf52c6041584ab5aedb4a9e6a0529bd4cb5bcd",
+  "source_definition": {
+    "pipeline": {
+      "dag_id": "testpipelinev1",
+      "description": "",
+      "start_date": "2026-01-01",
+      "schedule": null,
+      "schedule_mode": "manual",
+      "catchup": false,
+      "schedule_preset": "",
+      "schedule_cron": "",
+      "interval_value": "",
+      "interval_unit": "minutes",
+      "event_source": "",
+      "custom_schedule_text": "",
+      "retries": 3,
+      "retry_delay_minutes": 5,
+      "alert_emails": [],
+      "alert_mode": "both",
+      "tags": [
+        "demo",
+        "orchestration"
+      ],
+      "output_filename": "testpipelinev1.py"
+    },
+    "nodes": [
+      {
+        "id": "node_1",
+        "type": "delay",
+        "label": "Delay 1",
+        "x": 313,
+        "y": 274,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_2",
+        "type": "delay",
+        "label": "Delay 2",
+        "x": 8,
+        "y": 282,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_3",
+        "type": "delay",
+        "label": "Delay 3",
+        "x": 633.5530134915609,
+        "y": 251.19295930560136,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_4",
+        "type": "delay",
+        "label": "Delay 4",
+        "x": 937.9664309661135,
+        "y": 243.2480618236696,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_5",
+        "type": "delay",
+        "label": "Delay 5",
+        "x": 1286.3754753658566,
+        "y": 254.95636957612646,
+        "config": {
+          "delay_minutes": 1
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "node_2",
+        "target": "node_1"
+      },
+      {
+        "source": "node_1",
+        "target": "node_3"
+      },
+      {
+        "source": "node_3",
+        "target": "node_4"
+      },
+      {
+        "source": "node_4",
+        "target": "node_5"
+      }
+    ],
+    "group_boxes": []
+  },
+  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testpipelinev1__v5.py",
+  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testpipelinev1__v5.py",
+  "node_task_map": {
+    "node_2": [
+      "delay_1_node_2"
+    ],
+    "node_1": [
+      "delay_2_node_1"
+    ],
+    "node_3": [
+      "delay_3_node_3"
+    ],
+    "node_4": [
+      "delay_4_node_4"
+    ],
+    "node_5": [
+      "delay_5_node_5"
+    ]
+  },
+  "node_primary_task_map": {
+    "node_2": "delay_1_node_2",
+    "node_1": "delay_2_node_1",
+    "node_3": "delay_3_node_3",
+    "node_4": "delay_4_node_4",
+    "node_5": "delay_5_node_5"
+  },
+  "base_pipeline_id": "testpipelinev1",
+  "promotion_status": "draft",
+  "score": null,
+  "score_type": null,
+  "score_breakdown": {},
+  "last_eval_run_id": null,
+  "promoted_at": null,
+  "promoted_by": null,
+  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/53",
+  "github_commit_sha": "6bcbd6530bab3ea2ca6e0444b2b102cb80971def",
+  "local_dag_id": "testpipelinev1__v5",
+  "git_dag_id": "testpipelinev1_git__v5",
+  "local_dag_file": "airflow/dags/testpipelinev1__v5.py",
+  "git_dag_file": "dags/testpipelinev1_git__v5.py",
+  "dag_id": "testpipelinev1__v5",
+  "deployment_target": "git",
+  "updated_at": "2026-05-13T16:18:57.320550+00:00",
+  "publish_status": "pr_open",
+  "version": "v5",
+  "workflow_name": "testpipelinev1",
+  "workflow_slug": "testpipelinev1",
+  "repo_file_path": "dags/testpipelinev1_git__v5.py",
+  "git_branch_name": "feature/workflow/testpipelinev1-5",
+  "pull_request_number": 53,
+  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/53",
+  "commit_sha": "6bcbd6530bab3ea2ca6e0444b2b102cb80971def",
+  "github_pr_number": 53,
+  "github_branch": "feature/workflow/testpipelinev1-5",
+  "requested_by_user_id": "admin",
+  "requested_by_email": "",
+  "requested_by_display_name": "admin"
+}
