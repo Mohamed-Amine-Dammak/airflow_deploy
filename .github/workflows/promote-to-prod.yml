@@ -1,12 +1,6 @@
 name: Promote DAG to Prod
 
 on:
-  push:
-    branches:
-      - eval
-    paths:
-      - "airflow/web_app_data/metadata/**/*.json"
-      - "dags/**/*.py"
   workflow_dispatch:
     inputs:
       metadata_file:
