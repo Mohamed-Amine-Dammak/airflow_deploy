@@ -1,12 +1,9 @@
 name: Evaluate DAG
 
 on:
-  push:
-    branches:
-      - eval
-    paths:
-      - "airflow/web_app_data/metadata/**/*.json"
-      - "dags/**/*.py"
+  workflow_run:
+    workflows: ["Promote Changed Metadata to Eval"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       metadata_file:
@@ -31,6 +28,7 @@ concurrency:
 
 jobs:
   evaluate-dag-runtime:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: [self-hosted]
     defaults:
       run:
