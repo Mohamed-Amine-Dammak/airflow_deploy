@@ -96,12 +96,20 @@
     "node_12": "timeout_guard_3_node_12"
   },
   "base_pipeline_id": "testpipeline",
-  "promotion_status": "submitted",
-  "score": null,
-  "score_type": null,
-  "score_breakdown": {},
-  "last_eval_run_id": null,
-  "promoted_at": null,
+  "promotion_status": "archived",
+  "score": 94.5,
+  "score_type": "runtime_once",
+  "score_breakdown": {
+    "reliability": 25.0,
+    "runtime_efficiency": 17.4,
+    "retry_behavior": 15.0,
+    "scheduler_behavior": 15.0,
+    "complexity": 9.6,
+    "maintainability": 10.0,
+    "resource_efficiency": 2.5
+  },
+  "last_eval_run_id": "eval-testpipeline-v9-1778594188",
+  "promoted_at": "2026-05-12T15:31:02.341744+00:00",
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/41",
   "github_commit_sha": "28437db8d5695aaab674d8820c6095cfa1063c0f",
@@ -111,7 +119,7 @@
   "git_dag_file": "dags/testpipeline_git__v9.py",
   "dag_id": "testpipeline__v9",
   "deployment_target": "git",
-  "updated_at": "2026-05-12T13:50:07.016711+00:00",
+  "updated_at": "2026-05-13T15:31:31.963010+00:00",
   "publish_status": "merged_to_git",
   "version": "v9",
   "workflow_name": "testpipeline",
@@ -129,5 +137,45 @@
   "warnings": [],
   "critical_failures": [],
   "merged_at": "2026-05-12T13:50:07.016731+00:00",
-  "merge_commit_sha": "28437db8d5695aaab674d8820c6095cfa1063c0f"
+  "merge_commit_sha": "28437db8d5695aaab674d8820c6095cfa1063c0f",
+  "evaluated_branch": "eval",
+  "last_evaluated_at": "2026-05-12T13:56:28.539425+00:00",
+  "evaluation_runs": [
+    {
+      "dag_run_id": "manual__2026-05-12T13:55:08.071057+00:00",
+      "dag_id": "testpipeline_git__v9",
+      "state": "success",
+      "metrics": {
+        "dag_run_state": "success",
+        "total_runtime_seconds": 79.389,
+        "task_count": 3,
+        "success_task_count": 3,
+        "failed_task_count": 0,
+        "skipped_task_count": 0,
+        "retry_count": 0,
+        "try_number": 0,
+        "queued_duration": 0.0,
+        "scheduler_delay_seconds": 0.0,
+        "start_date": "2026-05-12T13:55:08.846852Z",
+        "end_date": "2026-05-12T13:56:28.235631Z",
+        "duration_per_task": {
+          "timeout_guard_1_node_11": 0.0,
+          "delay_2_node_10": 77.399132,
+          "timeout_guard_3_node_12": 0.0
+        },
+        "task_failure_rate": 0.0,
+        "sla_misses": 0,
+        "resource_usage_pct": 50.0
+      }
+    }
+  ],
+  "promotion_history": [
+    {
+      "at": "2026-05-12T15:31:02.341751+00:00",
+      "promoted_version_id": "v9",
+      "base_pipeline_id": "testpipeline",
+      "previous_champion_version_id": "v8"
+    }
+  ],
+  "archived_at": "2026-05-13T15:31:31.963018+00:00"
 }
