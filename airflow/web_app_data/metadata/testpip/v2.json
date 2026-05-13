@@ -1,0 +1,111 @@
+{
+  "pipeline_id": "testpip",
+  "version_id": "v2",
+  "dag_version": 2,
+  "airflow_dag_id": "testpip__v2",
+  "output_filename": "testpip__v2.py",
+  "created_at": "2026-05-13T17:27:37.903635+00:00",
+  "created_by": "admin",
+  "status": "active",
+  "is_current": true,
+  "source_hash": "48e714c7e362953582828edd940008334dca99047ad3cabda15000b17bd4ab2d",
+  "source_definition": {
+    "pipeline": {
+      "dag_id": "testpip",
+      "description": "",
+      "start_date": "2026-01-01",
+      "schedule": null,
+      "schedule_mode": "manual",
+      "catchup": false,
+      "schedule_preset": "",
+      "schedule_cron": "",
+      "interval_value": "",
+      "interval_unit": "minutes",
+      "event_source": "",
+      "custom_schedule_text": "",
+      "retries": 3,
+      "retry_delay_minutes": 5,
+      "alert_emails": [],
+      "alert_mode": "both",
+      "tags": [
+        "demo",
+        "orchestration"
+      ],
+      "output_filename": "testpip.py"
+    },
+    "nodes": [
+      {
+        "id": "node_1",
+        "type": "delay",
+        "label": "Delay 1",
+        "x": 241,
+        "y": 200,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_2",
+        "type": "delay",
+        "label": "Delay 2",
+        "x": 520,
+        "y": 189,
+        "config": {
+          "delay_minutes": 5
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "node_1",
+        "target": "node_2"
+      }
+    ],
+    "group_boxes": []
+  },
+  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testpip__v2.py",
+  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testpip__v2.py",
+  "node_task_map": {
+    "node_1": [
+      "delay_1_node_1"
+    ],
+    "node_2": [
+      "delay_2_node_2"
+    ]
+  },
+  "node_primary_task_map": {
+    "node_1": "delay_1_node_1",
+    "node_2": "delay_2_node_2"
+  },
+  "base_pipeline_id": "testpip",
+  "promotion_status": "draft",
+  "score": null,
+  "score_type": null,
+  "score_breakdown": {},
+  "last_eval_run_id": null,
+  "promoted_at": null,
+  "promoted_by": null,
+  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/59",
+  "github_commit_sha": "969dcdb4e9c0b7f4c256b9aed5ab4c120a18fd65",
+  "local_dag_id": "testpip__v2",
+  "git_dag_id": "testpip_git__v2",
+  "local_dag_file": "airflow/dags/testpip__v2.py",
+  "git_dag_file": "dags/testpip_git__v2.py",
+  "dag_id": "testpip__v2",
+  "deployment_target": "git",
+  "updated_at": "2026-05-13T17:27:47.285692+00:00",
+  "publish_status": "pr_open",
+  "version": "v2",
+  "workflow_name": "testpip",
+  "workflow_slug": "testpip",
+  "repo_file_path": "dags/testpip_git__v2.py",
+  "git_branch_name": "feature/workflow/testpip-2",
+  "pull_request_number": 59,
+  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/59",
+  "commit_sha": "969dcdb4e9c0b7f4c256b9aed5ab4c120a18fd65",
+  "github_pr_number": 59,
+  "github_branch": "feature/workflow/testpip-2",
+  "requested_by_user_id": "admin",
+  "requested_by_email": "",
+  "requested_by_display_name": "admin"
+}
