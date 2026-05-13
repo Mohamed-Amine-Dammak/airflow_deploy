@@ -54,8 +54,8 @@ def _apply_resume_scope(context):
 
 
 default_args = {
-    "retries": 1,
-    "retry_delay": timedelta(minutes=1),
+    "retries": 3,
+    "retry_delay": timedelta(minutes=5),
     "pre_execute": _apply_resume_scope,
 }
 
@@ -68,7 +68,7 @@ if _alert_emails and _alert_mode in {"on_retry", "both"}:
 
 
 @dag(
-    dag_id='testpipeline__v1',
+    dag_id='testpipelinev1__v1',
     start_date=datetime(
         2026,
         1,
@@ -80,7 +80,7 @@ if _alert_emails and _alert_mode in {"on_retry", "both"}:
     tags=['demo', 'orchestration'],
     description='',
 )
-def testpipeline_v1():
+def testpipelinev1_v1():
     @task(task_id='delay_1_node_1')
     def run_node_1():
         delay_minutes = int(1)
@@ -95,4 +95,4 @@ def testpipeline_v1():
     # Single task DAG (no chaining required).
 
 
-dag = testpipeline_v1()
+dag = testpipelinev1_v1()
