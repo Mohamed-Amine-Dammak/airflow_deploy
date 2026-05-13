@@ -96,7 +96,7 @@
     "node_12": "timeout_guard_3_node_12"
   },
   "base_pipeline_id": "testpipeline",
-  "promotion_status": "champion",
+  "promotion_status": "archived",
   "score": 94.5,
   "score_type": "runtime_once",
   "score_breakdown": {
@@ -119,7 +119,7 @@
   "git_dag_file": "dags/testpipeline_git__v9.py",
   "dag_id": "testpipeline__v9",
   "deployment_target": "git",
-  "updated_at": "2026-05-12T15:31:02.339123+00:00",
+  "updated_at": "2026-05-13T15:31:31.963010+00:00",
   "publish_status": "merged_to_git",
   "version": "v9",
   "workflow_name": "testpipeline",
@@ -176,5 +176,6 @@
       "base_pipeline_id": "testpipeline",
       "previous_champion_version_id": "v8"
     }
-  ]
+  ],
+  "archived_at": "2026-05-13T15:31:31.963018+00:00"
 }
