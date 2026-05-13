@@ -205,7 +205,8 @@ jobs:
         run: |
           set -euo pipefail
           cd prod-worktree
-          if git diff --quiet -- dags airflow/web_app_data/metadata; then
+          git add -A dags airflow/web_app_data/metadata
+          if git diff --cached --quiet; then
             echo "No prod changes to commit"
             if [ "${PROD_EXPECTED_PROMOTION_COUNT:-0}" -gt 0 ]; then
               unresolved=0
@@ -230,7 +231,6 @@ jobs:
             fi
             echo "processed_count=0"
           else
-            git add dags airflow/web_app_data/metadata
             git commit -m "Auto-promote eligible challengers to prod champion"
             git push origin prod
             echo "processed_count=${PROD_EXPECTED_PROMOTION_COUNT:-0}"
