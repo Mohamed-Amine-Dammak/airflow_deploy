@@ -45,7 +45,8 @@ def main() -> int:
         return 0
     failures = 0
     for row in rows:
-        if str(row.get("promotion_status", "")).strip().lower() != "eval":
+        promotion = str(row.get("promotion_status", "")).strip().lower()
+        if promotion not in {"eval", "challenger"}:
             continue
         pipeline_id = str(row.get("pipeline_id", "")).strip()
         dag_id = str(row.get("git_dag_id", "")).strip() or str(row.get("local_dag_id", "")).strip()

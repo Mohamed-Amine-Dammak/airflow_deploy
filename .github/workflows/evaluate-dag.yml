@@ -274,10 +274,15 @@ jobs:
             Write-Output "publish_status=$publish"
             Write-Output "promotion_status=$promotion"
 
-            if ($promotion -eq "eval") {
+            if ($promotion -eq "eval" -or $promotion -eq "challenger") {
               $resolved | Out-File -FilePath $readyFile -Encoding utf8 -Append
               $processed += 1
-              Write-Output "selected=true reason=promotion_status_eval"
+              if ($promotion -eq "eval") {
+                Write-Output "selected=true reason=promotion_status_eval"
+              }
+              else {
+                Write-Output "selected=true reason=promotion_status_challenger_recheck"
+              }
             }
             else {
               Write-Output "selected=false reason=promotion_status_$promotion"
