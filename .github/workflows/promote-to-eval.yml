@@ -103,6 +103,52 @@ jobs:
           fi
           awk 'NF && !seen[$0]++' /tmp/metadata_files.txt > /tmp/metadata_files.dedup.txt || true
           mv /tmp/metadata_files.dedup.txt /tmp/metadata_files.txt
+          # Fallback scan: detect all main-submitted metadata that still needs eval propagation.
+          python - << 'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          main_root = Path("main-src").resolve()
+          eval_root = Path("eval-worktree").resolve()
+          submitted_out = Path("/tmp/submitted_metadata_files.txt")
+          existing = set()
+          if submitted_out.exists():
+              for line in submitted_out.read_text(encoding="utf-8").splitlines():
+                  rel = line.strip()
+                  if rel:
+                      existing.add(rel)
+          selected = list(existing)
+
+          for meta in sorted((main_root / "airflow" / "web_app_data" / "metadata").glob("*/*.json")):
+              rel = str(meta.relative_to(main_root)).replace("\\", "/")
+              try:
+                  payload = json.loads(meta.read_text(encoding="utf-8"))
+              except Exception:
+                  continue
+              publish = str(payload.get("publish_status", "")).strip().lower()
+              promo = str(payload.get("promotion_status", "")).strip().lower()
+              if not (publish == "merged_to_git" and promo == "submitted"):
+                  continue
+              eval_meta = eval_root / rel
+              needs = True
+              if eval_meta.exists():
+                  try:
+                      eval_payload = json.loads(eval_meta.read_text(encoding="utf-8"))
+                      eval_promo = str(eval_payload.get("promotion_status", "")).strip().lower()
+                      if eval_promo in {"eval", "challenger", "champion"}:
+                          dag_file = str(eval_payload.get("git_dag_file", "")).strip()
+                          if not dag_file or (eval_root / dag_file).exists():
+                              needs = False
+                  except Exception:
+                      needs = True
+              if needs and rel not in existing:
+                  selected.append(rel)
+                  existing.add(rel)
+
+          submitted_out.write_text("\n".join(selected) + ("\n" if selected else ""), encoding="utf-8")
+          print(f"pending_main_submitted_count={len(selected)}")
+          PY
           echo "Detected metadata files:"
           if [ -s /tmp/metadata_files.txt ]; then
             sed 's/^/- /' /tmp/metadata_files.txt
@@ -142,8 +188,12 @@ jobs:
               fi
             done < /tmp/metadata_files.txt
           fi
+          if [ -s /tmp/submitted_metadata_files.txt ]; then
+            submitted_count=$(wc -l < /tmp/submitted_metadata_files.txt | tr -d ' ')
+          fi
           echo "CHANGED_COUNT=$changed_count" >> "$GITHUB_ENV"
           echo "SUBMITTED_COUNT=$submitted_count" >> "$GITHUB_ENV"
+          echo "NEEDS_PROMOTION_COUNT=$submitted_count" >> "$GITHUB_ENV"
           echo "processed_count=$submitted_count"
 
       - name: Copy selected metadata and DAG files from main to eval
@@ -192,6 +242,10 @@ jobs:
           set -euo pipefail
           cd eval-worktree
           if [ ! -s /tmp/submitted_metadata_files.txt ]; then
+            if [ "${NEEDS_PROMOTION_COUNT:-0}" -gt 0 ]; then
+              echo "Submitted metadata exists on main but no eval candidates were built."
+              exit 1
+            fi
             echo "No submitted metadata files detected; skipping promotion."
             echo "processed_count=0"
             exit 0
@@ -352,5 +406,12 @@ jobs:
             if [ "$promotion_status" != "eval" ]; then
               echo "origin/eval verification failed for $meta_file: promotion_status=$promotion_status"
               exit 1
+            fi
+            dag_file=$(git show "origin/eval:$meta_file" | python -c "import json,sys;print((json.load(sys.stdin).get('git_dag_file') or '').strip())")
+            if [ -n "$dag_file" ]; then
+              if ! git cat-file -e "origin/eval:$dag_file" 2>/dev/null; then
+                echo "origin/eval is missing promoted DAG file: $dag_file"
+                exit 1
+              fi
             fi
           done < /tmp/eval_committed_metadata_files.txt
