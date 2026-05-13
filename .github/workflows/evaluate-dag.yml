@@ -21,9 +21,6 @@ on:
       airflow_api_version:
         description: "Optional API version override (default v2)"
         required: false
-  workflow_run:
-    workflows: ["Promote Changed Metadata to Eval"]
-    types: [completed]
 
 permissions:
   contents: write
@@ -34,7 +31,6 @@ concurrency:
 
 jobs:
   evaluate-dag-runtime:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: [self-hosted]
     defaults:
       run:
@@ -90,8 +86,16 @@ jobs:
           }
 
           # Make bootstrap metadata immediately eligible for eval runtime checks.
-          $payload.promotion_status = "eval"
-          $payload.evaluated_branch = "eval"
+          if ($payload.PSObject.Properties.Match("promotion_status").Count -eq 0) {
+            $payload | Add-Member -NotePropertyName "promotion_status" -NotePropertyValue "eval"
+          } else {
+            $payload.promotion_status = "eval"
+          }
+          if ($payload.PSObject.Properties.Match("evaluated_branch").Count -eq 0) {
+            $payload | Add-Member -NotePropertyName "evaluated_branch" -NotePropertyValue "eval"
+          } else {
+            $payload.evaluated_branch = "eval"
+          }
           $payload.updated_at = (Get-Date).ToUniversalTime().ToString("o")
           $payload | ConvertTo-Json -Depth 100 | Set-Content -Path $metaRel -Encoding utf8
 
@@ -149,8 +153,16 @@ jobs:
             }
           }
 
-          $payload.promotion_status = "eval"
-          $payload.evaluated_branch = "eval"
+          if ($payload.PSObject.Properties.Match("promotion_status").Count -eq 0) {
+            $payload | Add-Member -NotePropertyName "promotion_status" -NotePropertyValue "eval"
+          } else {
+            $payload.promotion_status = "eval"
+          }
+          if ($payload.PSObject.Properties.Match("evaluated_branch").Count -eq 0) {
+            $payload | Add-Member -NotePropertyName "evaluated_branch" -NotePropertyValue "eval"
+          } else {
+            $payload.evaluated_branch = "eval"
+          }
           $payload.updated_at = (Get-Date).ToUniversalTime().ToString("o")
           $payload | ConvertTo-Json -Depth 100 | Set-Content -Path $selectedMeta -Encoding utf8
 
@@ -272,8 +284,16 @@ jobs:
             }
 
             # Ensure consistent stage state on eval.
-            $payload.promotion_status = "eval"
-            $payload.evaluated_branch = "eval"
+            if ($payload.PSObject.Properties.Match("promotion_status").Count -eq 0) {
+              $payload | Add-Member -NotePropertyName "promotion_status" -NotePropertyValue "eval"
+            } else {
+              $payload.promotion_status = "eval"
+            }
+            if ($payload.PSObject.Properties.Match("evaluated_branch").Count -eq 0) {
+              $payload | Add-Member -NotePropertyName "evaluated_branch" -NotePropertyValue "eval"
+            } else {
+              $payload.evaluated_branch = "eval"
+            }
             $payload.updated_at = (Get-Date).ToUniversalTime().ToString("o")
             $payload | ConvertTo-Json -Depth 100 | Set-Content -Path $rel -Encoding utf8
             $synced += 1
