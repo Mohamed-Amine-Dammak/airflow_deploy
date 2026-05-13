@@ -331,12 +331,18 @@ def main() -> None:
                 )
                 scored = _score_with_eval_metrics(dag_content, metrics)
                 runtime_scores.append(scored)
-                if str(metrics.get("dag_run_state", "")).lower() != "success":
+                final_state = str(metrics.get("dag_run_state", "")).lower()
+                if final_state != "success":
                     failed_runs += 1
+                    raise AirflowClientError(
+                        f"Runtime DAG run did not succeed: dag_run_id={dag_run_id} final_state={final_state}"
+                    )
             except AirflowClientError as exc:
                 print(f"ERROR: Runtime evaluation failed: {exc}")
+                current_status = str(version.get("promotion_status", "")).strip().lower()
                 failure_fields = {
-                    "promotion_status": "challenger",
+                    # Do not mark eval-passed on failed/timeout runtime.
+                    "promotion_status": current_status or "eval",
                     "deployment_target": "git",
                     "last_evaluated_at": _now_iso(),
                     "critical_failures": [str(exc)],

@@ -134,24 +134,35 @@ def wait_for_dag_run(
     timeout_seconds: int = 600,
     poll_interval_seconds: int = 10,
 ) -> dict[str, Any]:
-    deadline = time.time() + timeout_seconds
+    success_terminal = {"success"}
+    failure_terminal = {"failed", "upstream_failed", "skipped", "removed"}
+    started_at = time.time()
+    deadline = started_at + timeout_seconds
     last = {}
     while time.time() < deadline:
         try:
             run = get_dag_run(base_url, auth, dag_id, dag_run_id, token=token, api_version=api_version)
             last = run
             state = str(run.get("state", "")).lower()
-            print(f"dag_run_id={dag_run_id} state={state}")
-            if state in {"success", "failed"}:
+            elapsed = int(time.time() - started_at)
+            print(f"dag_run_id={dag_run_id} state={state or 'unknown'} elapsed_seconds={elapsed}")
+            if state in success_terminal | failure_terminal:
+                print(f"dag_run_id={dag_run_id} final_state={state} elapsed_seconds={elapsed}")
                 return run
         except AirflowClientError as exc:
             msg = str(exc).lower()
             if "read timed out" in msg or "timed out" in msg:
-                print(f"dag_run_id={dag_run_id} state=unknown (poll timeout, retrying)")
+                elapsed = int(time.time() - started_at)
+                print(f"dag_run_id={dag_run_id} state=unknown elapsed_seconds={elapsed} note=poll_timeout_retrying")
             else:
                 raise
         time.sleep(max(1, int(poll_interval_seconds)))
-    raise AirflowClientError("Timed out waiting for DAG run to finish.")
+    elapsed = int(time.time() - started_at)
+    last_state = str(last.get("state", "")).lower() if isinstance(last, dict) else ""
+    raise AirflowClientError(
+        f"Timed out waiting for DAG run to finish: dag_run_id={dag_run_id} "
+        f"last_state={last_state or 'unknown'} elapsed_seconds={elapsed} timeout_seconds={timeout_seconds}"
+    )
 
 
 def get_task_instances(
