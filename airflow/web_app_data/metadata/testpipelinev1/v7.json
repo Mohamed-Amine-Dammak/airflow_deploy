@@ -114,11 +114,19 @@
     "node_5": "delay_4_node_5"
   },
   "base_pipeline_id": "testpipelinev1",
-  "promotion_status": "eval",
-  "score": null,
-  "score_type": null,
-  "score_breakdown": {},
-  "last_eval_run_id": null,
+  "promotion_status": "challenger",
+  "score": 89.5,
+  "score_type": "runtime_once",
+  "score_breakdown": {
+    "reliability": 25.0,
+    "runtime_efficiency": 12.2,
+    "retry_behavior": 15.0,
+    "scheduler_behavior": 15.0,
+    "complexity": 9.8,
+    "maintainability": 10.0,
+    "resource_efficiency": 2.5
+  },
+  "last_eval_run_id": "eval-testpipelinev1-v7-1778691764",
   "promoted_at": null,
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/55",
@@ -129,7 +137,7 @@
   "git_dag_file": "dags/testpipelinev1_git__v7.py",
   "dag_id": "testpipelinev1__v7",
   "deployment_target": "git",
-  "updated_at": "2026-05-13T16:54:47.023224+00:00",
+  "updated_at": "2026-05-13T16:58:03.196741+00:00",
   "publish_status": "merged_to_git",
   "version": "v7",
   "workflow_name": "testpipelinev1",
@@ -148,5 +156,36 @@
   "critical_failures": [],
   "merged_at": "2026-05-13T16:44:53.053235+00:00",
   "merge_commit_sha": "221f0cc40d9ed532b9645843bf3b78728d97c9ce",
-  "evaluated_branch": "eval"
+  "evaluated_branch": "eval",
+  "last_evaluated_at": "2026-05-13T17:02:44.370468+00:00",
+  "evaluation_runs": [
+    {
+      "dag_run_id": "manual__2026-05-13T16:58:43.425685+00:00",
+      "dag_id": "testpipelinev1_git__v7",
+      "state": "success",
+      "metrics": {
+        "dag_run_state": "success",
+        "total_runtime_seconds": 232.757,
+        "task_count": 4,
+        "success_task_count": 4,
+        "failed_task_count": 0,
+        "skipped_task_count": 0,
+        "retry_count": 0,
+        "try_number": 0,
+        "queued_duration": 0.0,
+        "scheduler_delay_seconds": 0.0,
+        "start_date": "2026-05-13T16:58:43.525776Z",
+        "end_date": "2026-05-13T17:02:36.282526Z",
+        "duration_per_task": {
+          "timeout_guard_1_node_6": 0.0,
+          "delay_2_node_3": 77.490147,
+          "delay_3_node_4": 76.182708,
+          "delay_4_node_5": 76.19533
+        },
+        "task_failure_rate": 0.0,
+        "sla_misses": 0,
+        "resource_usage_pct": 50.0
+      }
+    }
+  ]
 }
