@@ -127,7 +127,7 @@
     "resource_efficiency": 2.5
   },
   "last_eval_run_id": "eval-testpipeline-v10-1778595788",
-  "promoted_at": "2026-05-12T15:31:01.638109+00:00",
+  "promoted_at": "2026-05-13T17:03:29.342772+00:00",
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/43",
   "github_commit_sha": "c2b359a4ba4651128f05a09cacb130f7ef7d35cd",
@@ -137,7 +137,7 @@
   "git_dag_file": "dags/testpipeline_git__v10.py",
   "dag_id": "testpipeline__v10",
   "deployment_target": "git",
-  "updated_at": "2026-05-12T15:31:01.756637+00:00",
+  "updated_at": "2026-05-13T17:03:29.436454+00:00",
   "publish_status": "merged_to_git",
   "version": "v10",
   "workflow_name": "testpipeline",
@@ -190,11 +190,11 @@
   ],
   "promotion_history": [
     {
-      "at": "2026-05-12T15:31:01.638117+00:00",
+      "at": "2026-05-13T17:03:29.342778+00:00",
       "promoted_version_id": "v10",
       "base_pipeline_id": "testpipeline",
-      "previous_champion_version_id": null
+      "previous_champion_version_id": "v12"
     }
   ],
-  "archived_at": "2026-05-12T15:31:01.756646+00:00"
+  "archived_at": "2026-05-13T17:03:29.436461+00:00"
 }

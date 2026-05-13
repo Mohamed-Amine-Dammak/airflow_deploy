@@ -150,7 +150,7 @@
     "node_13": "delay_6_node_13"
   },
   "base_pipeline_id": "testpipeline",
-  "promotion_status": "champion",
+  "promotion_status": "archived",
   "score": 87.9,
   "score_type": "runtime_once",
   "score_breakdown": {
@@ -163,7 +163,7 @@
     "resource_efficiency": 2.5
   },
   "last_eval_run_id": "eval-testpipeline-v12-1778599831",
-  "promoted_at": "2026-05-13T15:31:31.963551+00:00",
+  "promoted_at": "2026-05-13T17:03:29.532607+00:00",
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/45",
   "github_commit_sha": "daf62fafdc2707176ce0c811c52cb4e79b309e23",
@@ -173,7 +173,7 @@
   "git_dag_file": "dags/testpipeline_git__v12.py",
   "dag_id": "testpipeline__v12",
   "deployment_target": "git",
-  "updated_at": "2026-05-13T15:31:31.960737+00:00",
+  "updated_at": "2026-05-13T17:03:29.625759+00:00",
   "publish_status": "merged_to_git",
   "version": "v12",
   "workflow_name": "testpipeline",
@@ -228,10 +228,11 @@
   ],
   "promotion_history": [
     {
-      "at": "2026-05-13T15:31:31.963559+00:00",
+      "at": "2026-05-13T17:03:29.532612+00:00",
       "promoted_version_id": "v12",
       "base_pipeline_id": "testpipeline",
-      "previous_champion_version_id": "v9"
+      "previous_champion_version_id": "v11"
     }
-  ]
+  ],
+  "archived_at": "2026-05-13T17:03:29.625765+00:00"
 }
