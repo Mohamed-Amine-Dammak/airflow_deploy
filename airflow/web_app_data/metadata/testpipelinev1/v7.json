@@ -127,7 +127,7 @@
     "resource_efficiency": 2.5
   },
   "last_eval_run_id": "eval-testpipelinev1-v7-1778691764",
-  "promoted_at": "2026-05-13T17:03:29.813132+00:00",
+  "promoted_at": "2026-05-13T17:05:17.790907+00:00",
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/55",
   "github_commit_sha": "221f0cc40d9ed532b9645843bf3b78728d97c9ce",
@@ -137,7 +137,7 @@
   "git_dag_file": "dags/testpipelinev1_git__v7.py",
   "dag_id": "testpipelinev1__v7",
   "deployment_target": "git",
-  "updated_at": "2026-05-13T17:03:29.811203+00:00",
+  "updated_at": "2026-05-13T17:05:17.788365+00:00",
   "publish_status": "merged_to_git",
   "version": "v7",
   "workflow_name": "testpipelinev1",
@@ -190,7 +190,7 @@
   ],
   "promotion_history": [
     {
-      "at": "2026-05-13T17:03:29.813138+00:00",
+      "at": "2026-05-13T17:05:17.790915+00:00",
       "promoted_version_id": "v7",
       "base_pipeline_id": "testpipelinev1",
       "previous_champion_version_id": null
