@@ -17,7 +17,7 @@ def _normalize_schedule(schedule):
     return schedule
 
 
-_TASK_RESUME_SCOPE_BY_ENTRY = {'delay_1_node_1': ['delay_1_node_1']}
+_TASK_RESUME_SCOPE_BY_ENTRY = {'delay_1_node_1': ['delay_1_node_1', 'delay_2_node_2'], 'delay_2_node_2': ['delay_2_node_2']}
 
 
 def _resolve_resume_from_task_id(context):
@@ -68,7 +68,7 @@ if _alert_emails and _alert_mode in {"on_retry", "both"}:
 
 
 @dag(
-    dag_id='testpipelinev1__v1',
+    dag_id='testpip__v2',
     start_date=datetime(
         2026,
         1,
@@ -80,7 +80,7 @@ if _alert_emails and _alert_mode in {"on_retry", "both"}:
     tags=['demo', 'orchestration'],
     description='',
 )
-def testpipelinev1_v1():
+def testpip_v2():
     @task(task_id='delay_1_node_1')
     def run_node_1():
         delay_minutes = int(1)
@@ -92,7 +92,18 @@ def testpipelinev1_v1():
 
     task_node_1 = run_node_1()
 
-    # Single task DAG (no chaining required).
+    @task(task_id='delay_2_node_2')
+    def run_node_2():
+        delay_minutes = int(5)
+        if delay_minutes <= 0:
+            raise AirflowException("delay.delay_minutes must be > 0.")
+        time.sleep(delay_minutes * 60)
+        return {"delayed_minutes": delay_minutes, "status": "completed"}
 
 
-dag = testpipelinev1_v1()
+    task_node_2 = run_node_2()
+
+    task_node_1 >> task_node_2
+
+
+dag = testpip_v2()
