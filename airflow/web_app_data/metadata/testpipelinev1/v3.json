@@ -96,7 +96,7 @@
     "node_3": "delay_3_node_3"
   },
   "base_pipeline_id": "testpipelinev1",
-  "promotion_status": "draft",
+  "promotion_status": "submitted",
   "score": null,
   "score_type": null,
   "score_breakdown": {},
@@ -104,15 +104,15 @@
   "promoted_at": null,
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/51",
-  "github_commit_sha": "3524dcaff7c02e38d70fd8be1cb9a222b3116390",
+  "github_commit_sha": "e278e262dffd2db68edf259764acf2ada47b6775",
   "local_dag_id": "testpipelinev1__v3",
   "git_dag_id": "testpipelinev1_git__v3",
   "local_dag_file": "airflow/dags/testpipelinev1__v3.py",
   "git_dag_file": "dags/testpipelinev1_git__v3.py",
   "dag_id": "testpipelinev1__v3",
   "deployment_target": "git",
-  "updated_at": "2026-05-13T15:38:10.739844+00:00",
-  "publish_status": "pr_open",
+  "updated_at": "2026-05-13T15:39:38.293164+00:00",
+  "publish_status": "merged_to_git",
   "version": "v3",
   "workflow_name": "testpipelinev1",
   "workflow_slug": "testpipelinev1",
@@ -125,5 +125,9 @@
   "github_branch": "feature/workflow/testpipelinev1-3",
   "requested_by_user_id": "admin",
   "requested_by_email": "",
-  "requested_by_display_name": "admin"
+  "requested_by_display_name": "admin",
+  "warnings": [],
+  "critical_failures": [],
+  "merged_at": "2026-05-13T15:39:38.293177+00:00",
+  "merge_commit_sha": "e278e262dffd2db68edf259764acf2ada47b6775"
 }
