@@ -12,9 +12,6 @@ on:
       metadata_file:
         description: "Optional metadata file for manual recovery (e.g. airflow/web_app_data/metadata/testops/v2.json)"
         required: false
-  workflow_run:
-    workflows: ["Sync Metadata On Merge"]
-    types: [completed]
 
 permissions:
   contents: write
@@ -25,7 +22,6 @@ concurrency:
 
 jobs:
   promote-to-eval:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -92,11 +88,6 @@ jobs:
               git diff --name-only "$before_sha" "$after_sha" | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/metadata_files.txt || true
             else
               git show --name-only --pretty="" "$after_sha" | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/metadata_files.txt || true
-            fi
-          elif [ "$event_name" = "workflow_run" ]; then
-            run_sha="${{ github.event.workflow_run.head_sha }}"
-            if [ -n "$run_sha" ]; then
-              git show --name-only --pretty="" "$run_sha" | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/metadata_files.txt || true
             fi
           else
             git show --name-only --pretty="" HEAD | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/metadata_files.txt || true
@@ -316,7 +307,18 @@ jobs:
           git status --short || true
           echo "---- git diff --name-only HEAD ----"
           git diff --name-only HEAD || true
-          if git diff --quiet -- dags airflow/web_app_data/metadata; then
+          if [ -s /tmp/submitted_metadata_files.txt ]; then
+            while IFS= read -r meta_file; do
+              [ -z "$meta_file" ] && continue
+              git add "$meta_file"
+              dag_file=$(python -c "import json,sys;print((json.load(open(sys.argv[1],encoding='utf-8')).get('git_dag_file') or '').strip())" "$meta_file")
+              if [ -n "$dag_file" ]; then
+                git add -f "$dag_file"
+              fi
+            done < /tmp/submitted_metadata_files.txt
+          fi
+          # Use staged diff so newly added files are accounted for (git diff --quiet ignores untracked files).
+          if git diff --cached --quiet; then
             echo "No DAG/metadata changes to commit"
             if [ "${SUBMITTED_COUNT:-0}" -gt 0 ]; then
               unresolved=0
@@ -352,11 +354,6 @@ jobs:
               processed_count=0
               while IFS= read -r meta_file; do
                 [ -z "$meta_file" ] && continue
-                git add "$meta_file"
-                dag_file=$(python -c "import json,sys;print((json.load(open(sys.argv[1],encoding='utf-8')).get('git_dag_file') or '').strip())" "$meta_file")
-                if [ -n "$dag_file" ]; then
-                  git add -f "$dag_file"
-                fi
                 echo "$meta_file" >> /tmp/eval_committed_metadata_files.txt
                 processed_count=$((processed_count + 1))
               done < /tmp/submitted_metadata_files.txt
