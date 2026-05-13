@@ -200,21 +200,93 @@ jobs:
             $manual | Out-File -FilePath $outFile -Encoding utf8
           }
           else {
-            Write-Output "Detecting changed metadata files from git diff..."
-            $files = git diff --name-only HEAD~1 HEAD |
-              Where-Object { $_ -like "airflow/web_app_data/metadata/*.json" -or $_ -like "airflow/web_app_data/metadata/*/*.json" }
-
-            if ($null -eq $files -or $files.Count -eq 0) {
-              Write-Output "No changed metadata files found."
-              "" | Out-File -FilePath $outFile -Encoding utf8
+            $eventName = "${{ github.event_name }}"
+            $files = @()
+            if ($eventName -eq "push") {
+              $before = "${{ github.event.before }}"
+              $after = "${{ github.sha }}"
+              if (-not [string]::IsNullOrWhiteSpace($before) -and $before -ne "0000000000000000000000000000000000000000") {
+                $files = git diff --name-only $before $after
+              } else {
+                $files = git show --name-only --pretty="" $after
+              }
+            }
+            elseif ($eventName -eq "workflow_run") {
+              $runSha = "${{ github.event.workflow_run.head_sha }}"
+              if (-not [string]::IsNullOrWhiteSpace($runSha)) {
+                $files = git show --name-only --pretty="" $runSha
+              }
             }
             else {
+              $files = git diff --name-only HEAD~1 HEAD
+            }
+
+            $files = @($files | Where-Object { $_ -like "airflow/web_app_data/metadata/*/*.json" } | Select-Object -Unique)
+            if ($files.Count -eq 0) {
+              Write-Output "No changed metadata files found from event diff."
+              "" | Out-File -FilePath $outFile -Encoding utf8
+            } else {
               $files | Out-File -FilePath $outFile -Encoding utf8
             }
           }
 
+          $detected = 0
+          if (Test-Path $outFile) {
+            $detected = @((Get-Content $outFile | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })).Count
+          }
+          "DETECTED_METADATA_COUNT=$detected" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Output "detected_count=$detected"
           Write-Output "Detected metadata files:"
           Get-Content $outFile
+
+      - name: Auto-sync missing eval metadata and DAG from main
+        if: ${{ github.event.inputs.metadata_file == '' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $inFile = "$env:EVAL_METADATA_FILE"
+          if (-not (Test-Path $inFile)) { exit 0 }
+          $rows = Get-Content $inFile | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+          if ($rows.Count -eq 0) { exit 0 }
+
+          git fetch origin main
+          $synced = 0
+          foreach ($relRaw in $rows) {
+            $rel = "$relRaw".Trim().Replace('\','/')
+            if ($rel -like "web_app_data/*") { $rel = "airflow/$rel" }
+            if (Test-Path $rel) { continue }
+
+            Write-Output "Syncing missing eval metadata from main: $rel"
+            New-Item -ItemType Directory -Force -Path (Split-Path -Parent $rel) | Out-Null
+            $metaContent = git show "origin/main:$rel"
+            if ($LASTEXITCODE -ne 0) { throw "Could not read metadata from origin/main: $rel" }
+            Set-Content -Path $rel -Value $metaContent -Encoding utf8
+
+            $payload = Get-Content $rel -Raw | ConvertFrom-Json
+            $dagRel = "$($payload.git_dag_file)".Trim().Replace('\','/')
+            if (-not [string]::IsNullOrWhiteSpace($dagRel) -and -not (Test-Path $dagRel)) {
+              New-Item -ItemType Directory -Force -Path (Split-Path -Parent $dagRel) | Out-Null
+              $dagContent = git show "origin/main:$dagRel"
+              if ($LASTEXITCODE -ne 0) { throw "Could not read DAG from origin/main: $dagRel" }
+              Set-Content -Path $dagRel -Value $dagContent -Encoding utf8
+            }
+
+            # Ensure consistent stage state on eval.
+            $payload.promotion_status = "eval"
+            $payload.evaluated_branch = "eval"
+            $payload.updated_at = (Get-Date).ToUniversalTime().ToString("o")
+            $payload | ConvertTo-Json -Depth 100 | Set-Content -Path $rel -Encoding utf8
+            $synced += 1
+          }
+
+          if ($synced -gt 0) {
+            git config user.email "airflow-bot@example.com"
+            git config user.name "Airflow Bot"
+            git add airflow/web_app_data/metadata dags
+            git commit -m "Auto-sync missing eval metadata and DAG from main"
+            git push origin eval
+          }
+          Write-Output "auto_synced_count=$synced"
 
       - name: Filter eval-ready metadata and enforce processed_count
         shell: powershell
@@ -291,8 +363,12 @@ jobs:
           "EVAL_METADATA_FILE=$readyFile" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Output "processed_count=$processed"
           if ($processed -eq 0) {
-            Write-Output "No eval metadata to evaluate."
-            exit 1
+            if ("${{ github.event_name }}" -eq "workflow_dispatch" -or [int]("${env:DETECTED_METADATA_COUNT}") -gt 0) {
+              Write-Output "No eval metadata to evaluate."
+              exit 1
+            }
+            Write-Output "No eval metadata detected for this run; exiting cleanly."
+            exit 0
           }
 
       - name: Get Airflow JWT token for API v2
