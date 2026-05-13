@@ -114,7 +114,7 @@
     "node_5": "delay_4_node_5"
   },
   "base_pipeline_id": "testpipelinev1",
-  "promotion_status": "submitted",
+  "promotion_status": "eval",
   "score": null,
   "score_type": null,
   "score_breakdown": {},
@@ -129,7 +129,7 @@
   "git_dag_file": "dags/testpipelinev1_git__v7.py",
   "dag_id": "testpipelinev1__v7",
   "deployment_target": "git",
-  "updated_at": "2026-05-13T16:44:53.053215+00:00",
+  "updated_at": "2026-05-13T16:54:47.023224+00:00",
   "publish_status": "merged_to_git",
   "version": "v7",
   "workflow_name": "testpipelinev1",
@@ -147,5 +147,6 @@
   "warnings": [],
   "critical_failures": [],
   "merged_at": "2026-05-13T16:44:53.053235+00:00",
-  "merge_commit_sha": "221f0cc40d9ed532b9645843bf3b78728d97c9ce"
+  "merge_commit_sha": "221f0cc40d9ed532b9645843bf3b78728d97c9ce",
+  "evaluated_branch": "eval"
 }
