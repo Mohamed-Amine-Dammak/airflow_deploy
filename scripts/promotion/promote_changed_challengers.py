@@ -7,6 +7,7 @@ import argparse
 import json
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -55,6 +56,26 @@ def _canonical_metadata_file(pipeline_id: str, version_id: str) -> str:
     return f"airflow/web_app_data/metadata/{pipeline_id}/{version_id}.json"
 
 
+def _base_decision(
+    pipeline_id: str,
+    version_id: str,
+    meta_file: str,
+    eligibility: dict | None = None,
+) -> dict:
+    payload = dict(eligibility or {})
+    payload.setdefault("pipeline_id", pipeline_id)
+    payload.setdefault("candidate_version", version_id)
+    payload["version_id"] = version_id
+    payload["metadata_file"] = meta_file
+    payload.setdefault("candidate_score", None)
+    payload.setdefault("prod_champion_version", None)
+    payload.setdefault("prod_champion_score", None)
+    payload.setdefault("threshold", None)
+    payload.setdefault("required_score", None)
+    payload.setdefault("blocking_issues", [])
+    return payload
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Promote changed challengers")
     parser.add_argument("--eval-root", type=Path, required=True)
@@ -79,26 +100,49 @@ def main() -> int:
         meta_file = _canonical_metadata_file(pipeline_id, version_id)
         if not pipeline_id or not version_id:
             continue
+
+        with tempfile.NamedTemporaryFile(prefix=f"eligibility-{pipeline_id}-{version_id}-", suffix=".json", delete=False) as tmp:
+            eligibility_json_path = Path(tmp.name)
         elig_cmd = [
             sys.executable,
             str(eval_root / "scripts" / "promotion" / "check_promotion_eligibility.py"),
-            "--root",
+            "--candidate-root",
             str(eval_root),
+            "--prod-root",
+            str(prod_root),
             "--pipeline-id",
             pipeline_id,
             "--version-id",
             version_id,
+            "--decision-out",
+            str(eligibility_json_path),
         ]
         elig = subprocess.run(elig_cmd, check=False, capture_output=True, text=True)
+        eligibility: dict = {}
+        if eligibility_json_path.exists():
+            try:
+                eligibility = json.loads(eligibility_json_path.read_text(encoding="utf-8"))
+            except Exception:
+                eligibility = {}
+            try:
+                eligibility_json_path.unlink()
+            except Exception:
+                pass
+        base = _base_decision(pipeline_id, version_id, meta_file, eligibility=eligibility)
         if elig.returncode != 0:
+            blocking = list(base.get("blocking_issues") or [])
+            details = (elig.stdout + "\n" + elig.stderr).strip()
+            if details:
+                blocking.append(details)
             decisions.append(
                 {
-                    "pipeline_id": pipeline_id,
-                    "version_id": version_id,
                     "eligible": False,
-                    "reason": "blocked_by_score_policy",
-                    "details": (elig.stdout + "\n" + elig.stderr).strip(),
-                    "metadata_file": meta_file,
+                    "promoted": False,
+                    "should_promote": False,
+                    "reason": str(base.get("reason") or "blocked_by_score_policy"),
+                    "details": details,
+                    "blocking_issues": blocking,
+                    **base,
                 }
             )
             continue
@@ -107,13 +151,12 @@ def main() -> int:
         if not meta_copy_ok:
             decisions.append(
                 {
-                    "pipeline_id": pipeline_id,
-                    "version_id": version_id,
                     "eligible": True,
                     "promoted": False,
+                    "should_promote": True,
                     "reason": "metadata_copy_failed",
                     "details": meta_copy_err,
-                    "metadata_file": meta_file,
+                    **base,
                 }
             )
             continue
@@ -138,13 +181,12 @@ def main() -> int:
         if copy_proc.returncode != 0:
             decisions.append(
                 {
-                    "pipeline_id": pipeline_id,
-                    "version_id": version_id,
                     "eligible": True,
                     "promoted": False,
+                    "should_promote": True,
                     "reason": "copy_failed",
                     "details": (copy_proc.stdout + "\n" + copy_proc.stderr).strip(),
-                    "metadata_file": meta_file,
+                    **base,
                 }
             )
             continue
@@ -166,13 +208,12 @@ def main() -> int:
         if prom.returncode != 0:
             decisions.append(
                 {
-                    "pipeline_id": pipeline_id,
-                    "version_id": version_id,
                     "eligible": True,
                     "promoted": False,
+                    "should_promote": True,
                     "reason": "metadata_promote_failed",
                     "details": (prom.stdout + "\n" + prom.stderr).strip(),
-                    "metadata_file": meta_file,
+                    **base,
                 }
             )
             continue
@@ -184,38 +225,35 @@ def main() -> int:
         except Exception as exc:
             decisions.append(
                 {
-                    "pipeline_id": pipeline_id,
-                    "version_id": version_id,
                     "eligible": True,
                     "promoted": False,
+                    "should_promote": True,
                     "reason": "metadata_verify_failed",
                     "details": str(exc),
-                    "metadata_file": meta_file,
+                    **base,
                 }
             )
             continue
         if status != "champion":
             decisions.append(
                 {
-                    "pipeline_id": pipeline_id,
-                    "version_id": version_id,
                     "eligible": True,
                     "promoted": False,
+                    "should_promote": True,
                     "reason": "metadata_not_champion_after_promote",
                     "details": f"promotion_status={status}",
-                    "metadata_file": meta_file,
+                    **base,
                 }
             )
             continue
 
         decisions.append(
             {
-                "pipeline_id": pipeline_id,
-                "version_id": version_id,
                 "eligible": True,
                 "promoted": True,
-                "reason": "challenger_exceeds_threshold",
-                "metadata_file": meta_file,
+                "should_promote": True,
+                "reason": str(base.get("reason") or "challenger_exceeds_threshold"),
+                **base,
             }
         )
 

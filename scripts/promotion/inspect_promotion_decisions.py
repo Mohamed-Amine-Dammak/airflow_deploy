@@ -24,14 +24,33 @@ def main() -> int:
         rel = str(d.get("metadata_file") or "").strip()
         eligible = bool(d.get("eligible"))
         promoted = bool(d.get("promoted"))
+        should_promote = bool(d.get("should_promote"))
         reason = str(d.get("reason") or "").strip()
         details = str(d.get("details") or "").strip()
-        print(f"decision metadata_file={rel} eligible={eligible} promoted={promoted} reason={reason}")
+        candidate_version = str(d.get("candidate_version") or d.get("version_id") or "").strip()
+        candidate_score = d.get("candidate_score")
+        prod_champion_version = d.get("prod_champion_version")
+        prod_champion_score = d.get("prod_champion_score")
+        required_score = d.get("required_score")
+        print(
+            "decision",
+            f"metadata_file={rel}",
+            f"candidate_version={candidate_version}",
+            f"should_promote={should_promote}",
+            f"eligible={eligible}",
+            f"promoted={promoted}",
+            f"reason={reason}",
+            f"candidate_score={candidate_score}",
+            f"prod_champion_version={prod_champion_version}",
+            f"prod_champion_score={prod_champion_score}",
+            f"required_score={required_score}",
+        )
         if details:
             print(f"decision_details metadata_file={rel} details={details}")
         if rel and promoted:
             expected.append(rel)
-        if rel and eligible and not promoted:
+        # Any decision that should have promoted but did not is a hard failure.
+        if rel and (eligible or should_promote) and not promoted:
             failed.append((rel, reason or "unknown_reason", details))
 
     args.expected_out.write_text("\n".join(expected) + ("\n" if expected else ""), encoding="utf-8")

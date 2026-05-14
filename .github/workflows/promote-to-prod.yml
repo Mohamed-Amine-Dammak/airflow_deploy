@@ -191,6 +191,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          [ -d "eval-src/.git" ] || { echo "Missing eval-src checkout"; exit 1; }
+          [ -d "prod-worktree/.git" ] || { echo "Missing prod-worktree checkout"; exit 1; }
           rollback_retention="${{ github.event.inputs.rollback_retention_enabled || 'false' }}"
           CMD=(python eval-src/scripts/promotion/promote_changed_challengers.py
             --eval-root eval-src
