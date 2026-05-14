@@ -59,7 +59,7 @@
     "node_1": "delay_1_node_1"
   },
   "base_pipeline_id": "testok",
-  "promotion_status": "draft",
+  "promotion_status": "submitted",
   "score": null,
   "score_type": null,
   "score_breakdown": {},
@@ -67,15 +67,15 @@
   "promoted_at": null,
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/68",
-  "github_commit_sha": "bd3001a3dbc050652d6b1e426ce8d9c6d911c13e",
+  "github_commit_sha": "20fdb33ad9af058381e7565501f097fda3d90709",
   "local_dag_id": "testok__v1",
   "git_dag_id": "testok_git__v1",
   "local_dag_file": "airflow/dags/testok__v1.py",
   "git_dag_file": "dags/testok_git__v1.py",
   "dag_id": "testok__v1",
   "deployment_target": "git",
-  "updated_at": "2026-05-14T13:01:33.579346+00:00",
-  "publish_status": "pr_open",
+  "updated_at": "2026-05-14T13:02:53.422627+00:00",
+  "publish_status": "merged_to_git",
   "version": "v1",
   "workflow_name": "testok",
   "workflow_slug": "testok",
@@ -88,5 +88,9 @@
   "github_branch": "feature/workflow/testok",
   "requested_by_user_id": "admin",
   "requested_by_email": "",
-  "requested_by_display_name": "admin"
+  "requested_by_display_name": "admin",
+  "warnings": [],
+  "critical_failures": [],
+  "merged_at": "2026-05-14T13:02:53.422643+00:00",
+  "merge_commit_sha": "20fdb33ad9af058381e7565501f097fda3d90709"
 }
