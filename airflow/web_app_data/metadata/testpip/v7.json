@@ -168,11 +168,19 @@
     "node_8": "delay_7_node_8"
   },
   "base_pipeline_id": "testpip",
-  "promotion_status": "eval",
-  "score": null,
-  "score_type": null,
-  "score_breakdown": {},
-  "last_eval_run_id": null,
+  "promotion_status": "challenger",
+  "score": 95.7,
+  "score_type": "runtime_once",
+  "score_breakdown": {
+    "reliability": 25.0,
+    "runtime_efficiency": 18.4,
+    "retry_behavior": 15.0,
+    "scheduler_behavior": 15.0,
+    "complexity": 9.8,
+    "maintainability": 10.0,
+    "resource_efficiency": 2.5
+  },
+  "last_eval_run_id": "eval-testpip-v7-1778752845",
   "promoted_at": null,
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/64",
@@ -202,5 +210,39 @@
   "critical_failures": [],
   "merged_at": "2026-05-14T09:58:55.535523+00:00",
   "merge_commit_sha": "64ceffb1f30c8d4af868c54fd4e95349bf503a2c",
-  "evaluated_branch": "eval"
+  "evaluated_branch": "eval",
+  "last_evaluated_at": "2026-05-14T10:00:45.638631+00:00",
+  "evaluation_runs": [
+    {
+      "dag_run_id": "manual__2026-05-14T09:59:55.409800+00:00",
+      "dag_id": "testpip_git__v7",
+      "state": "success",
+      "metrics": {
+        "dag_run_state": "success",
+        "total_runtime_seconds": 46.888,
+        "task_count": 7,
+        "success_task_count": 7,
+        "failed_task_count": 0,
+        "skipped_task_count": 0,
+        "retry_count": 0,
+        "try_number": 0,
+        "queued_duration": 0.0,
+        "scheduler_delay_seconds": 0.0,
+        "start_date": "2026-05-14T09:59:55.745533Z",
+        "end_date": "2026-05-14T10:00:42.633921Z",
+        "duration_per_task": {
+          "timeout_guard_1_node_4": 0.0,
+          "delay_2_node_2": 46.284902,
+          "delay_3_node_3": 0.0,
+          "delay_4_node_5": 0.0,
+          "delay_5_node_6": 0.0,
+          "delay_6_node_7": 0.0,
+          "delay_7_node_8": 0.0
+        },
+        "task_failure_rate": 0.0,
+        "sla_misses": 0,
+        "resource_usage_pct": 50.0
+      }
+    }
+  ]
 }
