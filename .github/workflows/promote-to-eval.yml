@@ -1,12 +1,9 @@
-name: Promote Changed Metadata to Eval
+﻿name: Promote Changed Metadata to Eval
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "airflow/web_app_data/metadata/**/*.json"
-      - "dags/**/*.py"
+  workflow_run:
+    workflows: ["Sync Metadata On Merge"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       metadata_file:
@@ -15,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: pipeline-${{ github.workflow }}-${{ github.ref }}
@@ -22,9 +20,20 @@ concurrency:
 
 jobs:
   promote-to-eval:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
+      - name: Log trigger source
+        shell: bash
+        run: |
+          echo "trigger_source=${{ github.event_name }}"
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "triggering_workflow=${{ github.event.workflow_run.name }}"
+            echo "triggering_run_id=${{ github.event.workflow_run.id }}"
+            echo "triggering_head_sha=${{ github.event.workflow_run.head_sha }}"
+          fi
+
       - name: Checkout main source
         uses: actions/checkout@v4
         with:
@@ -60,92 +69,103 @@ jobs:
           python-version: "3.11"
 
       - name: Configure Git
+        shell: bash
         run: |
           cd eval-worktree
           git config user.email "airflow-bot@example.com"
           git config user.name "Airflow Bot"
 
+      - name: Download sync lifecycle artifact
+        if: ${{ github.event_name == 'workflow_run' }}
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: sync-metadata-lifecycle
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: sync-lifecycle
+
       - name: Detect metadata files to promote
-        id: detect
         shell: bash
         run: |
           set -euo pipefail
-          cd main-src
           : > /tmp/metadata_files.txt
           : > /tmp/submitted_metadata_files.txt
           event_name="${{ github.event_name }}"
+          source_ref=""
+          metadata_source=""
+
+          cd main-src
+          git fetch origin main
+
           if [ "$event_name" = "workflow_dispatch" ]; then
+            source_ref="origin/main"
+            git checkout --detach "$source_ref"
             manual_file="${{ github.event.inputs.metadata_file || '' }}"
             if [ -n "$manual_file" ]; then
               echo "$manual_file" > /tmp/metadata_files.txt
+              metadata_source="manual_input"
             else
               find airflow/web_app_data/metadata -type f -name "*.json" | sed 's#^\./##' > /tmp/metadata_files.txt || true
-            fi
-          elif [ "$event_name" = "push" ]; then
-            before_sha="${{ github.event.before }}"
-            after_sha="${{ github.sha }}"
-            if [ -n "$before_sha" ] && [ "$before_sha" != "0000000000000000000000000000000000000000" ]; then
-              git diff --name-only "$before_sha" "$after_sha" | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/metadata_files.txt || true
-            else
-              git show --name-only --pretty="" "$after_sha" | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/metadata_files.txt || true
+              metadata_source="manual_scan_all"
             fi
           else
-            git show --name-only --pretty="" HEAD | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/metadata_files.txt || true
+            source_ref="${{ github.event.workflow_run.head_sha }}"
+            if [ -f ../sync-lifecycle/sync_commit_sha.txt ]; then
+              artifact_ref=$(tr -d '\r\n' < ../sync-lifecycle/sync_commit_sha.txt)
+              if [ -n "$artifact_ref" ]; then
+                source_ref="$artifact_ref"
+              fi
+            fi
+            if [ -z "$source_ref" ]; then
+              source_ref="origin/main"
+            fi
+            if git cat-file -e "$source_ref^{commit}" 2>/dev/null; then
+              git checkout --detach "$source_ref"
+            else
+              git checkout --detach origin/main
+              source_ref=$(git rev-parse HEAD)
+            fi
+
+            if [ -s ../sync-lifecycle/updated_metadata_files.txt ]; then
+              cp ../sync-lifecycle/updated_metadata_files.txt /tmp/metadata_files.txt
+              metadata_source="sync_artifact"
+            else
+              metadata_source="fallback_git_diff"
+            fi
+
+            if [ ! -s /tmp/metadata_files.txt ]; then
+              if git rev-parse "${source_ref}^" >/dev/null 2>&1; then
+                git diff --name-only "${source_ref}^" "$source_ref" | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/metadata_files.txt || true
+              else
+                git show --name-only --pretty="" "$source_ref" | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/metadata_files.txt || true
+              fi
+            fi
           fi
+
           awk 'NF && !seen[$0]++' /tmp/metadata_files.txt > /tmp/metadata_files.dedup.txt || true
           mv /tmp/metadata_files.dedup.txt /tmp/metadata_files.txt
-          # Fallback scan: detect all main-submitted metadata that still needs eval propagation.
-          python - << 'PY'
-          import json
-          import subprocess
-          from pathlib import Path
 
-          main_root = Path("main-src").resolve()
-          eval_root = Path("eval-worktree").resolve()
-          submitted_out = Path("/tmp/submitted_metadata_files.txt")
-          existing = set()
-          if submitted_out.exists():
-              for line in submitted_out.read_text(encoding="utf-8").splitlines():
-                  rel = line.strip()
-                  if rel:
-                      existing.add(rel)
-          selected = list(existing)
+          received_count=0
+          if [ -s /tmp/metadata_files.txt ]; then
+            received_count=$(wc -l < /tmp/metadata_files.txt | tr -d ' ')
+          fi
 
-          for meta in sorted((main_root / "airflow" / "web_app_data" / "metadata").glob("*/*.json")):
-              rel = str(meta.relative_to(main_root)).replace("\\", "/")
-              try:
-                  payload = json.loads(meta.read_text(encoding="utf-8"))
-              except Exception:
-                  continue
-              publish = str(payload.get("publish_status", "")).strip().lower()
-              promo = str(payload.get("promotion_status", "")).strip().lower()
-              if not (publish == "merged_to_git" and promo == "submitted"):
-                  continue
-              eval_meta = eval_root / rel
-              needs = True
-              if eval_meta.exists():
-                  try:
-                      eval_payload = json.loads(eval_meta.read_text(encoding="utf-8"))
-                      eval_promo = str(eval_payload.get("promotion_status", "")).strip().lower()
-                      if eval_promo in {"eval", "challenger", "champion"}:
-                          dag_file = str(eval_payload.get("git_dag_file", "")).strip()
-                          if not dag_file or (eval_root / dag_file).exists():
-                              needs = False
-                  except Exception:
-                      needs = True
-              if needs and rel not in existing:
-                  selected.append(rel)
-                  existing.add(rel)
+          echo "SOURCE_REF=$source_ref" >> "$GITHUB_ENV"
+          echo "METADATA_SOURCE=$metadata_source" >> "$GITHUB_ENV"
+          echo "RECEIVED_COUNT=$received_count" >> "$GITHUB_ENV"
 
-          submitted_out.write_text("\n".join(selected) + ("\n" if selected else ""), encoding="utf-8")
-          print(f"pending_main_submitted_count={len(selected)}")
-          PY
-          echo "Detected metadata files:"
+          echo "trigger_source=$event_name"
+          echo "metadata_source=$metadata_source"
+          echo "source_ref=$source_ref"
+          echo "received_count=$received_count"
+          echo "Received metadata files:"
           if [ -s /tmp/metadata_files.txt ]; then
             sed 's/^/- /' /tmp/metadata_files.txt
           else
             echo "- <none>"
           fi
+
           changed_count=0
           submitted_count=0
           if [ -s /tmp/metadata_files.txt ]; then
@@ -168,24 +188,24 @@ jobs:
               echo "git_dag_file=$dag_file"
               echo "publish_status=$publish_status"
               echo "promotion_status=$promotion_status"
-              echo "source_path_on_main=$meta_file"
-              echo "destination_path_on_eval=$meta_file"
-              if [ "$promotion_status" = "submitted" ]; then
+              if [ "$publish_status" = "merged_to_git" ] && [ "$promotion_status" = "submitted" ]; then
                 echo "$meta_file" >> /tmp/submitted_metadata_files.txt
                 submitted_count=$((submitted_count + 1))
-                echo "selected=true reason=promotion_status_submitted"
+                echo "selected=true reason=publish_merged_and_promotion_submitted"
               else
-                echo "selected=false reason=promotion_status_${promotion_status:-empty}"
+                echo "selected=false reason=status_mismatch"
               fi
             done < /tmp/metadata_files.txt
           fi
-          if [ -s /tmp/submitted_metadata_files.txt ]; then
-            submitted_count=$(wc -l < /tmp/submitted_metadata_files.txt | tr -d ' ')
-          fi
+
           echo "CHANGED_COUNT=$changed_count" >> "$GITHUB_ENV"
           echo "SUBMITTED_COUNT=$submitted_count" >> "$GITHUB_ENV"
-          echo "NEEDS_PROMOTION_COUNT=$submitted_count" >> "$GITHUB_ENV"
           echo "processed_count=$submitted_count"
+
+          if [ "$event_name" = "workflow_run" ] && [ "$received_count" -gt 0 ] && [ "$submitted_count" -eq 0 ]; then
+            echo "Automatic run received metadata files but none were eligible (submitted + merged_to_git)."
+            exit 1
+          fi
 
       - name: Copy selected metadata and DAG files from main to eval
         shell: bash
@@ -194,15 +214,16 @@ jobs:
           if [ ! -s /tmp/submitted_metadata_files.txt ]; then
             exit 0
           fi
+          src_ref="${SOURCE_REF:-origin/main}"
           cd eval-worktree
           while IFS= read -r meta_file; do
             [ -z "$meta_file" ] && continue
             mkdir -p "$(dirname "$meta_file")"
-            git --git-dir=../main-src/.git show origin/main:"$meta_file" > "$meta_file"
+            git --git-dir=../main-src/.git show "$src_ref:$meta_file" > "$meta_file"
             dag_file=$(python -c "import json,sys;print((json.load(open(sys.argv[1],encoding='utf-8')).get('git_dag_file') or '').strip())" "$meta_file")
             if [ -n "$dag_file" ]; then
               mkdir -p "$(dirname "$dag_file")"
-              git --git-dir=../main-src/.git show origin/main:"$dag_file" > "$dag_file"
+              git --git-dir=../main-src/.git show "$src_ref:$dag_file" > "$dag_file"
             fi
           done < /tmp/submitted_metadata_files.txt
 
@@ -227,14 +248,14 @@ jobs:
             fi
           done < /tmp/submitted_metadata_files.txt
 
-      - name: Promote changed metadata files to eval
+      - name: Promote selected metadata files to eval
         shell: bash
         run: |
           set -euo pipefail
           cd eval-worktree
           if [ ! -s /tmp/submitted_metadata_files.txt ]; then
-            if [ "${NEEDS_PROMOTION_COUNT:-0}" -gt 0 ]; then
-              echo "Submitted metadata exists on main but no eval candidates were built."
+            if [ "${{ github.event_name }}" = "workflow_run" ] && [ "${RECEIVED_COUNT:-0}" -gt 0 ]; then
+              echo "Automatic run had expected metadata but no submitted candidates."
               exit 1
             fi
             echo "No submitted metadata files detected; skipping promotion."
@@ -248,38 +269,25 @@ jobs:
           done < /tmp/submitted_metadata_files.txt
           "${CMD[@]}"
 
-      - name: Show promoted metadata files
+      - name: Verify eval promotion persisted in worktree
         shell: bash
         run: |
           set -euo pipefail
-          cd eval-worktree
           if [ ! -s /tmp/submitted_metadata_files.txt ]; then
             exit 0
           fi
-          while IFS= read -r meta_file; do
-            [ -z "$meta_file" ] && continue
-            echo "==== $meta_file ===="
-            cat "$meta_file"
-          done < /tmp/submitted_metadata_files.txt
-
-      - name: Verify eval promotion persisted
-        shell: bash
-        run: |
-          set -euo pipefail
           cd eval-worktree
-          if [ ! -s /tmp/submitted_metadata_files.txt ]; then
-            exit 0
-          fi
           python - << 'PY'
           import json
           from pathlib import Path
 
-          root = Path(".").resolve()
-          files = [line.strip() for line in Path("/tmp/submitted_metadata_files.txt").read_text(encoding="utf-8").splitlines() if line.strip()]
+          root = Path('.').resolve()
+          files = [line.strip() for line in Path('/tmp/submitted_metadata_files.txt').read_text(encoding='utf-8').splitlines() if line.strip()]
           for rel in files:
-              payload = json.loads((root / rel).read_text(encoding="utf-8"))
-              p = str(payload.get("promotion_status", "")).strip().lower()
-              if p != "eval":
+              payload = json.loads((root / rel).read_text(encoding='utf-8'))
+              p = str(payload.get('promotion_status', '')).strip().lower()
+              print(f"metadata_file={rel} promotion_status={p}")
+              if p != 'eval':
                   raise SystemExit(f"metadata transition failed for {rel}: promotion_status={p}")
           PY
 
@@ -303,10 +311,7 @@ jobs:
           : > /tmp/eval_committed_metadata_files.txt
           git restore --staged airflow/web_app_data/pipeline_versions_store.json || true
           git restore --source=HEAD --worktree airflow/web_app_data/pipeline_versions_store.json || true
-          echo "---- git status --short ----"
-          git status --short || true
-          echo "---- git diff --name-only HEAD ----"
-          git diff --name-only HEAD || true
+
           if [ -s /tmp/submitted_metadata_files.txt ]; then
             while IFS= read -r meta_file; do
               [ -z "$meta_file" ] && continue
@@ -317,31 +322,34 @@ jobs:
               fi
             done < /tmp/submitted_metadata_files.txt
           fi
-          # Use staged diff so newly added files are accounted for (git diff --quiet ignores untracked files).
+
+          echo "---- git status --short ----"
+          git status --short || true
+          echo "---- git diff --name-only HEAD ----"
+          git diff --name-only HEAD || true
+
           if git diff --cached --quiet; then
             echo "No DAG/metadata changes to commit"
             if [ "${SUBMITTED_COUNT:-0}" -gt 0 ]; then
               unresolved=0
-              if [ -s /tmp/submitted_metadata_files.txt ]; then
-                while IFS= read -r meta_file; do
-                  [ -z "$meta_file" ] && continue
-                  if [ ! -f "$meta_file" ]; then
-                    echo "Missing eval metadata after promotion: $meta_file"
-                    unresolved=1
-                    continue
-                  fi
-                  status=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print(str(d.get('promotion_status') or '').strip().lower())" "$meta_file")
-                  dag_file=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print((d.get('git_dag_file') or '').strip())" "$meta_file")
-                  if [ "$status" != "eval" ]; then
-                    echo "Not eval-promoted in worktree: $meta_file status=$status"
-                    unresolved=1
-                  fi
-                  if [ -n "$dag_file" ] && [ ! -f "$dag_file" ]; then
-                    echo "Missing DAG in worktree: $dag_file"
-                    unresolved=1
-                  fi
-                done < /tmp/submitted_metadata_files.txt
-              fi
+              while IFS= read -r meta_file; do
+                [ -z "$meta_file" ] && continue
+                if [ ! -f "$meta_file" ]; then
+                  echo "Missing eval metadata after promotion: $meta_file"
+                  unresolved=1
+                  continue
+                fi
+                status=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print(str(d.get('promotion_status') or '').strip().lower())" "$meta_file")
+                dag_file=$(python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));print((d.get('git_dag_file') or '').strip())" "$meta_file")
+                if [ "$status" != "eval" ]; then
+                  echo "Not eval-promoted in worktree: $meta_file status=$status"
+                  unresolved=1
+                fi
+                if [ -n "$dag_file" ] && [ ! -f "$dag_file" ]; then
+                  echo "Missing DAG in worktree: $dag_file"
+                  unresolved=1
+                fi
+              done < /tmp/submitted_metadata_files.txt
               if [ "$unresolved" -ne 0 ]; then
                 echo "Submitted metadata detected but no eval commit was produced."
                 exit 1
@@ -350,17 +358,17 @@ jobs:
             fi
             echo "PROCESSED_COUNT=0" >> "$GITHUB_ENV"
           else
+            processed_count=0
             if [ -s /tmp/submitted_metadata_files.txt ]; then
-              processed_count=0
               while IFS= read -r meta_file; do
                 [ -z "$meta_file" ] && continue
                 echo "$meta_file" >> /tmp/eval_committed_metadata_files.txt
                 processed_count=$((processed_count + 1))
               done < /tmp/submitted_metadata_files.txt
-              echo "PROCESSED_COUNT=$processed_count" >> "$GITHUB_ENV"
-              echo "processed_count=$processed_count"
             fi
             git commit -m "Promote merged DAG metadata to eval"
+            echo "PROCESSED_COUNT=$processed_count" >> "$GITHUB_ENV"
+            echo "processed_count=$processed_count"
           fi
 
       - name: Push eval branch
@@ -369,46 +377,68 @@ jobs:
           set -euo pipefail
           cd eval-worktree
           if [ "${PROCESSED_COUNT:-0}" -eq 0 ]; then
-            if [ "${SUBMITTED_COUNT:-0}" -gt 0 ]; then
-              echo "Submitted metadata already promoted or no real changes; skipping push."
-            else
-              echo "No submitted metadata selected; skipping push."
+            if [ "${{ github.event_name }}" = "workflow_run" ] && [ "${SUBMITTED_COUNT:-0}" -gt 0 ]; then
+              echo "Automatic run had submitted metadata but produced no eval commit."
+              exit 1
             fi
+            echo "No eval push needed."
             exit 0
           fi
           git push origin eval
 
-      - name: Post-promotion verify metadata on origin/eval
+      - name: Verify metadata on origin/eval
         shell: bash
         run: |
           set -euo pipefail
           if [ "${PROCESSED_COUNT:-0}" -eq 0 ]; then
-            echo "No eval commit produced in this run; skipping origin/eval file verification."
-            exit 0
-          fi
-          if [ ! -s /tmp/eval_committed_metadata_files.txt ]; then
-            echo "No committed metadata file list found; skipping origin/eval file verification."
             exit 0
           fi
           cd eval-worktree
           git fetch origin eval
-          while IFS= read -r meta_file; do
-            [ -z "$meta_file" ] && continue
-            echo "Verifying origin/eval:$meta_file"
-            if ! git cat-file -e "origin/eval:$meta_file" 2>/dev/null; then
-              echo "origin/eval is missing expected promoted metadata: $meta_file"
-              exit 1
-            fi
-            promotion_status=$(git show "origin/eval:$meta_file" | python -c "import json,sys;print(str(json.load(sys.stdin).get('promotion_status') or '').strip().lower())")
-            if [ "$promotion_status" != "eval" ]; then
-              echo "origin/eval verification failed for $meta_file: promotion_status=$promotion_status"
-              exit 1
-            fi
-            dag_file=$(git show "origin/eval:$meta_file" | python -c "import json,sys;print((json.load(sys.stdin).get('git_dag_file') or '').strip())")
-            if [ -n "$dag_file" ]; then
-              if ! git cat-file -e "origin/eval:$dag_file" 2>/dev/null; then
-                echo "origin/eval is missing promoted DAG file: $dag_file"
+          if [ -s /tmp/eval_committed_metadata_files.txt ]; then
+            while IFS= read -r meta_file; do
+              [ -z "$meta_file" ] && continue
+              echo "Verifying origin/eval:$meta_file"
+              if ! git cat-file -e "origin/eval:$meta_file" 2>/dev/null; then
+                echo "origin/eval missing expected metadata: $meta_file"
                 exit 1
               fi
-            fi
-          done < /tmp/eval_committed_metadata_files.txt
+              promotion_status=$(git show "origin/eval:$meta_file" | python -c "import json,sys;print(str(json.load(sys.stdin).get('promotion_status') or '').strip().lower())")
+              if [ "$promotion_status" != "eval" ]; then
+                echo "origin/eval verification failed for $meta_file: promotion_status=$promotion_status"
+                exit 1
+              fi
+              dag_file=$(git show "origin/eval:$meta_file" | python -c "import json,sys;print((json.load(sys.stdin).get('git_dag_file') or '').strip())")
+              if [ -n "$dag_file" ] && ! git cat-file -e "origin/eval:$dag_file" 2>/dev/null; then
+                echo "origin/eval missing expected DAG file: $dag_file"
+                exit 1
+              fi
+            done < /tmp/eval_committed_metadata_files.txt
+          fi
+          eval_sha=$(git rev-parse origin/eval)
+          echo "EVAL_COMMIT_SHA=$eval_sha" >> "$GITHUB_ENV"
+
+      - name: Build eval lifecycle artifact
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p lifecycle
+          if [ -s /tmp/eval_committed_metadata_files.txt ]; then
+            cp /tmp/eval_committed_metadata_files.txt lifecycle/eval_promoted_metadata_files.txt
+          else
+            : > lifecycle/eval_promoted_metadata_files.txt
+          fi
+          echo "${EVAL_COMMIT_SHA:-}" > lifecycle/eval_commit_sha.txt
+          echo "trigger_source=${{ github.event_name }}" > lifecycle/summary.txt
+          echo "metadata_source=${METADATA_SOURCE:-}" >> lifecycle/summary.txt
+          echo "received_count=${RECEIVED_COUNT:-0}" >> lifecycle/summary.txt
+          echo "processed_count=${PROCESSED_COUNT:-0}" >> lifecycle/summary.txt
+
+      - name: Upload eval lifecycle artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-promotion-lifecycle
+          path: lifecycle/
+          retention-days: 30
