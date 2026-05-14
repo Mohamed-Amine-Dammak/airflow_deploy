@@ -9,6 +9,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+METADATA_DIR = SCRIPT_DIR.parent / "metadata"
+if str(METADATA_DIR) not in sys.path:
+    sys.path.insert(0, str(METADATA_DIR))
+
+from metadata_path_normalization import normalize_metadata_path, normalize_metadata_paths
+
 
 def _discover(root: Path, rev_from: str, rev_to: str, metadata_files: list[str]) -> list[dict]:
     cmd = [
@@ -21,7 +28,7 @@ def _discover(root: Path, rev_from: str, rev_to: str, metadata_files: list[str])
         "--to",
         rev_to,
     ]
-    for mf in metadata_files:
+    for mf in normalize_metadata_paths(metadata_files):
         cmd.extend(["--metadata-file", mf])
     proc = subprocess.run(cmd, check=True, capture_output=True, text=True)
     payload = json.loads(proc.stdout or "[]")
@@ -39,7 +46,13 @@ def main() -> int:
     args = parser.parse_args()
 
     root = args.root.resolve()
-    rows = _discover(root, args.rev_from, args.rev_to, [str(x) for x in args.metadata_file if str(x).strip()])
+    normalized_files = normalize_metadata_paths(str(x) for x in args.metadata_file if str(x).strip())
+    for raw in (args.metadata_file or []):
+        norm = normalize_metadata_path(str(raw))
+        print(
+            f"[evaluate_changed_metadata] metadata_file_raw={str(raw)!r} normalized={norm!r}"
+        )
+    rows = _discover(root, args.rev_from, args.rev_to, normalized_files)
     if not rows:
         print("No changed metadata rows discovered.")
         return 0
