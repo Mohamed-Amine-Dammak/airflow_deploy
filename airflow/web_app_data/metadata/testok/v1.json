@@ -1,0 +1,141 @@
+{
+  "pipeline_id": "testok",
+  "version_id": "v1",
+  "dag_version": 1,
+  "airflow_dag_id": "testok__v1",
+  "output_filename": "testok__v1.py",
+  "created_at": "2026-05-14T13:01:29.828634+00:00",
+  "created_by": "admin",
+  "status": "active",
+  "is_current": true,
+  "source_hash": "4768957f291a89bfbad693dda8f4a13e88fc7db70548cabc4e6399204bf7c22a",
+  "source_definition": {
+    "pipeline": {
+      "dag_id": "testok",
+      "description": "",
+      "start_date": "2026-01-01",
+      "schedule": null,
+      "schedule_mode": "manual",
+      "catchup": false,
+      "schedule_preset": "",
+      "schedule_cron": "",
+      "interval_value": "",
+      "interval_unit": "minutes",
+      "event_source": "",
+      "custom_schedule_text": "",
+      "retries": 1,
+      "retry_delay_minutes": 5,
+      "alert_emails": [],
+      "alert_mode": "both",
+      "tags": [
+        "demo",
+        "orchestration"
+      ],
+      "output_filename": "testok.py"
+    },
+    "nodes": [
+      {
+        "id": "node_1",
+        "type": "delay",
+        "label": "Delay 1",
+        "x": 490.99998474121094,
+        "y": 347.99999618530273,
+        "config": {
+          "delay_minutes": 1
+        }
+      }
+    ],
+    "edges": [],
+    "group_boxes": []
+  },
+  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testok__v1.py",
+  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testok__v1.py",
+  "node_task_map": {
+    "node_1": [
+      "delay_1_node_1"
+    ]
+  },
+  "node_primary_task_map": {
+    "node_1": "delay_1_node_1"
+  },
+  "base_pipeline_id": "testok",
+  "promotion_status": "champion",
+  "score": 94.9,
+  "score_type": "runtime_once",
+  "score_breakdown": {
+    "reliability": 25.0,
+    "runtime_efficiency": 17.4,
+    "retry_behavior": 15.0,
+    "scheduler_behavior": 15.0,
+    "complexity": 10.0,
+    "maintainability": 10.0,
+    "resource_efficiency": 2.5
+  },
+  "last_eval_run_id": "eval-testok-v1-1778763909",
+  "promoted_at": "2026-05-14T13:05:40.095326+00:00",
+  "promoted_by": null,
+  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/68",
+  "github_commit_sha": "20fdb33ad9af058381e7565501f097fda3d90709",
+  "local_dag_id": "testok__v1",
+  "git_dag_id": "testok_git__v1",
+  "local_dag_file": "airflow/dags/testok__v1.py",
+  "git_dag_file": "dags/testok_git__v1.py",
+  "dag_id": "testok__v1",
+  "deployment_target": "git",
+  "updated_at": "2026-05-14T13:05:40.092488+00:00",
+  "publish_status": "merged_to_git",
+  "version": "v1",
+  "workflow_name": "testok",
+  "workflow_slug": "testok",
+  "repo_file_path": "dags/testok_git__v1.py",
+  "git_branch_name": "feature/workflow/testok",
+  "pull_request_number": 68,
+  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/68",
+  "commit_sha": "bd3001a3dbc050652d6b1e426ce8d9c6d911c13e",
+  "github_pr_number": 68,
+  "github_branch": "feature/workflow/testok",
+  "requested_by_user_id": "admin",
+  "requested_by_email": "",
+  "requested_by_display_name": "admin",
+  "warnings": [],
+  "critical_failures": [],
+  "merged_at": "2026-05-14T13:02:53.422643+00:00",
+  "merge_commit_sha": "20fdb33ad9af058381e7565501f097fda3d90709",
+  "evaluated_branch": "eval",
+  "last_evaluated_at": "2026-05-14T13:05:09.526382+00:00",
+  "evaluation_runs": [
+    {
+      "dag_run_id": "manual__2026-05-14T13:03:49.179241+00:00",
+      "dag_id": "testok_git__v1",
+      "state": "success",
+      "metrics": {
+        "dag_run_state": "success",
+        "total_runtime_seconds": 78.011,
+        "task_count": 1,
+        "success_task_count": 1,
+        "failed_task_count": 0,
+        "skipped_task_count": 0,
+        "retry_count": 0,
+        "try_number": 0,
+        "queued_duration": 0.0,
+        "scheduler_delay_seconds": 0.0,
+        "start_date": "2026-05-14T13:03:50.244425Z",
+        "end_date": "2026-05-14T13:05:08.255834Z",
+        "duration_per_task": {
+          "delay_1_node_1": 77.258291
+        },
+        "task_failure_rate": 0.0,
+        "sla_misses": 0,
+        "resource_usage_pct": 50.0
+      }
+    }
+  ],
+  "promotion_history": [
+    {
+      "at": "2026-05-14T13:05:40.095333+00:00",
+      "promoted_version_id": "v1",
+      "base_pipeline_id": "testok",
+      "previous_champion_version_id": null
+    }
+  ]
+}
