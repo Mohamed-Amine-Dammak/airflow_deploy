@@ -34,6 +34,14 @@ def _has_critical_failures(row: dict[str, Any]) -> bool:
     return bool(list(row.get("critical_failures") or []))
 
 
+def _has_numeric_score(row: dict[str, Any]) -> bool:
+    try:
+        float(row.get("score"))
+        return True
+    except Exception:
+        return False
+
+
 def _to_bool(value: str) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on"}
 
@@ -75,38 +83,49 @@ def main() -> int:
     archived_updates = 0
     removed_dags = 0
     for base_id, versions in sorted(groups.items()):
-        champions = [
+        champions_current = [
             row
             for row in versions
             if str(row.get("promotion_status") or "").strip().lower() == "champion"
         ]
-        if not champions:
+        scored_candidates = [
+            row
+            for row in versions
+            if str(row.get("promotion_status") or "").strip().lower() in {"champion", "archived", "challenger"}
+            and _has_numeric_score(row)
+            and not _has_critical_failures(row)
+        ]
+        if not scored_candidates:
+            # Fallback to currently champion rows when no scored valid rows exist.
+            scored_candidates = champions_current
+        if not scored_candidates:
             continue
 
-        valid = [row for row in champions if not _has_critical_failures(row)]
-        pool = valid if valid else champions
-        selected = max(pool, key=_score)
+        selected = max(scored_candidates, key=_score)
         selected_key = (
             str(selected.get("pipeline_id") or "").strip(),
             str(selected.get("version_id") or "").strip(),
         )
         print(
             f"base_pipeline_id={base_id} selected_champion={selected_key[0]}/{selected_key[1]} "
-            f"score={_score(selected)} valid_pool={len(valid)} total_champions={len(champions)}"
+            f"score={_score(selected)} candidate_pool={len(scored_candidates)} total_champions={len(champions_current)}"
         )
 
-        for row in champions:
+        # Set selected row as champion (even if previously archived/challenger).
+        if selected_key[0] and selected_key[1]:
+            selected["promotion_status"] = "champion"
+            selected["updated_at"] = _now_iso()
+            save_version_metadata(root, selected_key[0], selected_key[1], selected)
+            champion_updates += 1
+
+        # Any other currently champion row is archived.
+        for row in champions_current:
             pipeline_id = str(row.get("pipeline_id") or "").strip()
             version_id = str(row.get("version_id") or "").strip()
             if not pipeline_id or not version_id:
                 continue
             key = (pipeline_id, version_id)
             if key == selected_key:
-                if str(row.get("promotion_status") or "").strip().lower() != "champion":
-                    row["promotion_status"] = "champion"
-                    champion_updates += 1
-                row["updated_at"] = _now_iso()
-                save_version_metadata(root, pipeline_id, version_id, row)
                 continue
 
             row["promotion_status"] = "archived"
