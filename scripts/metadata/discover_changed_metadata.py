@@ -6,8 +6,11 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
+
+from metadata_path_normalization import normalize_metadata_path, normalize_metadata_paths
 
 
 def _changed_files(root: Path, rev_from: str, rev_to: str) -> list[str]:
@@ -21,15 +24,24 @@ def _changed_files(root: Path, rev_from: str, rev_to: str) -> list[str]:
         return []
     files: list[str] = []
     for line in proc.stdout.splitlines():
-        p = str(line or "").strip().replace("\\", "/")
+        p = normalize_metadata_path(str(line or ""))
         if p.startswith("airflow/web_app_data/metadata/") and p.endswith(".json"):
             files.append(p)
-    return files
+    return normalize_metadata_paths(files)
 
 
 def _row(root: Path, rel: str) -> dict[str, Any] | None:
-    path = root / rel
+    normalized_rel = normalize_metadata_path(rel)
+    print(
+        f"[discover_changed_metadata] metadata_file_raw={rel!r} normalized={normalized_rel!r}",
+        file=sys.stderr,
+    )
+    path = root / normalized_rel
     if not path.exists():
+        print(
+            f"[discover_changed_metadata] metadata_file_exists=false normalized={normalized_rel!r}",
+            file=sys.stderr,
+        )
         return None
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -38,7 +50,7 @@ def _row(root: Path, rel: str) -> dict[str, Any] | None:
     if not isinstance(payload, dict):
         return None
     return {
-        "metadata_file": rel,
+        "metadata_file": normalized_rel,
         "pipeline_id": str(payload.get("pipeline_id", "")).strip(),
         "version_id": str(payload.get("version_id", "")).strip(),
         "base_pipeline_id": str(payload.get("base_pipeline_id", "")).strip(),
@@ -59,7 +71,7 @@ def main() -> int:
     args = parser.parse_args()
 
     root = args.root.resolve()
-    files = [str(x).strip().replace("\\", "/") for x in args.metadata_file if str(x).strip()]
+    files = normalize_metadata_paths(str(x) for x in args.metadata_file if str(x).strip())
     if not files:
         files = _changed_files(root, args.rev_from, args.rev_to)
     out: list[dict[str, Any]] = []

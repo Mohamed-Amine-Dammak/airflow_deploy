@@ -139,7 +139,11 @@ jobs:
           promotable_count=0
           if [ -s /tmp/prod_metadata.txt ]; then
             while IFS= read -r meta_file; do
+              raw_meta_file="$meta_file"
+              meta_file=$(python -c "import sys; s=sys.argv[1]; s=s.lstrip('\ufeff').strip().strip('\"').strip(\"'\").replace('\r',''); print(s.replace('\\\\','/'))" "$raw_meta_file")
               [ -z "$meta_file" ] && continue
+              echo "metadata_file_raw_repr=$(python -c "import sys; print(repr(sys.argv[1]))" "$raw_meta_file")"
+              echo "metadata_file_norm_repr=$(python -c "import sys; print(repr(sys.argv[1]))" "$meta_file")"
               if [ ! -f "eval-src/$meta_file" ]; then
                 echo "metadata_file=$meta_file"
                 echo "selected=false reason=missing_on_eval_checkout"
