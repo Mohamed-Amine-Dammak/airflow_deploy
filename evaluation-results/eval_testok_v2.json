@@ -1,0 +1,52 @@
+{
+  "dag_id": "testok_git__v2",
+  "pipeline_id": "testok",
+  "version_id": "v2",
+  "evaluation_mode": "run_once",
+  "run_count": 1,
+  "status": "completed",
+  "score": 96.9,
+  "score_type": "runtime_once",
+  "breakdown": {
+    "reliability": 25.0,
+    "runtime_efficiency": 19.4,
+    "retry_behavior": 15.0,
+    "scheduler_behavior": 15.0,
+    "complexity": 10.0,
+    "maintainability": 10.0,
+    "resource_efficiency": 2.5
+  },
+  "warnings": [],
+  "critical_failures": [],
+  "last_eval_run_id": "eval-testok-v2-1778764110",
+  "updated_store": "D:\\dataops\\APACHE-AIRFLOW\\actions-runner\\_work\\airflow_deploy\\airflow_deploy\\airflow\\web_app_data\\metadata\\testok\\v2.json",
+  "dag_file_used": "D:\\dataops\\APACHE-AIRFLOW\\actions-runner\\_work\\airflow_deploy\\airflow_deploy\\dags\\testok_git__v2.py",
+  "evaluation_runs": [
+    {
+      "dag_run_id": "manual__2026-05-14T13:08:10.545125+00:00",
+      "dag_id": "testok_git__v2",
+      "state": "success",
+      "metrics": {
+        "dag_run_state": "success",
+        "total_runtime_seconds": 18.25,
+        "task_count": 2,
+        "success_task_count": 2,
+        "failed_task_count": 0,
+        "skipped_task_count": 0,
+        "retry_count": 0,
+        "try_number": 0,
+        "queued_duration": 0.0,
+        "scheduler_delay_seconds": 0.0,
+        "start_date": "2026-05-14T13:08:10.966916Z",
+        "end_date": "2026-05-14T13:08:29.217183Z",
+        "duration_per_task": {
+          "delay_1_node_2": 18.065055,
+          "delay_2_node_1": 0.0
+        },
+        "task_failure_rate": 0.0,
+        "sla_misses": 0,
+        "resource_usage_pct": 50.0
+      }
+    }
+  ]
+}
