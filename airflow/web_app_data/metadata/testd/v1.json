@@ -1,0 +1,141 @@
+{
+  "pipeline_id": "testd",
+  "version_id": "v1",
+  "dag_version": 1,
+  "airflow_dag_id": "testd__v1",
+  "output_filename": "testd__v1.py",
+  "created_at": "2026-05-14T12:41:36.835497+00:00",
+  "created_by": "admin",
+  "status": "active",
+  "is_current": true,
+  "source_hash": "8c1273816ef511188058272687d74f2b780a8369609bb0e42d0e84040b27eb8d",
+  "source_definition": {
+    "pipeline": {
+      "dag_id": "testd",
+      "description": "",
+      "start_date": "2026-01-01",
+      "schedule": null,
+      "schedule_mode": "manual",
+      "catchup": false,
+      "schedule_preset": "",
+      "schedule_cron": "",
+      "interval_value": "",
+      "interval_unit": "minutes",
+      "event_source": "",
+      "custom_schedule_text": "",
+      "retries": 1,
+      "retry_delay_minutes": 5,
+      "alert_emails": [],
+      "alert_mode": "both",
+      "tags": [
+        "demo",
+        "orchestration"
+      ],
+      "output_filename": "testd.py"
+    },
+    "nodes": [
+      {
+        "id": "node_1",
+        "type": "delay",
+        "label": "Delay 1",
+        "x": 490.99998474121094,
+        "y": 347.99999618530273,
+        "config": {
+          "delay_minutes": 1
+        }
+      }
+    ],
+    "edges": [],
+    "group_boxes": []
+  },
+  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testd__v1.py",
+  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testd__v1.py",
+  "node_task_map": {
+    "node_1": [
+      "delay_1_node_1"
+    ]
+  },
+  "node_primary_task_map": {
+    "node_1": "delay_1_node_1"
+  },
+  "base_pipeline_id": "testd",
+  "promotion_status": "champion",
+  "score": 94.9,
+  "score_type": "runtime_once",
+  "score_breakdown": {
+    "reliability": 25.0,
+    "runtime_efficiency": 17.4,
+    "retry_behavior": 15.0,
+    "scheduler_behavior": 15.0,
+    "complexity": 10.0,
+    "maintainability": 10.0,
+    "resource_efficiency": 2.5
+  },
+  "last_eval_run_id": "eval-testd-v1-1778762759",
+  "promoted_at": "2026-05-14T12:46:29.703541+00:00",
+  "promoted_by": null,
+  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/66",
+  "github_commit_sha": "47858eb24427ddb8f0093e17fec6a4496b11a144",
+  "local_dag_id": "testd__v1",
+  "git_dag_id": "testd_git__v1",
+  "local_dag_file": "airflow/dags/testd__v1.py",
+  "git_dag_file": "dags/testd_git__v1.py",
+  "dag_id": "testd__v1",
+  "deployment_target": "git",
+  "updated_at": "2026-05-14T12:46:29.700407+00:00",
+  "publish_status": "merged_to_git",
+  "version": "v1",
+  "workflow_name": "testd",
+  "workflow_slug": "testd",
+  "repo_file_path": "dags/testd_git__v1.py",
+  "git_branch_name": "feature/workflow/testd",
+  "pull_request_number": 66,
+  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/66",
+  "commit_sha": "925293d6350c91d6dddda49e9bd16ba445e886fb",
+  "github_pr_number": 66,
+  "github_branch": "feature/workflow/testd",
+  "requested_by_user_id": "admin",
+  "requested_by_email": "",
+  "requested_by_display_name": "admin",
+  "warnings": [],
+  "critical_failures": [],
+  "merged_at": "2026-05-14T12:43:25.143412+00:00",
+  "merge_commit_sha": "47858eb24427ddb8f0093e17fec6a4496b11a144",
+  "evaluated_branch": "eval",
+  "last_evaluated_at": "2026-05-14T12:45:59.855127+00:00",
+  "evaluation_runs": [
+    {
+      "dag_run_id": "manual__2026-05-14T12:44:39.501274+00:00",
+      "dag_id": "testd_git__v1",
+      "state": "success",
+      "metrics": {
+        "dag_run_state": "success",
+        "total_runtime_seconds": 78.607,
+        "task_count": 1,
+        "success_task_count": 1,
+        "failed_task_count": 0,
+        "skipped_task_count": 0,
+        "retry_count": 0,
+        "try_number": 0,
+        "queued_duration": 0.0,
+        "scheduler_delay_seconds": 0.0,
+        "start_date": "2026-05-14T12:44:40.087960Z",
+        "end_date": "2026-05-14T12:45:58.694811Z",
+        "duration_per_task": {
+          "delay_1_node_1": 77.807172
+        },
+        "task_failure_rate": 0.0,
+        "sla_misses": 0,
+        "resource_usage_pct": 50.0
+      }
+    }
+  ],
+  "promotion_history": [
+    {
+      "at": "2026-05-14T12:46:29.703549+00:00",
+      "promoted_version_id": "v1",
+      "base_pipeline_id": "testd",
+      "previous_champion_version_id": null
+    }
+  ]
+}
