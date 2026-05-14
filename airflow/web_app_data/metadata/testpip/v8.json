@@ -186,7 +186,7 @@
     "node_9": "delay_8_node_9"
   },
   "base_pipeline_id": "testpip",
-  "promotion_status": "champion",
+  "promotion_status": "archived",
   "score": 79.7,
   "score_type": "runtime_once",
   "score_breakdown": {
@@ -209,7 +209,7 @@
   "git_dag_file": "dags/testpip_git__v8.py",
   "dag_id": "testpip__v8",
   "deployment_target": "git",
-  "updated_at": "2026-05-14T10:12:17.496820+00:00",
+  "updated_at": "2026-05-14T12:34:29.900631+00:00",
   "publish_status": "merged_to_git",
   "version": "v8",
   "workflow_name": "testpip",
@@ -271,5 +271,6 @@
       "base_pipeline_id": "testpip",
       "previous_champion_version_id": "v7"
     }
-  ]
+  ],
+  "archived_at": "2026-05-14T12:34:29.900631+00:00"
 }
