@@ -1,4 +1,4 @@
-name: Sync Metadata On Merge
+﻿name: Sync Metadata On Merge
 
 on:
   pull_request:
@@ -29,6 +29,13 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Log trigger source
+        shell: bash
+        run: |
+          echo "trigger_source=pull_request.closed"
+          echo "pr_number=${{ github.event.pull_request.number }}"
+          echo "merge_commit_sha=${{ github.event.pull_request.merge_commit_sha }}"
+
       - name: Update metadata for merged PR
         run: |
           python scripts/metadata/update_pipeline_metadata.py merged \
@@ -41,11 +48,19 @@ jobs:
             --promotion-status submitted
 
       - name: Detect merged metadata files
-        id: changed
         shell: bash
         run: |
+          set -euo pipefail
           git show --name-only --pretty="" "${{ github.event.pull_request.merge_commit_sha }}" \
             | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/merged_metadata.txt || true
+          awk 'NF && !seen[$0]++' /tmp/merged_metadata.txt > /tmp/merged_metadata.dedup.txt || true
+          mv /tmp/merged_metadata.dedup.txt /tmp/merged_metadata.txt
+          count=0
+          if [ -s /tmp/merged_metadata.txt ]; then
+            count=$(wc -l < /tmp/merged_metadata.txt | tr -d ' ')
+          fi
+          echo "MERGED_METADATA_COUNT=$count" >> "$GITHUB_ENV"
+          echo "processed_count=$count"
           echo "Merged metadata files:"
           if [ -s /tmp/merged_metadata.txt ]; then
             sed 's/^/- /' /tmp/merged_metadata.txt
@@ -53,72 +68,28 @@ jobs:
             echo "- <none>"
           fi
 
-      - name: Log merged metadata transition (before/after)
+      - name: Verify merged metadata states in workspace
         shell: bash
         run: |
           set -euo pipefail
+          if [ ! -s /tmp/merged_metadata.txt ]; then
+            exit 0
+          fi
           python - << 'PY'
           import json
-          import subprocess
-          from datetime import datetime, timezone
           from pathlib import Path
 
-          root = Path(".").resolve()
-          lines = []
-          p = Path("/tmp/merged_metadata.txt")
-          if p.exists():
-              lines = [x.strip() for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
-          meta_files = lines
-          now = datetime.now(timezone.utc).isoformat()
-          for rel in meta_files:
-              path = root / rel
-              payload = json.loads(path.read_text(encoding="utf-8"))
-              before_promo = str(payload.get("promotion_status", "")).strip()
-              before_publish = str(payload.get("publish_status", "")).strip()
-              print(f"{rel} before: promotion_status={before_promo} publish_status={before_publish}")
-              payload["publish_status"] = "merged_to_git"
-              payload["updated_at"] = now
-              payload["merged_at"] = now
-              payload["merge_commit_sha"] = "${{ github.event.pull_request.merge_commit_sha }}"
-              path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-              after_promo = str(payload.get("promotion_status", "")).strip()
-              after_publish = str(payload.get("publish_status", "")).strip()
-              print(f"{rel} after: promotion_status={after_promo} publish_status={after_publish}")
+          root = Path('.').resolve()
+          for rel in [x.strip() for x in Path('/tmp/merged_metadata.txt').read_text(encoding='utf-8').splitlines() if x.strip()]:
+              payload = json.loads((root / rel).read_text(encoding='utf-8'))
+              publish = str(payload.get('publish_status', '')).strip().lower()
+              promo = str(payload.get('promotion_status', '')).strip().lower()
+              print(f"metadata_file={rel}")
+              print(f"publish_status={publish}")
+              print(f"promotion_status={promo}")
+              if publish != 'merged_to_git' or promo != 'submitted':
+                  raise SystemExit(f"sync verification failed in workspace for {rel}: publish_status={publish} promotion_status={promo}")
           PY
-
-      - name: Validate metadata JSON after merged update
-        run: |
-          python scripts/metadata/validate_metadata.py --root .
-
-      - name: Fail if draft persisted after merge
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - << 'PY'
-          import json
-          import subprocess
-          from pathlib import Path
-
-          root = Path(".").resolve()
-          lines = []
-          p = Path("/tmp/merged_metadata.txt")
-          if p.exists():
-              lines = [x.strip() for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
-          meta_files = lines
-          for rel in meta_files:
-              payload = json.loads((root / rel).read_text(encoding="utf-8"))
-              if str(payload.get("promotion_status", "")).strip().lower() == "draft":
-                  raise SystemExit("metadata transition failed: draft state persisted after merge")
-          PY
-
-      - name: Show updated metadata files
-        shell: bash
-        run: |
-          set -euo pipefail
-          for f in $(cat /tmp/merged_metadata.txt 2>/dev/null || true); do
-            echo "==== $f ===="
-            cat "$f"
-          done
 
       - name: Guard legacy store is unchanged
         shell: bash
@@ -128,13 +99,17 @@ jobs:
             exit 1
           fi
 
-      - name: Preserve updated metadata from merge snapshot
+      - name: Preserve updated metadata snapshot
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p /tmp/metadata
           cp -r airflow/web_app_data/metadata /tmp/metadata/
 
-      - name: Checkout main to publish metadata
+      - name: Checkout main and apply metadata snapshot
+        shell: bash
         run: |
+          set -euo pipefail
           git fetch origin main
           git checkout -B main origin/main
           mkdir -p airflow/web_app_data
@@ -142,8 +117,10 @@ jobs:
           cp -r /tmp/metadata/metadata airflow/web_app_data/metadata
           python scripts/metadata/validate_metadata.py --root .
 
-      - name: Commit and push metadata
+      - name: Commit and push metadata to main
+        shell: bash
         run: |
+          set -euo pipefail
           git config user.email "airflow-bot@example.com"
           git config user.name "Airflow Bot"
           if git diff --quiet -- airflow/web_app_data/metadata; then
@@ -153,3 +130,56 @@ jobs:
             git commit -m "Sync merged PR #${{ github.event.pull_request.number }} metadata"
             git push origin main
           fi
+          git fetch origin main
+          sync_sha=$(git rev-parse origin/main)
+          echo "SYNC_COMMIT_SHA=$sync_sha" >> "$GITHUB_ENV"
+          echo "sync_commit_sha=$sync_sha"
+
+      - name: Verify synced metadata on origin/main
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -s /tmp/merged_metadata.txt ]; then
+            exit 0
+          fi
+          git fetch origin main
+          while IFS= read -r meta_file; do
+            [ -z "$meta_file" ] && continue
+            echo "Verifying origin/main:$meta_file"
+            if ! git cat-file -e "origin/main:$meta_file" 2>/dev/null; then
+              echo "Missing metadata on origin/main: $meta_file"
+              exit 1
+            fi
+            publish_status=$(git show "origin/main:$meta_file" | python -c "import json,sys;print(str(json.load(sys.stdin).get('publish_status') or '').strip().lower())")
+            promotion_status=$(git show "origin/main:$meta_file" | python -c "import json,sys;print(str(json.load(sys.stdin).get('promotion_status') or '').strip().lower())")
+            echo "origin/main metadata_file=$meta_file publish_status=$publish_status promotion_status=$promotion_status"
+            if [ "$publish_status" != "merged_to_git" ] || [ "$promotion_status" != "submitted" ]; then
+              echo "origin/main lifecycle verification failed for $meta_file"
+              exit 1
+            fi
+          done < /tmp/merged_metadata.txt
+
+      - name: Build lifecycle handoff artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p lifecycle
+          if [ -s /tmp/merged_metadata.txt ]; then
+            cp /tmp/merged_metadata.txt lifecycle/updated_metadata_files.txt
+          else
+            : > lifecycle/updated_metadata_files.txt
+          fi
+          echo "${SYNC_COMMIT_SHA:-}" > lifecycle/sync_commit_sha.txt
+          echo "trigger_source=pull_request.closed" > lifecycle/summary.txt
+          echo "processed_count=${MERGED_METADATA_COUNT:-0}" >> lifecycle/summary.txt
+          echo "sync_commit_sha=${SYNC_COMMIT_SHA:-}" >> lifecycle/summary.txt
+          echo "Lifecycle artifact contents:"
+          cat lifecycle/summary.txt
+
+      - name: Upload lifecycle artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sync-metadata-lifecycle
+          path: lifecycle/
+          retention-days: 30

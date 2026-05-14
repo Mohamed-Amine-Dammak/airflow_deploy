@@ -1,4 +1,4 @@
-name: Promote DAG to Prod
+﻿name: Promote DAG to Prod
 
 on:
   workflow_dispatch:
@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: promote-prod-${{ github.ref }}
@@ -27,6 +28,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Log trigger source
+        shell: bash
+        run: |
+          echo "trigger_source=${{ github.event_name }}"
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "triggering_workflow=${{ github.event.workflow_run.name }}"
+            echo "triggering_run_id=${{ github.event.workflow_run.id }}"
+            echo "triggering_head_sha=${{ github.event.workflow_run.head_sha }}"
+          fi
+
       - name: Checkout eval source
         uses: actions/checkout@v4
         with:
@@ -68,6 +79,16 @@ jobs:
           git config user.email "airflow-bot@example.com"
           git config user.name "Airflow Bot"
 
+      - name: Download eval lifecycle artifact
+        if: ${{ github.event_name == 'workflow_run' }}
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: eval-evaluation-lifecycle
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: eval-lifecycle
+
       - name: Detect changed metadata files in eval
         shell: bash
         run: |
@@ -75,47 +96,45 @@ jobs:
           : > /tmp/prod_metadata.txt
           : > /tmp/prod_promotable.txt
           event_name="${{ github.event_name }}"
+          metadata_source=""
+
           if [ "$event_name" = "workflow_dispatch" ]; then
             manual_file="${{ github.event.inputs.metadata_file || '' }}"
             if [ -n "$manual_file" ]; then
               echo "$manual_file" > /tmp/prod_metadata.txt
+              metadata_source="manual_input"
             else
               cd eval-src
               find airflow/web_app_data/metadata -type f -name "*.json" | sed 's#^\./##' > /tmp/prod_metadata.txt || true
               cd ..
+              metadata_source="manual_scan_all"
             fi
-          elif [ "$event_name" = "push" ]; then
-            before_sha="${{ github.event.before }}"
-            after_sha="${{ github.sha }}"
-            cd eval-src
-            if [ -n "$before_sha" ] && [ "$before_sha" != "0000000000000000000000000000000000000000" ]; then
-              git diff --name-only "$before_sha" "$after_sha" | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/prod_metadata.txt || true
-            else
-              git show --name-only --pretty="" "$after_sha" | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/prod_metadata.txt || true
-            fi
-            cd ..
-          elif [ "$event_name" = "workflow_run" ]; then
-            run_sha="${{ github.event.workflow_run.head_sha }}"
-            cd eval-src
-            if [ -n "$run_sha" ]; then
-              git show --name-only --pretty="" "$run_sha" | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/prod_metadata.txt || true
-            fi
-            cd ..
           else
-            cd eval-src
-            git show --name-only --pretty="" HEAD | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/prod_metadata.txt || true
-            cd ..
+            if [ -s eval-lifecycle/evaluated_metadata_files.txt ]; then
+              cp eval-lifecycle/evaluated_metadata_files.txt /tmp/prod_metadata.txt
+              metadata_source="evaluation_artifact"
+            else
+              metadata_source="fallback_git_diff"
+              run_sha="${{ github.event.workflow_run.head_sha }}"
+              cd eval-src
+              if [ -n "$run_sha" ]; then
+                git show --name-only --pretty="" "$run_sha" | grep '^airflow/web_app_data/metadata/.*/.*\.json$' > /tmp/prod_metadata.txt || true
+              fi
+              if [ ! -s /tmp/prod_metadata.txt ]; then
+                python scripts/promotion/select_pending_eval_challengers.py --eval-root . --out-file /tmp/prod_metadata.txt
+              fi
+              cd ..
+            fi
           fi
+
           awk 'NF && !seen[$0]++' /tmp/prod_metadata.txt > /tmp/prod_metadata.dedup.txt || true
           mv /tmp/prod_metadata.dedup.txt /tmp/prod_metadata.txt
-          if [ "$event_name" = "workflow_run" ] && [ ! -s /tmp/prod_metadata.txt ]; then
-            echo "No metadata files detected from workflow_run head_sha; selecting pending evaluated challengers."
-            python eval-src/scripts/promotion/select_pending_eval_challengers.py \
-              --eval-root eval-src \
-              --out-file /tmp/prod_metadata.txt
+
+          received_count=0
+          if [ -s /tmp/prod_metadata.txt ]; then
+            received_count=$(wc -l < /tmp/prod_metadata.txt | tr -d ' ')
           fi
-          echo "Detected metadata files:"
-          if [ -s /tmp/prod_metadata.txt ]; then sed 's/^/- /' /tmp/prod_metadata.txt; else echo "- <none>"; fi
+
           changed_count=0
           promotable_count=0
           if [ -s /tmp/prod_metadata.txt ]; then
@@ -147,11 +166,21 @@ jobs:
               fi
             done < /tmp/prod_metadata.txt
           fi
+
+          echo "METADATA_SOURCE=$metadata_source" >> "$GITHUB_ENV"
+          echo "RECEIVED_COUNT=$received_count" >> "$GITHUB_ENV"
           echo "PROD_CHANGED_COUNT=$changed_count" >> "$GITHUB_ENV"
           echo "PROD_PROMOTABLE_COUNT=$promotable_count" >> "$GITHUB_ENV"
           echo "processed_count=$promotable_count"
-          if [ "$changed_count" -gt 0 ] && [ "$promotable_count" -eq 0 ]; then
-            echo "No challenger metadata ready for prod promotion."
+
+          echo "metadata_source=$metadata_source"
+          echo "received_count=$received_count"
+          echo "Detected metadata files:"
+          if [ -s /tmp/prod_metadata.txt ]; then sed 's/^/- /' /tmp/prod_metadata.txt; else echo "- <none>"; fi
+
+          if [ "$event_name" = "workflow_run" ] && [ "$received_count" -gt 0 ] && [ "$promotable_count" -eq 0 ]; then
+            echo "Automatic prod promotion run received metadata but none were challenger."
+            exit 1
           fi
 
       - name: Promote changed challengers
@@ -186,6 +215,17 @@ jobs:
             --expected-out /tmp/prod_expected_promotions.txt \
             --env-out /tmp/prod_expected_count.env
           cat /tmp/prod_expected_count.env >> "$GITHUB_ENV"
+          echo "expected_promotions_count=${PROD_EXPECTED_PROMOTION_COUNT:-0}"
+
+      - name: Enforce automatic no-op policy
+        if: ${{ github.event_name == 'workflow_run' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${RECEIVED_COUNT:-0}" -gt 0 ] && [ "${PROD_EXPECTED_PROMOTION_COUNT:-0}" -eq 0 ]; then
+            echo "Automatic prod promotion run received metadata but produced no promotable champion outputs. See promotion-decisions artifact for reasons."
+            exit 1
+          fi
 
       - name: Validate prod metadata
         run: |
