@@ -98,7 +98,18 @@ jobs:
           $ErrorActionPreference = "Stop"
           $outFile = "$env:EVAL_METADATA_FILE"
           if (Test-Path $outFile) { Remove-Item $outFile -Force }
-          New-Item -ItemType File -Path $outFile -Force | Out-Null
+          $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+          function Write-Utf8NoBomLines([string]$Path, [string[]]$Lines) {
+            [System.IO.File]::WriteAllLines($Path, @($Lines), $utf8NoBom)
+          }
+          function Normalize-MetadataPath([string]$Line) {
+            if ($null -eq $Line) { return "" }
+            $normalized = "$Line"
+            $normalized = $normalized.TrimStart([char]0xFEFF).Trim().Trim('"').Trim("'")
+            $normalized = $normalized.Replace("`r", "").Replace('\', '/')
+            return $normalized
+          }
+          Write-Utf8NoBomLines $outFile @()
 
           $eventName = "${{ github.event_name }}"
           $source = ""
@@ -106,22 +117,24 @@ jobs:
           if ($eventName -eq "workflow_dispatch") {
             $manual = "${{ github.event.inputs.metadata_file }}"
             if (-not [string]::IsNullOrWhiteSpace($manual)) {
-              $manual.Trim().Replace('\\','/') | Out-File -FilePath $outFile -Encoding utf8
+              $manualPath = Normalize-MetadataPath $manual
+              Write-Utf8NoBomLines $outFile @($manualPath)
               $source = "manual_input"
             }
             else {
               $all = Get-ChildItem -Path airflow/web_app_data/metadata -Recurse -File -Filter *.json -ErrorAction SilentlyContinue |
-                ForEach-Object { $_.FullName.Replace((Resolve-Path .).Path + '\\','').Replace('\\','/') }
-              $all | Out-File -FilePath $outFile -Encoding utf8
+                ForEach-Object { Normalize-MetadataPath ($_.FullName.Replace((Resolve-Path .).Path + '\\','')) } |
+                Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+              Write-Utf8NoBomLines $outFile @($all)
               $source = "manual_scan_all"
             }
           }
           else {
             $artifactFile = "promote-lifecycle/eval_promoted_metadata_files.txt"
             if (Test-Path $artifactFile) {
-              $rows = Get-Content $artifactFile | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+              $rows = Get-Content $artifactFile | ForEach-Object { Normalize-MetadataPath $_ } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
               if ($rows.Count -gt 0) {
-                $rows | Out-File -FilePath $outFile -Encoding utf8
+                Write-Utf8NoBomLines $outFile @($rows)
                 $source = "promote_artifact"
               }
             }
@@ -132,9 +145,14 @@ jobs:
               $runSha = "${{ github.event.workflow_run.head_sha }}"
               if (-not [string]::IsNullOrWhiteSpace($runSha)) {
                 $files = git show --name-only --pretty="" $runSha
-                $files = @($files | Where-Object { $_ -like "airflow/web_app_data/metadata/*/*.json" } | Select-Object -Unique)
+                $files = @(
+                  $files |
+                  ForEach-Object { Normalize-MetadataPath $_ } |
+                  Where-Object { $_ -like "airflow/web_app_data/metadata/*/*.json" } |
+                  Select-Object -Unique
+                )
                 if ($files.Count -gt 0) {
-                  $files | Out-File -FilePath $outFile -Encoding utf8
+                  Write-Utf8NoBomLines $outFile @($files)
                 }
               }
             }
@@ -142,9 +160,14 @@ jobs:
 
           $rows2 = @()
           if (Test-Path $outFile) {
-            $rows2 = @(Get-Content $outFile | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_.Trim() } | Select-Object -Unique)
+            $rows2 = @(
+              Get-Content $outFile |
+              ForEach-Object { Normalize-MetadataPath $_ } |
+              Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+              Select-Object -Unique
+            )
           }
-          $rows2 | Out-File -FilePath $outFile -Encoding utf8
+          Write-Utf8NoBomLines $outFile @($rows2)
           $detected = $rows2.Count
 
           "DETECTED_METADATA_COUNT=$detected" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -165,17 +188,27 @@ jobs:
           $ErrorActionPreference = "Stop"
           $inFile = "$env:EVAL_METADATA_FILE"
           $readyFile = "$env:EVAL_READY_FILE"
-          if (Test-Path $readyFile) { Remove-Item $readyFile -Force }
-          New-Item -ItemType File -Path $readyFile -Force | Out-Null
+          $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+          function Write-Utf8NoBomLines([string]$Path, [string[]]$Lines) {
+            [System.IO.File]::WriteAllLines($Path, @($Lines), $utf8NoBom)
+          }
+          function Normalize-MetadataPath([string]$Line) {
+            if ($null -eq $Line) { return "" }
+            $normalized = "$Line"
+            $normalized = $normalized.TrimStart([char]0xFEFF).Trim().Trim('"').Trim("'")
+            $normalized = $normalized.Replace("`r", "").Replace('\', '/')
+            return $normalized
+          }
 
           $rows = @()
           if (Test-Path $inFile) {
-            $rows = @(Get-Content $inFile | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+            $rows = @(Get-Content $inFile | ForEach-Object { Normalize-MetadataPath $_ } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
           }
 
           $processed = 0
+          $readyRows = @()
           foreach ($m in $rows) {
-            $rel = "$m".Trim().Replace('\\','/')
+            $rel = Normalize-MetadataPath "$m"
             $candidatePaths = @(
               $rel,
               ($rel -replace '^[\.\/]+', ''),
@@ -217,7 +250,7 @@ jobs:
             Write-Output "promotion_status=$promotion"
 
             if ($publish -eq "merged_to_git" -and ($promotion -eq "eval" -or $promotion -eq "challenger")) {
-              $resolved | Out-File -FilePath $readyFile -Encoding utf8 -Append
+              $readyRows += $resolved
               $processed += 1
               if ($promotion -eq "eval") {
                 Write-Output "selected=true reason=publish_merged_promotion_eval"
@@ -229,6 +262,7 @@ jobs:
               Write-Output "selected=false reason=status_mismatch"
             }
           }
+          Write-Utf8NoBomLines $readyFile @($readyRows | Select-Object -Unique)
 
           "PROCESSED_COUNT=$processed" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Output "processed_count=$processed"
@@ -309,17 +343,27 @@ jobs:
           $ErrorActionPreference = "Stop"
           $readyFile = "$env:EVAL_READY_FILE"
           $outFile = "$env:EVALUATED_METADATA_FILE"
-          if (Test-Path $outFile) { Remove-Item $outFile -Force }
-          New-Item -ItemType File -Path $outFile -Force | Out-Null
+          $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+          function Write-Utf8NoBomLines([string]$Path, [string[]]$Lines) {
+            [System.IO.File]::WriteAllLines($Path, @($Lines), $utf8NoBom)
+          }
+          function Normalize-MetadataPath([string]$Line) {
+            if ($null -eq $Line) { return "" }
+            $normalized = "$Line"
+            $normalized = $normalized.TrimStart([char]0xFEFF).Trim().Trim('"').Trim("'")
+            $normalized = $normalized.Replace("`r", "").Replace('\', '/')
+            return $normalized
+          }
 
           $rows = @()
           if (Test-Path $readyFile) {
-            $rows = @(Get-Content $readyFile | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+            $rows = @(Get-Content $readyFile | ForEach-Object { Normalize-MetadataPath $_ } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
           }
 
           $okCount = 0
+          $evaluatedRows = @()
           foreach ($m in $rows) {
-            $rel = "$m".Trim()
+            $rel = Normalize-MetadataPath "$m"
             $payload = Get-Content $rel -Raw | ConvertFrom-Json
             $promo = "$($payload.promotion_status)".Trim().ToLowerInvariant()
             $score = $payload.score
@@ -330,9 +374,10 @@ jobs:
             if ($null -eq $score -or [string]::IsNullOrWhiteSpace("$score")) {
               throw "Evaluation lifecycle verification failed for ${rel}: score is missing"
             }
-            $rel | Out-File -FilePath $outFile -Encoding utf8 -Append
+            $evaluatedRows += $rel
             $okCount += 1
           }
+          Write-Utf8NoBomLines $outFile @($evaluatedRows | Select-Object -Unique)
 
           "EVALUATED_COUNT=$okCount" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Output "processed_count=$okCount"
@@ -373,13 +418,25 @@ jobs:
         if: always()
         run: |
           $ErrorActionPreference = "Stop"
+          $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+          function Write-Utf8NoBomLines([string]$Path, [string[]]$Lines) {
+            [System.IO.File]::WriteAllLines($Path, @($Lines), $utf8NoBom)
+          }
+          function Normalize-MetadataPath([string]$Line) {
+            if ($null -eq $Line) { return "" }
+            $normalized = "$Line"
+            $normalized = $normalized.TrimStart([char]0xFEFF).Trim().Trim('"').Trim("'")
+            $normalized = $normalized.Replace("`r", "").Replace('\', '/')
+            return $normalized
+          }
           New-Item -ItemType Directory -Force -Path lifecycle | Out-Null
           $metaOut = "lifecycle/evaluated_metadata_files.txt"
           if (Test-Path "$env:EVALUATED_METADATA_FILE") {
-            Copy-Item "$env:EVALUATED_METADATA_FILE" $metaOut -Force
+            $lines = Get-Content "$env:EVALUATED_METADATA_FILE" | ForEach-Object { Normalize-MetadataPath $_ } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+            Write-Utf8NoBomLines $metaOut @($lines)
           }
           else {
-            New-Item -ItemType File -Path $metaOut -Force | Out-Null
+            Write-Utf8NoBomLines $metaOut @()
           }
           @(
             "trigger_source=${{ github.event_name }}",

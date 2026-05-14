@@ -9,6 +9,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+METADATA_DIR = SCRIPT_DIR.parent / "metadata"
+if str(METADATA_DIR) not in sys.path:
+    sys.path.insert(0, str(METADATA_DIR))
+
+from metadata_path_normalization import normalize_metadata_path, normalize_metadata_paths
+
 
 def _discover(eval_root: Path, rev_from: str, rev_to: str, metadata_files: list[str]) -> list[dict]:
     cmd = [
@@ -21,7 +28,7 @@ def _discover(eval_root: Path, rev_from: str, rev_to: str, metadata_files: list[
         "--to",
         rev_to,
     ]
-    for mf in metadata_files:
+    for mf in normalize_metadata_paths(metadata_files):
         cmd.extend(["--metadata-file", mf])
     proc = subprocess.run(cmd, check=True, capture_output=True, text=True)
     payload = json.loads(proc.stdout or "[]")
@@ -29,7 +36,10 @@ def _discover(eval_root: Path, rev_from: str, rev_to: str, metadata_files: list[
 
 
 def _copy_file_from_source(source_root: Path, dest_root: Path, rel_path: str) -> tuple[bool, str]:
-    rel = str(rel_path or "").strip().replace("\\", "/")
+    rel = normalize_metadata_path(str(rel_path or ""))
+    print(
+        f"[promote_changed_challengers] metadata_file_raw={rel_path!r} normalized={rel!r}"
+    )
     if not rel:
         return False, "empty path"
     source = source_root / rel
@@ -58,7 +68,8 @@ def main() -> int:
 
     eval_root = args.eval_root.resolve()
     prod_root = args.prod_root.resolve()
-    rows = _discover(eval_root, args.rev_from, args.rev_to, [str(x) for x in args.metadata_file if str(x).strip()])
+    normalized_args = normalize_metadata_paths(str(x) for x in args.metadata_file if str(x).strip())
+    rows = _discover(eval_root, args.rev_from, args.rev_to, normalized_args)
     decisions: list[dict] = []
     for row in rows:
         if str(row.get("promotion_status", "")).strip().lower() != "challenger":
