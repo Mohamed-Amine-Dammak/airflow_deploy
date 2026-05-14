@@ -325,10 +325,10 @@ jobs:
             $score = $payload.score
             Write-Output "metadata_file=$rel post_eval_promotion_status=$promo score=$score"
             if ($promo -ne "challenger") {
-              throw "Evaluation lifecycle verification failed for $rel: promotion_status=$promo"
+              throw "Evaluation lifecycle verification failed for ${rel}: promotion_status=$promo"
             }
             if ($null -eq $score -or [string]::IsNullOrWhiteSpace("$score")) {
-              throw "Evaluation lifecycle verification failed for $rel: score is missing"
+              throw "Evaluation lifecycle verification failed for ${rel}: score is missing"
             }
             $rel | Out-File -FilePath $outFile -Encoding utf8 -Append
             $okCount += 1
