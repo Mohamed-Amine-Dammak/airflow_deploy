@@ -228,9 +228,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${RECEIVED_COUNT:-0}" -gt 0 ] && [ "${PROD_EXPECTED_PROMOTION_COUNT:-0}" -eq 0 ]; then
-            echo "Automatic prod promotion run received metadata but produced no promotable champion outputs. See promotion-decisions artifact for reasons."
+          if [ "${RECEIVED_COUNT:-0}" -gt 0 ] && [ "${PROD_DECISION_COUNT:-0}" -eq 0 ]; then
+            echo "Automatic prod promotion run received metadata but produced no promotion decisions."
             exit 1
+          fi
+          if [ "${PROD_SHOULD_PROMOTE_COUNT:-0}" -gt 0 ] && [ "${PROD_EXPECTED_PROMOTION_COUNT:-0}" -eq 0 ]; then
+            echo "Automatic prod promotion run had promotable candidates but no champion outputs were produced. See promotion-decisions artifact for reasons."
+            exit 1
+          fi
+          if [ "${RECEIVED_COUNT:-0}" -gt 0 ] && [ "${PROD_EXPECTED_PROMOTION_COUNT:-0}" -eq 0 ]; then
+            echo "No prod promotion performed: candidates were blocked by policy (threshold/critical failures/static-only)."
+            echo "blocked_count=${PROD_BLOCKED_COUNT:-0}"
           fi
 
       - name: Validate prod metadata
