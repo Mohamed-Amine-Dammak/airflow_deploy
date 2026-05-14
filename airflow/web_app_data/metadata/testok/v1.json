@@ -59,11 +59,19 @@
     "node_1": "delay_1_node_1"
   },
   "base_pipeline_id": "testok",
-  "promotion_status": "eval",
-  "score": null,
-  "score_type": null,
-  "score_breakdown": {},
-  "last_eval_run_id": null,
+  "promotion_status": "challenger",
+  "score": 94.9,
+  "score_type": "runtime_once",
+  "score_breakdown": {
+    "reliability": 25.0,
+    "runtime_efficiency": 17.4,
+    "retry_behavior": 15.0,
+    "scheduler_behavior": 15.0,
+    "complexity": 10.0,
+    "maintainability": 10.0,
+    "resource_efficiency": 2.5
+  },
+  "last_eval_run_id": "eval-testok-v1-1778763909",
   "promoted_at": null,
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/68",
@@ -93,5 +101,33 @@
   "critical_failures": [],
   "merged_at": "2026-05-14T13:02:53.422643+00:00",
   "merge_commit_sha": "20fdb33ad9af058381e7565501f097fda3d90709",
-  "evaluated_branch": "eval"
+  "evaluated_branch": "eval",
+  "last_evaluated_at": "2026-05-14T13:05:09.526382+00:00",
+  "evaluation_runs": [
+    {
+      "dag_run_id": "manual__2026-05-14T13:03:49.179241+00:00",
+      "dag_id": "testok_git__v1",
+      "state": "success",
+      "metrics": {
+        "dag_run_state": "success",
+        "total_runtime_seconds": 78.011,
+        "task_count": 1,
+        "success_task_count": 1,
+        "failed_task_count": 0,
+        "skipped_task_count": 0,
+        "retry_count": 0,
+        "try_number": 0,
+        "queued_duration": 0.0,
+        "scheduler_delay_seconds": 0.0,
+        "start_date": "2026-05-14T13:03:50.244425Z",
+        "end_date": "2026-05-14T13:05:08.255834Z",
+        "duration_per_task": {
+          "delay_1_node_1": 77.258291
+        },
+        "task_failure_rate": 0.0,
+        "sla_misses": 0,
+        "resource_usage_pct": 50.0
+      }
+    }
+  ]
 }
