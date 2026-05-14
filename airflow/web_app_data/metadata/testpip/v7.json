@@ -1,14 +1,14 @@
 {
   "pipeline_id": "testpip",
-  "version_id": "v6",
-  "dag_version": 6,
-  "airflow_dag_id": "testpip__v6",
-  "output_filename": "testpip__v6.py",
-  "created_at": "2026-05-14T09:36:09.044022+00:00",
+  "version_id": "v7",
+  "dag_version": 7,
+  "airflow_dag_id": "testpip__v7",
+  "output_filename": "testpip__v7.py",
+  "created_at": "2026-05-14T09:56:37.347942+00:00",
   "created_by": "admin",
   "status": "active",
   "is_current": true,
-  "source_hash": "4eb51a527493670a28eea45a71d24e0931d6a79c59b8e2cde7d16dfa87b0b742",
+  "source_hash": "5774ada6818cc080604857f8da8e76f3483a2e6ddd4d5d899a8d06e2a317d750",
   "source_definition": {
     "pipeline": {
       "dag_id": "testpip",
@@ -93,6 +93,16 @@
         "config": {
           "delay_minutes": 1
         }
+      },
+      {
+        "id": "node_8",
+        "type": "delay",
+        "label": "Delay 3",
+        "x": 2014.666748046875,
+        "y": 315.7777404785156,
+        "config": {
+          "delay_minutes": 1
+        }
       }
     ],
     "edges": [
@@ -115,12 +125,16 @@
       {
         "source": "node_6",
         "target": "node_7"
+      },
+      {
+        "source": "node_7",
+        "target": "node_8"
       }
     ],
     "group_boxes": []
   },
-  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testpip__v6.py",
-  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testpip__v6.py",
+  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testpip__v7.py",
+  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testpip__v7.py",
   "node_task_map": {
     "node_4": [
       "timeout_guard_1_node_4"
@@ -139,6 +153,9 @@
     ],
     "node_7": [
       "delay_6_node_7"
+    ],
+    "node_8": [
+      "delay_7_node_8"
     ]
   },
   "node_primary_task_map": {
@@ -147,78 +164,80 @@
     "node_3": "delay_3_node_3",
     "node_5": "delay_4_node_5",
     "node_6": "delay_5_node_6",
-    "node_7": "delay_6_node_7"
+    "node_7": "delay_6_node_7",
+    "node_8": "delay_7_node_8"
   },
   "base_pipeline_id": "testpip",
-  "promotion_status": "archived",
-  "score": 96.5,
+  "promotion_status": "champion",
+  "score": 95.7,
   "score_type": "runtime_once",
   "score_breakdown": {
     "reliability": 25.0,
-    "runtime_efficiency": 19.2,
+    "runtime_efficiency": 18.4,
     "retry_behavior": 15.0,
     "scheduler_behavior": 15.0,
     "complexity": 9.8,
     "maintainability": 10.0,
     "resource_efficiency": 2.5
   },
-  "last_eval_run_id": "eval-testpip-v6-1778751513",
-  "promoted_at": "2026-05-14T09:39:05.230493+00:00",
+  "last_eval_run_id": "eval-testpip-v7-1778752845",
+  "promoted_at": "2026-05-14T10:01:16.165299+00:00",
   "promoted_by": null,
-  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/63",
-  "github_commit_sha": "065bdf612b38d2e61bed179fce76f9a9a71a9e41",
-  "local_dag_id": "testpip__v6",
-  "git_dag_id": "testpip_git__v6",
-  "local_dag_file": "airflow/dags/testpip__v6.py",
-  "git_dag_file": "dags/testpip_git__v6.py",
-  "dag_id": "testpip__v6",
+  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/64",
+  "github_commit_sha": "64ceffb1f30c8d4af868c54fd4e95349bf503a2c",
+  "local_dag_id": "testpip__v7",
+  "git_dag_id": "testpip_git__v7",
+  "local_dag_file": "airflow/dags/testpip__v7.py",
+  "git_dag_file": "dags/testpip_git__v7.py",
+  "dag_id": "testpip__v7",
   "deployment_target": "git",
-  "updated_at": "2026-05-14T10:01:16.164715+00:00",
+  "updated_at": "2026-05-14T10:01:16.161407+00:00",
   "publish_status": "merged_to_git",
-  "version": "v6",
+  "version": "v7",
   "workflow_name": "testpip",
   "workflow_slug": "testpip",
-  "repo_file_path": "dags/testpip_git__v6.py",
-  "git_branch_name": "feature/workflow/testpip-6",
-  "pull_request_number": 63,
-  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/63",
-  "commit_sha": "2b906c539b77590719df890b63bb6475700ef49e",
-  "github_pr_number": 63,
-  "github_branch": "feature/workflow/testpip-6",
+  "repo_file_path": "dags/testpip_git__v7.py",
+  "git_branch_name": "feature/workflow/testpip-7",
+  "pull_request_number": 64,
+  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/64",
+  "commit_sha": "022a480f5bc3f9d0f7f523b7d1f91464d1a5b033",
+  "github_pr_number": 64,
+  "github_branch": "feature/workflow/testpip-7",
   "requested_by_user_id": "admin",
   "requested_by_email": "",
   "requested_by_display_name": "admin",
   "warnings": [],
   "critical_failures": [],
-  "merged_at": "2026-05-14T09:37:06.534026+00:00",
-  "merge_commit_sha": "065bdf612b38d2e61bed179fce76f9a9a71a9e41",
+  "merged_at": "2026-05-14T09:58:55.535523+00:00",
+  "merge_commit_sha": "64ceffb1f30c8d4af868c54fd4e95349bf503a2c",
   "evaluated_branch": "eval",
-  "last_evaluated_at": "2026-05-14T09:38:33.072032+00:00",
+  "last_evaluated_at": "2026-05-14T10:00:45.638631+00:00",
   "evaluation_runs": [
     {
-      "dag_run_id": "manual__2026-05-14T09:38:02.858259+00:00",
-      "dag_id": "testpip_git__v6",
+      "dag_run_id": "manual__2026-05-14T09:59:55.409800+00:00",
+      "dag_id": "testpip_git__v7",
       "state": "success",
       "metrics": {
         "dag_run_state": "success",
-        "total_runtime_seconds": 23.193,
-        "task_count": 6,
-        "success_task_count": 6,
+        "total_runtime_seconds": 46.888,
+        "task_count": 7,
+        "success_task_count": 7,
         "failed_task_count": 0,
         "skipped_task_count": 0,
         "retry_count": 0,
         "try_number": 0,
         "queued_duration": 0.0,
         "scheduler_delay_seconds": 0.0,
-        "start_date": "2026-05-14T09:38:03.307057Z",
-        "end_date": "2026-05-14T09:38:26.499756Z",
+        "start_date": "2026-05-14T09:59:55.745533Z",
+        "end_date": "2026-05-14T10:00:42.633921Z",
         "duration_per_task": {
           "timeout_guard_1_node_4": 0.0,
-          "delay_2_node_2": 21.911789,
+          "delay_2_node_2": 46.284902,
           "delay_3_node_3": 0.0,
           "delay_4_node_5": 0.0,
           "delay_5_node_6": 0.0,
-          "delay_6_node_7": 0.0
+          "delay_6_node_7": 0.0,
+          "delay_7_node_8": 0.0
         },
         "task_failure_rate": 0.0,
         "sla_misses": 0,
@@ -228,11 +247,10 @@
   ],
   "promotion_history": [
     {
-      "at": "2026-05-14T09:39:05.230503+00:00",
-      "promoted_version_id": "v6",
+      "at": "2026-05-14T10:01:16.165307+00:00",
+      "promoted_version_id": "v7",
       "base_pipeline_id": "testpip",
-      "previous_champion_version_id": null
+      "previous_champion_version_id": "v6"
     }
-  ],
-  "archived_at": "2026-05-14T10:01:16.164726+00:00"
+  ]
 }
