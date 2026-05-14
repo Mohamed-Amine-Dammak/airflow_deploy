@@ -186,11 +186,19 @@
     "node_9": "delay_8_node_9"
   },
   "base_pipeline_id": "testpip",
-  "promotion_status": "eval",
-  "score": null,
-  "score_type": null,
-  "score_breakdown": {},
-  "last_eval_run_id": null,
+  "promotion_status": "challenger",
+  "score": 79.7,
+  "score_type": "runtime_once",
+  "score_breakdown": {
+    "reliability": 25.0,
+    "runtime_efficiency": 2.4,
+    "retry_behavior": 15.0,
+    "scheduler_behavior": 15.0,
+    "complexity": 9.8,
+    "maintainability": 10.0,
+    "resource_efficiency": 2.5
+  },
+  "last_eval_run_id": "eval-testpip-v8-1778753511",
   "promoted_at": null,
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/65",
@@ -220,5 +228,40 @@
   "critical_failures": [],
   "merged_at": "2026-05-14T10:02:05.370143+00:00",
   "merge_commit_sha": "909033e3733365011088bb8e70d482d27de6f2b8",
-  "evaluated_branch": "eval"
+  "evaluated_branch": "eval",
+  "last_evaluated_at": "2026-05-14T10:11:51.748676+00:00",
+  "evaluation_runs": [
+    {
+      "dag_run_id": "manual__2026-05-14T10:03:00.019294+00:00",
+      "dag_id": "testpip_git__v8",
+      "state": "success",
+      "metrics": {
+        "dag_run_state": "success",
+        "total_runtime_seconds": 526.896,
+        "task_count": 8,
+        "success_task_count": 8,
+        "failed_task_count": 0,
+        "skipped_task_count": 0,
+        "retry_count": 0,
+        "try_number": 0,
+        "queued_duration": 0.0,
+        "scheduler_delay_seconds": 0.0,
+        "start_date": "2026-05-14T10:03:00.451393Z",
+        "end_date": "2026-05-14T10:11:47.347127Z",
+        "duration_per_task": {
+          "timeout_guard_1_node_4": 0.0,
+          "delay_2_node_2": 77.384622,
+          "delay_3_node_3": 68.179429,
+          "delay_4_node_5": 76.210631,
+          "delay_5_node_6": 76.149345,
+          "delay_6_node_7": 76.161819,
+          "delay_7_node_8": 76.165531,
+          "delay_8_node_9": 72.160832
+        },
+        "task_failure_rate": 0.0,
+        "sla_misses": 0,
+        "resource_usage_pct": 50.0
+      }
+    }
+  ]
 }
