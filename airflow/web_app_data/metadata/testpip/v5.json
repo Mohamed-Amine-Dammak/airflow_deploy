@@ -114,7 +114,7 @@
     "node_5": "delay_4_node_5"
   },
   "base_pipeline_id": "testpip",
-  "promotion_status": "draft",
+  "promotion_status": "submitted",
   "score": null,
   "score_type": null,
   "score_breakdown": {},
@@ -122,15 +122,15 @@
   "promoted_at": null,
   "promoted_by": null,
   "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/62",
-  "github_commit_sha": "b6232cc19f03cf5edc5499aace60bba6749775e9",
+  "github_commit_sha": "4fad4589a7af9e1bb7307c37a77e1361f0619704",
   "local_dag_id": "testpip__v5",
   "git_dag_id": "testpip_git__v5",
   "local_dag_file": "airflow/dags/testpip__v5.py",
   "git_dag_file": "dags/testpip_git__v5.py",
   "dag_id": "testpip__v5",
   "deployment_target": "git",
-  "updated_at": "2026-05-14T09:15:49.525746+00:00",
-  "publish_status": "pr_open",
+  "updated_at": "2026-05-14T09:16:37.349304+00:00",
+  "publish_status": "merged_to_git",
   "version": "v5",
   "workflow_name": "testpip",
   "workflow_slug": "testpip",
@@ -143,5 +143,9 @@
   "github_branch": "feature/workflow/testpip-5",
   "requested_by_user_id": "admin",
   "requested_by_email": "",
-  "requested_by_display_name": "admin"
+  "requested_by_display_name": "admin",
+  "warnings": [],
+  "critical_failures": [],
+  "merged_at": "2026-05-14T09:16:37.349318+00:00",
+  "merge_commit_sha": "4fad4589a7af9e1bb7307c37a77e1361f0619704"
 }
