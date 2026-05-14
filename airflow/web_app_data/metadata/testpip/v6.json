@@ -1,0 +1,188 @@
+{
+  "pipeline_id": "testpip",
+  "version_id": "v6",
+  "dag_version": 6,
+  "airflow_dag_id": "testpip__v6",
+  "output_filename": "testpip__v6.py",
+  "created_at": "2026-05-14T09:36:09.044022+00:00",
+  "created_by": "admin",
+  "status": "active",
+  "is_current": true,
+  "source_hash": "4eb51a527493670a28eea45a71d24e0931d6a79c59b8e2cde7d16dfa87b0b742",
+  "source_definition": {
+    "pipeline": {
+      "dag_id": "testpip",
+      "description": "",
+      "start_date": "2026-01-01",
+      "schedule": null,
+      "schedule_mode": "manual",
+      "catchup": false,
+      "schedule_preset": "",
+      "schedule_cron": "",
+      "interval_value": "",
+      "interval_unit": "minutes",
+      "event_source": "",
+      "custom_schedule_text": "",
+      "retries": 3,
+      "retry_delay_minutes": 5,
+      "alert_emails": [],
+      "alert_mode": "both",
+      "tags": [
+        "demo",
+        "orchestration"
+      ],
+      "output_filename": "testpip.py"
+    },
+    "nodes": [
+      {
+        "id": "node_2",
+        "type": "delay",
+        "label": "Delay 2",
+        "x": 520,
+        "y": 189,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_3",
+        "type": "delay",
+        "label": "Delay 3",
+        "x": 761.7777709960938,
+        "y": 340.6666259765625,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_4",
+        "type": "timeout_guard",
+        "label": "Timeout Guard 4",
+        "x": 154.1111297607422,
+        "y": 187.99993515014648,
+        "config": {
+          "timeout_minutes": 1
+        }
+      },
+      {
+        "id": "node_5",
+        "type": "delay",
+        "label": "Delay 3",
+        "x": 1071.1111450195312,
+        "y": 329.99993896484375,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_6",
+        "type": "delay",
+        "label": "Delay 3",
+        "x": 1406.0000610351562,
+        "y": 325.99993896484375,
+        "config": {
+          "delay_minutes": 1
+        }
+      },
+      {
+        "id": "node_7",
+        "type": "delay",
+        "label": "Delay 3",
+        "x": 1720.8889770507812,
+        "y": 317.5555114746094,
+        "config": {
+          "delay_minutes": 1
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "node_2",
+        "target": "node_3"
+      },
+      {
+        "source": "node_4",
+        "target": "node_2"
+      },
+      {
+        "source": "node_3",
+        "target": "node_5"
+      },
+      {
+        "source": "node_5",
+        "target": "node_6"
+      },
+      {
+        "source": "node_6",
+        "target": "node_7"
+      }
+    ],
+    "group_boxes": []
+  },
+  "generated_local_path": "D:\\dataops\\APACHE-AIRFLOW\\web_app\\generated_dags\\testpip__v6.py",
+  "generated_airflow_path": "D:\\dataops\\APACHE-AIRFLOW\\airflow\\dags\\testpip__v6.py",
+  "node_task_map": {
+    "node_4": [
+      "timeout_guard_1_node_4"
+    ],
+    "node_2": [
+      "delay_2_node_2"
+    ],
+    "node_3": [
+      "delay_3_node_3"
+    ],
+    "node_5": [
+      "delay_4_node_5"
+    ],
+    "node_6": [
+      "delay_5_node_6"
+    ],
+    "node_7": [
+      "delay_6_node_7"
+    ]
+  },
+  "node_primary_task_map": {
+    "node_4": "timeout_guard_1_node_4",
+    "node_2": "delay_2_node_2",
+    "node_3": "delay_3_node_3",
+    "node_5": "delay_4_node_5",
+    "node_6": "delay_5_node_6",
+    "node_7": "delay_6_node_7"
+  },
+  "base_pipeline_id": "testpip",
+  "promotion_status": "eval",
+  "score": null,
+  "score_type": null,
+  "score_breakdown": {},
+  "last_eval_run_id": null,
+  "promoted_at": null,
+  "promoted_by": null,
+  "github_pr_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/63",
+  "github_commit_sha": "065bdf612b38d2e61bed179fce76f9a9a71a9e41",
+  "local_dag_id": "testpip__v6",
+  "git_dag_id": "testpip_git__v6",
+  "local_dag_file": "airflow/dags/testpip__v6.py",
+  "git_dag_file": "dags/testpip_git__v6.py",
+  "dag_id": "testpip__v6",
+  "deployment_target": "git",
+  "updated_at": "2026-05-14T09:37:24.848341+00:00",
+  "publish_status": "merged_to_git",
+  "version": "v6",
+  "workflow_name": "testpip",
+  "workflow_slug": "testpip",
+  "repo_file_path": "dags/testpip_git__v6.py",
+  "git_branch_name": "feature/workflow/testpip-6",
+  "pull_request_number": 63,
+  "pull_request_url": "https://github.com/Mohamed-Amine-Dammak/airflow_deploy/pull/63",
+  "commit_sha": "2b906c539b77590719df890b63bb6475700ef49e",
+  "github_pr_number": 63,
+  "github_branch": "feature/workflow/testpip-6",
+  "requested_by_user_id": "admin",
+  "requested_by_email": "",
+  "requested_by_display_name": "admin",
+  "warnings": [],
+  "critical_failures": [],
+  "merged_at": "2026-05-14T09:37:06.534026+00:00",
+  "merge_commit_sha": "065bdf612b38d2e61bed179fce76f9a9a71a9e41",
+  "evaluated_branch": "eval"
+}
