@@ -19,12 +19,18 @@ def main() -> int:
     decisions = payload.get("decisions", [])
     expected: list[str] = []
     failed: list[tuple[str, str, str]] = []
+    should_promote_count = 0
+    blocked_count = 0
 
     for d in decisions:
         rel = str(d.get("metadata_file") or "").strip()
         eligible = bool(d.get("eligible"))
         promoted = bool(d.get("promoted"))
         should_promote = bool(d.get("should_promote"))
+        if should_promote:
+            should_promote_count += 1
+        else:
+            blocked_count += 1
         reason = str(d.get("reason") or "").strip()
         details = str(d.get("details") or "").strip()
         candidate_version = str(d.get("candidate_version") or d.get("version_id") or "").strip()
@@ -62,7 +68,18 @@ def main() -> int:
             print(f"- metadata_file={rel} reason={reason} details={details}")
         return 1
 
-    args.env_out.write_text(f"PROD_EXPECTED_PROMOTION_COUNT={len(expected)}\n", encoding="utf-8")
+    args.env_out.write_text(
+        "\n".join(
+            [
+                f"PROD_EXPECTED_PROMOTION_COUNT={len(expected)}",
+                f"PROD_DECISION_COUNT={len(decisions)}",
+                f"PROD_SHOULD_PROMOTE_COUNT={should_promote_count}",
+                f"PROD_BLOCKED_COUNT={blocked_count}",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     return 0
 
 
